@@ -1,0 +1,24 @@
+services:
+  backend:
+    build: ./backend
+    container_name: stock-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      # IMPORTANTE: Persistência do SQLite.
+      # Mapeia o arquivo dev.db do seu computador para dentro do container
+      - ./backend/prisma/dev.db:/app/prisma/dev.db
+    environment:
+      # Garante que o Prisma saiba onde ler o banco
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=minha_chave_super_secreta_123
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: stock-frontend
+    ports:
+      - "80:80" # Acessa via porta 80 (padrão web)
+    depends_on:
+      - backend
+    restart: always

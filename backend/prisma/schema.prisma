@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL") 
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  name      String
+  cargo     String?  @default("EMPLOYEE")
+  role      String   @default("USER")
+  password  String   // Será a senha criptografada (Hash)
+
+  stockMovements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users") // Nome da tabela no banco
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  cnpj      String?  @unique // Opcional, mas se tiver deve ser único
+  email     String?
+  phone     String?
+  address   String?
+  
+  // Relacionamento inverso
+  stockMovements StockMovement[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt
+
+  @@map("suppliers")
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  name          String
+  category      String
+  internalCode  String   @unique @map("internal_code") // Código interno único
+  barcode       String   @unique // EAN/GTIN único
+  
+  // Unidade: UN, CX, KG, M (Vamos validar no DTO, aqui salvamos como string)
+  unit          String   
+  
+  costPrice     Float    @map("cost_price")
+  salePrice     Float?   @map("sale_price") // Opcional
+  
+  currentStock  Float    @map("current_stock")
+  minStock      Float    @map("min_stock")
+  specifications Specification[]
+  attachments    Attachment[]
+  
+  location      String?  // Prateleira A, Gaveta B...
+
+  stockMovements StockMovement[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("products")
+}
+
+model StockMovement {
+  id          String   @id @default(uuid())
+  
+  productId   String   @map("product_id")
+  product     Product  @relation(fields: [productId], references: [id])
+  
+  // Tipo: ENTRADA, SAIDA, AJUSTE, TRANSFERENCIA
+  type        String   
+  batch       String?  // Lote (Opcional)
+
+  
+  quantity    Float    // Quantidade movimentada (sempre positiva)
+  
+  expiryDate  DateTime? @map("expiry_date") // Validade (Opcional)
+  unitValue   Float?   @map("unit_value")
+  stockBefore Float    @map("stock_before") // Snapshot do saldo antes
+  stockAfter  Float    @map("stock_after")  // Snapshot do saldo depois
+  
+  description String?
+  
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+
+  supplierId String?   @map("supplier_id")
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("stock_movements")
+}
+
+// Tabela de Especificações (Chave/Valor)
+model Specification {
+  id        String  @id @default(uuid())
+  name      String  // Ex: "Voltagem", "Cor", "Peso"
+  value     String  // Ex: "220v", "Azul", "1.5kg"
+  
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("specifications")
+}
+
+// Tabela de Anexos (Arquivos)
+model Attachment {
+  id        String  @id @default(uuid())
+  fileName  String  // Nome original do arquivo
+  filePath  String  // Caminho onde foi salvo no disco
+  fileType  String  // Mime type (image/png, application/pdf)
+  
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("attachments")
+}
