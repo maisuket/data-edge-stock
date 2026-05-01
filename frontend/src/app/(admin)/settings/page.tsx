@@ -1,0 +1,520 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useTheme } from "next-themes";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Moon,
+  Sun,
+  UserCircle,
+  Shield,
+  Mail,
+  Lock,
+  Check,
+  Users,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  Search,
+  AlertTriangle,
+} from "lucide-react";
+import { toast } from "sonner";
+
+// Importações relativas para garantir que o build funcione
+import {
+  profileService,
+  type ProfileData,
+} from "../../../lib/services/profile";
+import { UserService, type User } from "../../../lib/services/users";
+
+// Componentes Shadcn
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { UserFormDialog } from "@/app/components/UserFormDialog";
+
+// --- SCHEMA ---
+const profileSchema = z
+  .object({
+    name: z.string().min(3, "Nome muito curto"),
+    email: z.string().email("E-mail inválido"),
+    password: z.string().optional().or(z.literal("")),
+    confirmPassword: z.string().optional().or(z.literal("")),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+type ProfileForm = z.infer<typeof profileSchema>;
+
+export default function SettingsPage() {
+  const { setTheme, theme } = useTheme();
+  const queryClient = useQueryClient();
+
+  // -- ESTADOS --
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [userData, setUserData] = useState<ProfileData | null>(null);
+
+  // Usuários
+  const [userSearch, setUserSearch] = useState("");
+  const [userPage, setUserPage] = useState(1);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+  });
+
+  // Load Profile
+  useEffect(() => {
+    profileService
+      .getMe()
+      .then((data) => {
+        setUserData(data);
+        setValue("name", data.name);
+        setValue("email", data.email);
+      })
+      .catch(() => toast.error("Erro ao carregar perfil."));
+  }, [setValue]);
+
+  // Load Users
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["users", userPage, userSearch],
+    queryFn: () => UserService.getAll(userPage, 10, userSearch),
+    enabled: activeTab === "users",
+  });
+
+  // Delete User
+  const deleteUserMutation = useMutation({
+    mutationFn: UserService.delete,
+    onSuccess: () => {
+      toast.success("Usuário excluído!");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: () => toast.error("Erro ao excluir usuário."),
+  });
+
+  const onSaveProfile = async (data: ProfileForm) => {
+    setIsSavingProfile(true);
+    try {
+      const payload: any = { name: data.name, email: data.email };
+      if (data.password) payload.password = data.password;
+
+      const updated = await profileService.updateMe(payload);
+      setUserData(updated);
+      toast.success("Perfil atualizado!");
+      setValue("password", "");
+      setValue("confirmPassword", "");
+    } catch {
+      toast.error("Erro ao atualizar perfil.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleAddUser = () => {
+    setEditingUser(null);
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (confirm("Tem certeza?")) {
+      deleteUserMutation.mutate(id);
+    }
+  };
+
+  const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between border-b border-border pb-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Configurações
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gerencie seu perfil, usuários e aparência.
+          </p>
+        </div>
+      </div>
+
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col md:flex-row gap-8 w-full"
+      >
+        <aside className="w-full md:w-64 shrink-0">
+          <TabsList className="flex flex-col h-auto bg-transparent p-0 space-y-1 w-full justify-start">
+            <TabsTrigger
+              value="profile"
+              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+            >
+              <UserCircle className="mr-2 h-4 w-4" />
+              Meu Perfil
+            </TabsTrigger>
+            <TabsTrigger
+              value="users"
+              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger
+              value="appearance"
+              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+            >
+              <Sun className="mr-2 h-4 w-4" />
+              Aparência
+            </TabsTrigger>
+          </TabsList>
+        </aside>
+
+        <div className="flex-1">
+          <TabsContent value="profile" className="mt-0 space-y-6">
+            <Card className="bg-card border-border shadow-sm">
+              <CardHeader>
+                <CardTitle>Informações Pessoais</CardTitle>
+                <CardDescription>Atualize seus dados.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!userData ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-20 w-20 rounded-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 bg-muted/40 rounded-lg border border-dashed border-border">
+                      <Avatar className="h-20 w-20 border-2 border-background shadow-sm">
+                        <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
+                          {getInitials(userData.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1 text-center sm:text-left">
+                        <h3 className="font-semibold text-lg">
+                          {userData.name}
+                        </h3>
+                        <div className="flex items-center justify-center sm:justify-start gap-2 text-sm text-muted-foreground">
+                          <Shield className="h-3.5 w-3.5" />
+                          <Badge variant="secondary">{userData.role}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground pt-1 font-mono">
+                          @{userData.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    <form
+                      id="profile-form"
+                      onSubmit={handleSubmit(onSaveProfile)}
+                      className="space-y-6"
+                    >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Nome Completo</Label>
+                          <Input
+                            {...register("name")}
+                            className="bg-background"
+                          />
+                          {errors.name && (
+                            <span className="text-red-500 text-xs">
+                              {errors.name.message}
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Label>E-mail</Label>
+                          <Input
+                            {...register("email")}
+                            className="bg-background"
+                          />
+                          {errors.email && (
+                            <span className="text-red-500 text-xs">
+                              {errors.email.message}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
+                          <Lock className="h-4 w-4 text-muted-foreground" />{" "}
+                          Segurança
+                        </h4>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label>Nova Senha</Label>
+                            <Input
+                              type="password"
+                              {...register("password")}
+                              placeholder="Deixe em branco para manter"
+                              className="bg-background"
+                            />
+                            {errors.password && (
+                              <span className="text-red-500 text-xs">
+                                {errors.password.message}
+                              </span>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Confirmar Senha</Label>
+                            <Input
+                              type="password"
+                              {...register("confirmPassword")}
+                              placeholder="Repita a nova senha"
+                              className="bg-background"
+                            />
+                            {errors.confirmPassword && (
+                              <span className="text-red-500 text-xs">
+                                {errors.confirmPassword.message}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  </>
+                )}
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4 bg-muted/20 flex justify-end">
+                <Button
+                  type="submit"
+                  form="profile-form"
+                  disabled={isSavingProfile}
+                  className="bg-primary text-primary-foreground"
+                >
+                  {isSavingProfile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-0 space-y-6">
+            <Card className="bg-card border-border shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <div>
+                  <CardTitle>Gestão de Usuários</CardTitle>
+                  <CardDescription>
+                    Gerencie quem acessa o sistema.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={handleAddUser}
+                  className="bg-primary text-primary-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Novo Usuário
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-md border w-fit">
+                  <div className="relative w-[300px]">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar usuários..."
+                      className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent"
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50 hover:bg-muted/50">
+                        <TableHead className="font-semibold">Usuário</TableHead>
+                        <TableHead className="font-semibold">E-mail</TableHead>
+                        <TableHead className="font-semibold">
+                          Permissão
+                        </TableHead>
+                        <TableHead className="text-right font-semibold">
+                          Ações
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingUsers ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={4}
+                            className="h-32 text-center text-muted-foreground"
+                          >
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                            Carregando...
+                          </TableCell>
+                        </TableRow>
+                      ) : usersData?.data.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={4}
+                            className="h-32 text-center text-muted-foreground"
+                          >
+                            Nenhum usuário encontrado.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        usersData?.data.map((user) => (
+                          <TableRow
+                            key={user.id}
+                            className="group hover:bg-muted/30"
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-9 w-9 border border-border">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                    {getInitials(user.name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col">
+                                  <span className="text-foreground font-medium">
+                                    {user.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    @{user.username}
+                                  </span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {user.email}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{user.role}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditUser(user)}
+                                >
+                                  <Pencil className="h-4 w-4 text-amber-500" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteUser(user.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="appearance" className="mt-0">
+            <Card className="bg-card border-border shadow-sm">
+              <CardHeader>
+                <CardTitle>Aparência</CardTitle>
+                <CardDescription>
+                  Personalize a experiência visual.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl">
+                  {/* Tema Claro */}
+                  <div
+                    className={`cursor-pointer border-2 rounded-xl p-1 hover:border-primary transition-all ${
+                      theme === "light"
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent bg-muted/50"
+                    }`}
+                    onClick={() => setTheme("light")}
+                  >
+                    <div className="space-y-2 rounded-lg bg-[#ecedef] p-2">
+                      <div className="space-y-2 rounded-md bg-white p-2 shadow-sm border border-black/5">
+                        <div className="h-2 w-20 rounded-lg bg-[#ecedef]" />
+                        <div className="h-2 w-[80px] rounded-lg bg-[#ecedef]" />
+                      </div>
+                    </div>
+                    <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
+                      <Sun className="h-4 w-4" /> Claro
+                    </div>
+                  </div>
+
+                  {/* Tema Escuro */}
+                  <div
+                    className={`cursor-pointer border-2 rounded-xl p-1 hover:border-primary transition-all ${
+                      theme === "dark"
+                        ? "border-primary bg-primary/5"
+                        : "border-transparent bg-muted/50"
+                    }`}
+                    onClick={() => setTheme("dark")}
+                  >
+                    <div className="space-y-2 rounded-lg bg-[#09090b] p-2 border border-white/10">
+                      <div className="space-y-2 rounded-md bg-[#18181b] p-2 shadow-sm border border-white/5">
+                        <div className="h-2 w-20 rounded-lg bg-[#27272a]" />
+                        <div className="h-2 w-[80px] rounded-lg bg-[#27272a]" />
+                      </div>
+                    </div>
+                    <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
+                      <Moon className="h-4 w-4" /> Escuro
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </div>
+      </Tabs>
+
+      <UserFormDialog
+        open={isUserModalOpen}
+        onOpenChange={setIsUserModalOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["users"] });
+        }}
+        userToEdit={editingUser}
+      />
+    </div>
+  );
+}

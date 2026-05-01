@@ -6,28 +6,27 @@ import {
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { LoginDto } from './dto/login.dto';
+
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+// IMPORTANTE: Ajuste o caminho abaixo se o seu PrismaService estiver em outro local
 import { PrismaService } from 'src/prisma/prisma.service';
+import { LoginDto } from 'src/auth/dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private prisma: PrismaService,
     private jwtService: JwtService,
+    private prisma: PrismaService, // <--- INJEÇÃO QUE FALTAVA
   ) {}
 
-  // 1. Valida o usuário (verifica email e senha)
+  // 1. Valida o usuário (verifica usuario e senha)
   async validateUser(username: string, pass: string): Promise<any> {
-    // Busca usuário no banco (precisamos criar um método findOneByEmail no UsersService depois)
-    // Por enquanto, vamos usar o prisma service injetado no UsersService se ele expuser,
-    // ou melhor: vamos adicionar um método helper no UsersService.
     const user = await this.usersService.findByUsername(username);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     if (user && (await bcrypt.compare(pass, user.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;
     }
@@ -36,7 +35,6 @@ export class AuthService {
 
   // 2. Gera o Token JWT
   async login(loginDto: LoginDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const user = await this.validateUser(loginDto.username, loginDto.password);
 
     if (!user) {
@@ -53,7 +51,7 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
       user: {
-        sub: user.id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -62,6 +60,7 @@ export class AuthService {
   }
 
   async getProfile(userId: string): Promise<UserEntity> {
+    // Agora 'this.prisma' existe e funcionará
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -75,17 +74,19 @@ export class AuthService {
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    // Lógica similar ao UsersService, mas restrita ao próprio usuário
     const data: any = { ...updateDto };
 
-    // Remove campos sensíveis que o usuário comum não deve poder alterar em si mesmo (ex: role, active)
+    // Remove campos sensíveis ou proibidos de alteração via perfil
     delete data.role;
 
+    // Se a senha foi enviada, criptografa antes de salvar
     if (updateDto.password) {
       data.password = await bcrypt.hash(updateDto.password, 10);
+    } else {
+      // Se a senha vier vazia ou undefined, remove do objeto para não apagar a senha atual
+      delete data.password;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data,

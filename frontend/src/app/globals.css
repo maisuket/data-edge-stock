@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   🍮 PUDIM GOURMET — Design System Tokens
+   ============================================================
+   Primária  (Caramelo escuro):  #6B3E26 → oklch(0.330 0.090 47)
+   Secundária (Caramelo médio): #A65E2E → oklch(0.480 0.120 50)
+   Background (Bege pudim):     #F5E6C8 → oklch(0.920 0.038 84)
+   Card / input (Creme suave):  #FFF8E7 → oklch(0.978 0.022 90)
+   Destaque (Dourado):          #D9A441 → oklch(0.710 0.140 74)
+   Texto principal:             #2E1B12 → oklch(0.190 0.058 46)
+   ============================================================ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* Superfícies */
+  --background:          oklch(0.920 0.038 84);   /* #F5E6C8 — Bege Pudim */
+  --foreground:          oklch(0.190 0.058 46);   /* #2E1B12 — Texto principal */
+
+  --card:                oklch(0.978 0.022 90);   /* #FFF8E7 — Creme suave */
+  --card-foreground:     oklch(0.190 0.058 46);
+
+  --popover:             oklch(0.978 0.022 90);
+  --popover-foreground:  oklch(0.190 0.058 46);
+
+  /* Primária — Caramelo escuro #6B3E26 */
+  --primary:             oklch(0.330 0.090 47);
+  --primary-foreground:  oklch(0.978 0.022 90);
+
+  /* Secundária — Bege levemente mais escuro */
+  --secondary:           oklch(0.945 0.030 84);
+  --secondary-foreground: oklch(0.330 0.090 47);
+
+  /* Muted — Tom neutro-quente para textos secundários */
+  --muted:               oklch(0.940 0.028 82);
+  --muted-foreground:    oklch(0.520 0.060 46);
+
+  /* Accent — Dourado #D9A441 */
+  --accent:              oklch(0.710 0.140 74);
+  --accent-foreground:   oklch(0.190 0.058 46);
+
+  /* Status — Manter padrão UX */
+  --destructive:         oklch(0.520 0.230 27);   /* #E53935 — Erro */
+
+  /* Bordas e inputs */
+  --border:              oklch(0.875 0.032 80);
+  --input:               oklch(0.875 0.032 80);
+
+  /* Ring de foco — Caramelo médio #A65E2E */
+  --ring:                oklch(0.480 0.120 50);
+
+  /* Charts — hierarquia visual alinhada à identidade */
+  --chart-1:             oklch(0.710 0.140 74);   /* Dourado — Produtos */
+  --chart-2:             oklch(0.620 0.180 142);  /* Verde — Valor/Sucesso */
+  --chart-3:             oklch(0.780 0.185 68);   /* Âmbar — Alertas */
+  --chart-4:             oklch(0.480 0.120 50);   /* Caramelo médio */
+  --chart-5:             oklch(0.580 0.200 254);  /* Azul — Info */
+
+  /* ── Sidebar — Caramelo escuro como fundo principal ── */
+  --sidebar:                     oklch(0.330 0.090 47);   /* #6B3E26 */
+  --sidebar-foreground:          oklch(0.978 0.022 90);   /* Creme */
+  --sidebar-primary:             oklch(0.480 0.120 50);   /* #A65E2E — item ativo */
+  --sidebar-primary-foreground:  oklch(0.978 0.022 90);
+  --sidebar-accent:              oklch(0.390 0.088 47);   /* hover suave */
+  --sidebar-accent-foreground:   oklch(0.978 0.022 90);
+  --sidebar-border:              oklch(0.400 0.085 47);   /* borda interna */
+  --sidebar-ring:                oklch(0.710 0.140 74);   /* Dourado — focus ring */
+}
+
+.dark {
+  /* Dark mode — variante quente escura, mantendo identidade Pudim */
+  --background:          oklch(0.185 0.055 44);
+  --foreground:          oklch(0.940 0.028 82);
+
+  --card:                oklch(0.230 0.070 46);
+  --card-foreground:     oklch(0.940 0.028 82);
+
+  --popover:             oklch(0.230 0.070 46);
+  --popover-foreground:  oklch(0.940 0.028 82);
+
+  --primary:             oklch(0.710 0.140 74);   /* Dourado como primária no dark */
+  --primary-foreground:  oklch(0.185 0.055 44);
+
+  --secondary:           oklch(0.280 0.075 46);
+  --secondary-foreground: oklch(0.940 0.028 82);
+
+  --muted:               oklch(0.270 0.065 46);
+  --muted-foreground:    oklch(0.680 0.060 70);
+
+  --accent:              oklch(0.480 0.120 50);   /* Caramelo médio como accent */
+  --accent-foreground:   oklch(0.940 0.028 82);
+
+  --destructive:         oklch(0.620 0.210 22);
+
+  --border:              oklch(1 0 0 / 10%);
+  --input:               oklch(1 0 0 / 15%);
+  --ring:                oklch(0.710 0.140 74);
+
+  --chart-1:             oklch(0.710 0.140 74);
+  --chart-2:             oklch(0.696 0.170 142);
+  --chart-3:             oklch(0.780 0.185 68);
+  --chart-4:             oklch(0.480 0.120 50);
+  --chart-5:             oklch(0.580 0.200 254);
+
+  --sidebar:                     oklch(0.230 0.070 46);
+  --sidebar-foreground:          oklch(0.940 0.028 82);
+  --sidebar-primary:             oklch(0.710 0.140 74);
+  --sidebar-primary-foreground:  oklch(0.185 0.055 44);
+  --sidebar-accent:              oklch(0.270 0.065 46);
+  --sidebar-accent-foreground:   oklch(0.940 0.028 82);
+  --sidebar-border:              oklch(1 0 0 / 10%);
+  --sidebar-ring:                oklch(0.710 0.140 74);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

@@ -1,0 +1,164 @@
+"use client"; // Necessário para usar hooks como useState e useRouter
+
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation"; // Importante: use navigation, não router
+import { Loader2, Lock, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
+import { authService } from "@/lib/services/auth";
+
+// Schema de validação
+const loginSchema = z.object({
+  username: z.string().min(5, "O usuário deve ter no mínimo 5 caracteres"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
+export default function LoginPage() {
+  const router = useRouter(); // Hook de navegação
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const handleLogin = async (data: LoginFormData) => {
+    setServerError(null);
+    setSuccess(false);
+
+    try {
+      // Chama o serviço real que salva o Cookie
+      await authService.login(data);
+
+      setSuccess(true);
+
+      // Aguarda um momento visual e redireciona
+      setTimeout(() => {
+        router.push("/dashboard"); // Redireciona para a home
+        router.refresh(); // Força atualização para o middleware reconhecer o novo cookie
+      }, 1000);
+    } catch (err: any) {
+      setServerError(err.message || "Ocorreu um erro ao tentar entrar.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md bg-card rounded-xl shadow-lg border border-border overflow-hidden">
+        {/* Cabeçalho */}
+        <div className="bg-primary p-8 text-center">
+          <div className="mx-auto w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 shadow-lg shadow-accent/20">
+            <Lock className="w-6 h-6 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-primary-foreground mb-2">
+            Acesso ao Sistema
+          </h1>
+          <p className="text-primary-foreground/60 text-sm">Gerenciamento de Stock</p>
+        </div>
+
+        {/* Formulário */}
+        <div className="p-8">
+          <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
+            {/* Erro */}
+            {serverError && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-3 text-destructive text-sm animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span>{serverError}</span>
+              </div>
+            )}
+
+            {/* Sucesso */}
+            {success && (
+              <div className="p-3 rounded-lg bg-[#4CAF50]/10 border border-[#4CAF50]/20 flex items-center gap-3 text-[#4CAF50] text-sm animate-in fade-in slide-in-from-top-2">
+                <CheckCircle2 className="w-5 h-5 shrink-0" />
+                <span>Login realizado! Redirecionando...</span>
+              </div>
+            )}
+
+            {/* Campos (username/Senha) */}
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-foreground"
+                htmlFor="username"
+              >
+                E-mail
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <input
+                  {...register("username")}
+                  id="username"
+                  type="username"
+                  placeholder="usuario.usuario"
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30 focus:outline-none transition-all
+                    ${
+                      errors.username
+                        ? "border-destructive focus:border-destructive"
+                        : "border-border focus:border-ring"
+                    }`}
+                />
+              </div>
+              {errors.username && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.username.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-foreground"
+                htmlFor="password"
+              >
+                Senha
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <input
+                  {...register("password")}
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30 focus:outline-none transition-all
+                    ${
+                      errors.password
+                        ? "border-destructive focus:border-destructive"
+                        : "border-border focus:border-ring"
+                    }`}
+                />
+              </div>
+              {errors.password && (
+                <p className="text-xs text-destructive mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || success}
+              className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-lg hover:bg-[oklch(0.480_0.120_50)] active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2 shadow-sm"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                "Entrar"
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
