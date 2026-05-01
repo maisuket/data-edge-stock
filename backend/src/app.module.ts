@@ -16,6 +16,9 @@ import { ReportsModule } from './reports/reports.module';
 import { SystemModule } from './system/system.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { FilesModule } from './files/files.module';
+import { IngredientsModule } from './ingredients/ingredients.module';
+import { RecipesModule } from './recipes/recipes.module';
+import { ProductionsModule } from './productions/productions.module';
 
 @Module({
   imports: [
@@ -47,6 +50,10 @@ import { FilesModule } from './files/files.module';
     ReportsModule,
     SystemModule,
     FilesModule,
+    // ── Módulos de produção (Pudim Gourmet) ──
+    IngredientsModule,
+    RecipesModule,
+    ProductionsModule,
   ],
   controllers: [AppController],
   providers: [
