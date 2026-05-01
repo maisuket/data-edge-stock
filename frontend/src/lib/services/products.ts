@@ -12,6 +12,8 @@ export interface Product {
   salePrice?: number;
   currentStock: number;
   minStock: number;
+  /** true = produto fabricado internamente (custo calculado pela receita) */
+  isManufactured: boolean;
 
   specifications?: { name: string; value: string }[];
   attachments?: { fileName: string; filePath: string; fileType: string }[];

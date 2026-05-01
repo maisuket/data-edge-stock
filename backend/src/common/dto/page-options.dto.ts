@@ -31,7 +31,7 @@ export class PageOptionsDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50) // Limite de segurança para ninguém pedir 1 milhão de itens
+  @Max(100) // Limite de segurança para ninguém pedir 1 milhão de itens
   @IsOptional()
   readonly take?: number = 10;
 

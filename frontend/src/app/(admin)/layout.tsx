@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   ArrowLeftRight,
-  Users,
   Settings,
   LogOut,
   Menu,
@@ -15,6 +14,9 @@ import {
   ChevronRight,
   Boxes,
   Truck,
+  Beaker,
+  ChefHat,
+  Factory,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +31,15 @@ const menuItems = [
   { href: "/products", label: "Produtos", icon: Package },
   { href: "/stock-history", label: "Movimentações", icon: ArrowLeftRight },
   { href: "/suppliers", label: "Fornecedores", icon: Truck },
+];
+
+const productionMenuItems = [
+  { href: "/ingredients", label: "Insumos", icon: Beaker },
+  { href: "/recipes", label: "Receitas", icon: ChefHat },
+  { href: "/productions", label: "Produção", icon: Factory },
+];
+
+const configMenuItems = [
   { href: "/settings", label: "Configurações", icon: Settings },
 ];
 
@@ -96,42 +107,90 @@ export default function AdminLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
-          <p className="px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider mb-2">
-            Menu Principal
-          </p>
-
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group text-sm font-medium
-                  ${
-                    isActive
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+          {/* Grupo: Estoque */}
+          <div>
+            <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-1">
+              Estoque
+            </p>
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group text-sm font-medium
+                    ${isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }
-                `}
-              >
-                <Icon
-                  className={`w-4 h-4 ${
-                    isActive
-                      ? "text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"
-                  }`}
-                />
-                <span>{item.label}</span>
-                {isActive && (
-                  <ChevronRight className="w-4 h-4 ml-auto opacity-50" />
-                )}
-              </Link>
-            );
-          })}
+                    }
+                  `}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`} />
+                  <span>{item.label}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Grupo: Produção */}
+          <div>
+            <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-1">
+              Produção
+            </p>
+            {productionMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group text-sm font-medium
+                    ${isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }
+                  `}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`} />
+                  <span>{item.label}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Grupo: Sistema */}
+          <div>
+            <p className="px-3 text-[10px] font-semibold text-sidebar-foreground/40 uppercase tracking-widest mb-1">
+              Sistema
+            </p>
+            {configMenuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`
+                    flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group text-sm font-medium
+                    ${isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }
+                  `}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground"}`} />
+                  <span>{item.label}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* User / Footer */}
