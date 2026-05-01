@@ -16,12 +16,22 @@ import {
 import { toast } from "sonner";
 
 import { ProductService, type Product } from "../../../lib/services/products";
-import { IngredientService, type Ingredient, UNIT_SHORT } from "../../../lib/services/ingredients";
+import {
+  IngredientService,
+  type Ingredient,
+  UNIT_SHORT,
+} from "../../../lib/services/ingredients";
 import { RecipeService } from "../../../lib/services/recipes";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -34,7 +44,10 @@ import {
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -66,7 +79,7 @@ export default function RecipesPage() {
 
   const { data: ingredientsData, isLoading: loadingIngredients } = useQuery({
     queryKey: ["ingredients-for-recipe"],
-    queryFn: () => IngredientService.getAll(1, 200),
+    queryFn: () => IngredientService.getAll(1, 100),
   });
 
   const { data: recipe, isLoading: loadingRecipe } = useQuery({
@@ -79,8 +92,15 @@ export default function RecipesPage() {
 
   useEffect(() => {
     if (recipe?.items) {
-      setRows(recipe.items.map((i) => ({ ingredientId: i.ingredientId, quantity: i.quantity })));
-      const product = productsData?.data.find((p) => p.id === selectedProductId);
+      setRows(
+        recipe.items.map((i) => ({
+          ingredientId: i.ingredientId,
+          quantity: i.quantity,
+        })),
+      );
+      const product = productsData?.data.find(
+        (p) => p.id === selectedProductId,
+      );
       if (product?.salePrice) setSalePrice(String(product.salePrice));
     } else {
       setRows([]);
@@ -100,7 +120,9 @@ export default function RecipesPage() {
 
   const salePriceNum = parseFloat(salePrice) || 0;
   const profitMargin =
-    salePriceNum > 0 ? ((salePriceNum - totalCostPerUnit) / salePriceNum) * 100 : null;
+    salePriceNum > 0
+      ? ((salePriceNum - totalCostPerUnit) / salePriceNum) * 100
+      : null;
   const profitValue = salePriceNum > 0 ? salePriceNum - totalCostPerUnit : null;
 
   // ── Mutations ─────────────────────────────────────────────────────────
@@ -108,10 +130,15 @@ export default function RecipesPage() {
   const saveMutation = useMutation({
     mutationFn: () =>
       RecipeService.setRecipe(selectedProductId, {
-        items: rows.map((r) => ({ ingredientId: r.ingredientId, quantity: r.quantity })),
+        items: rows.map((r) => ({
+          ingredientId: r.ingredientId,
+          quantity: r.quantity,
+        })),
       }),
     onSuccess: () => {
-      toast.success("Receita salva! Custo do produto atualizado automaticamente.");
+      toast.success(
+        "Receita salva! Custo do produto atualizado automaticamente.",
+      );
       qc.invalidateQueries({ queryKey: ["recipe", selectedProductId] });
       qc.invalidateQueries({ queryKey: ["products"] });
     },
@@ -135,12 +162,17 @@ export default function RecipesPage() {
       toast.error("Insumo já está na receita.");
       return;
     }
-    setRows((prev) => [...prev, { ingredientId: addIngredientId, quantity: 0 }]);
+    setRows((prev) => [
+      ...prev,
+      { ingredientId: addIngredientId, quantity: 0 },
+    ]);
     setAddIngredientId("");
   };
 
   const updateQty = (id: string, qty: number) =>
-    setRows((prev) => prev.map((r) => (r.ingredientId === id ? { ...r, quantity: qty } : r)));
+    setRows((prev) =>
+      prev.map((r) => (r.ingredientId === id ? { ...r, quantity: qty } : r)),
+    );
 
   const removeRow = (id: string) =>
     setRows((prev) => prev.filter((r) => r.ingredientId !== id));
@@ -179,7 +211,10 @@ export default function RecipesPage() {
               {loadingProducts ? (
                 <Skeleton className="h-10 w-full rounded-lg" />
               ) : (
-                <Select onValueChange={setSelectedProductId} value={selectedProductId}>
+                <Select
+                  onValueChange={setSelectedProductId}
+                  value={selectedProductId}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Escolha o produto para montar a receita..." />
                   </SelectTrigger>
@@ -191,7 +226,9 @@ export default function RecipesPage() {
                             <ChefHat className="w-3 h-3 text-accent" />
                           )}
                           {p.name}
-                          <span className="text-xs text-muted-foreground">— {p.category}</span>
+                          <span className="text-xs text-muted-foreground">
+                            — {p.category}
+                          </span>
                         </span>
                       </SelectItem>
                     ))}
@@ -219,7 +256,9 @@ export default function RecipesPage() {
                     disabled={refreshMutation.isPending}
                     className="gap-1.5 text-xs"
                   >
-                    <RefreshCw className={`w-3 h-3 ${refreshMutation.isPending ? "animate-spin" : ""}`} />
+                    <RefreshCw
+                      className={`w-3 h-3 ${refreshMutation.isPending ? "animate-spin" : ""}`}
+                    />
                     Atualizar custos
                   </Button>
                 )}
@@ -250,7 +289,8 @@ export default function RecipesPage() {
                               {ing.name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              CMP: {fmt.format(ing.averageCost)}/{UNIT_SHORT[ing.unit]}
+                              CMP: {fmt.format(ing.averageCost)}/
+                              {UNIT_SHORT[ing.unit]}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
@@ -259,7 +299,12 @@ export default function RecipesPage() {
                               step="0.001"
                               min={0}
                               value={row.quantity}
-                              onChange={(e) => updateQty(row.ingredientId, parseFloat(e.target.value) || 0)}
+                              onChange={(e) =>
+                                updateQty(
+                                  row.ingredientId,
+                                  parseFloat(e.target.value) || 0,
+                                )
+                              }
                               className="w-24 text-right tabular-nums"
                             />
                             <span className="text-xs text-muted-foreground w-6">
@@ -283,7 +328,10 @@ export default function RecipesPage() {
 
                     {/* Add ingredient */}
                     <div className="flex gap-2 pt-1">
-                      <Select onValueChange={setAddIngredientId} value={addIngredientId}>
+                      <Select
+                        onValueChange={setAddIngredientId}
+                        value={addIngredientId}
+                      >
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Adicionar insumo..." />
                         </SelectTrigger>
@@ -353,7 +401,9 @@ export default function RecipesPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-muted-foreground">Custo de produção</span>
+                  <span className="text-sm text-muted-foreground">
+                    Custo de produção
+                  </span>
                   <span className="font-bold text-lg tabular-nums text-foreground">
                     {fmt.format(totalCostPerUnit)}
                   </span>
@@ -363,28 +413,38 @@ export default function RecipesPage() {
                   <>
                     <div className="border-t border-border pt-3 space-y-2">
                       <div className="flex justify-between items-baseline">
-                        <span className="text-sm text-muted-foreground">Preço de venda</span>
-                        <span className="font-semibold tabular-nums">{fmt.format(salePriceNum)}</span>
+                        <span className="text-sm text-muted-foreground">
+                          Preço de venda
+                        </span>
+                        <span className="font-semibold tabular-nums">
+                          {fmt.format(salePriceNum)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-baseline">
-                        <span className="text-sm text-muted-foreground">Lucro por unidade</span>
+                        <span className="text-sm text-muted-foreground">
+                          Lucro por unidade
+                        </span>
                         <span
                           className={`font-semibold tabular-nums ${
-                            (profitValue ?? 0) >= 0 ? "text-[#4CAF50]" : "text-[#E53935]"
+                            (profitValue ?? 0) >= 0
+                              ? "text-[#4CAF50]"
+                              : "text-[#E53935]"
                           }`}
                         >
                           {fmt.format(profitValue ?? 0)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Margem</span>
+                        <span className="text-sm text-muted-foreground">
+                          Margem
+                        </span>
                         <Badge
                           className={`tabular-nums ${
                             (profitMargin ?? 0) >= 30
                               ? "bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30 border"
                               : (profitMargin ?? 0) >= 0
-                              ? "bg-[#FFB300]/10 text-[#FFB300] border-[#FFB300]/30 border"
-                              : "bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30 border"
+                                ? "bg-[#FFB300]/10 text-[#FFB300] border-[#FFB300]/30 border"
+                                : "bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30 border"
                           }`}
                         >
                           <TrendingUp className="w-3 h-3 mr-1" />

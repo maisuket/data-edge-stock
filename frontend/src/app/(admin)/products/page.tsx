@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   useQuery,
   useMutation,
@@ -17,12 +18,13 @@ import {
   Package,
   AlertTriangle,
   CheckCircle2,
-  Loader2,
   MoreHorizontal,
+  ChefHat,
+  Factory,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// Serviços (Caminhos relativos para compatibilidade)
 import { ProductService, type Product } from "../../../lib/services/products";
 import {
   StockMovementService,
@@ -30,9 +32,6 @@ import {
 } from "../../../lib/services/stock-movements";
 import { ReportsService } from "../../../lib/services/reports";
 
-// Componentes Customizados
-
-// Componentes UI (Shadcn)
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,6 +50,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +68,52 @@ import {
 } from "@/components/ui/card";
 import { ProductFormDialog } from "@/app/components/ProductFormDialog";
 
-// --- MODAL DE MOVIMENTAÇÃO DE ESTOQUE ---
+// ── Formatters ─────────────────────────────────────────────────────────────
+
+const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+// ── Category badge colors ──────────────────────────────────────────────────
+
+const CATEGORY_STYLES: Record<string, string> = {
+  Pudim:   "bg-[#6B3E26]/10 text-[#6B3E26] border-[#6B3E26]/25",
+  Picolé:  "bg-[#8ED1C6]/20 text-[#2E7D70] border-[#8ED1C6]/40",
+  Dindin:  "bg-[#FF8A65]/15 text-[#BF360C] border-[#FF8A65]/30",
+  Sorvete: "bg-[#D9A441]/15 text-[#7A5C1E] border-[#D9A441]/35",
+  Bolo:    "bg-[#CE93D8]/20 text-[#6A1B9A] border-[#CE93D8]/40",
+  Torta:   "bg-[#A5D6A7]/20 text-[#1B5E20] border-[#A5D6A7]/40",
+  Outros:  "bg-muted text-muted-foreground border-border",
+};
+
+function CategoryBadge({ category }: { category: string }) {
+  const style = CATEGORY_STYLES[category] ?? CATEGORY_STYLES["Outros"];
+  return (
+    <Badge variant="outline" className={`font-normal border ${style}`}>
+      {category || "Outros"}
+    </Badge>
+  );
+}
+
+// ── Margin badge ───────────────────────────────────────────────────────────
+
+function MarginBadge({ costPrice, salePrice }: { costPrice: number; salePrice?: number }) {
+  if (!salePrice || salePrice <= 0) return <span className="text-xs text-muted-foreground">—</span>;
+  const margin = ((salePrice - costPrice) / salePrice) * 100;
+  const cls =
+    margin >= 30
+      ? "bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30"
+      : margin >= 0
+      ? "bg-[#FFB300]/10 text-[#FFB300] border-[#FFB300]/30"
+      : "bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30";
+  return (
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded border ${cls}`}>
+      <TrendingUp className="w-3 h-3" />
+      {margin.toFixed(1)}%
+    </span>
+  );
+}
+
+// ── Stock movement dialog ──────────────────────────────────────────────────
+
 function StockMovementDialog({
   open,
   onOpenChange,
@@ -88,7 +133,7 @@ function StockMovementDialog({
       if (!product) return;
       return StockMovementService.create({
         productId: product.id,
-        type: type as any,
+        type,
         quantity: Number(quantity),
         description,
       });
@@ -165,7 +210,7 @@ function StockMovementDialog({
           <div className="grid gap-2">
             <label className="text-sm font-medium">Observação</label>
             <Input
-              placeholder="Motivo (ex: Venda, Perda, Compra)..."
+              placeholder="Motivo (ex: Ajuste, Perda, Venda direta)..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -181,7 +226,7 @@ function StockMovementDialog({
             disabled={mutation.isPending || !quantity || Number(quantity) <= 0}
           >
             {mutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <span className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
             )}
             Confirmar
           </Button>
@@ -191,21 +236,50 @@ function StockMovementDialog({
   );
 }
 
-// --- PÁGINA PRINCIPAL ---
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          </TableCell>
+          <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+          <TableCell>
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded ml-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
+
 export default function ProductsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | undefined>(
-    undefined
-  );
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
 
   const [isMoveOpen, setIsMoveOpen] = useState(false);
-  const [movingProduct, setMovingProduct] = useState<Product | undefined>(
-    undefined
-  );
+  const [movingProduct, setMovingProduct] = useState<Product | undefined>(undefined);
 
   const queryClient = useQueryClient();
 
@@ -230,7 +304,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     toast.promise(ReportsService.downloadProductsExcel(), {
       loading: "Gerando relatório...",
       success: "Download iniciado!",
@@ -238,7 +312,6 @@ export default function ProductsPage() {
     });
   };
 
-  // Handlers
   const openNew = () => {
     setEditingProduct(undefined);
     setIsFormOpen(true);
@@ -264,11 +337,12 @@ export default function ProductsPage() {
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Package className="w-7 h-7 text-accent" />
             Produtos
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Gerencie seu catálogo, preços e estoque.
+            Catálogo de doces e gelados — preços, custos e estoque.
           </p>
         </div>
         <div className="flex gap-2">
@@ -285,14 +359,18 @@ export default function ProductsPage() {
 
       <Card className="border-border shadow-sm bg-card">
         <CardHeader className="pb-4">
-          <CardTitle>Listagem de Itens</CardTitle>
+          <CardTitle>Listagem de Produtos</CardTitle>
           <CardDescription>
-            Visualize e gerencie todos os produtos cadastrados.
+            Produtos com{" "}
+            <span className="inline-flex items-center gap-1 text-accent font-medium">
+              <ChefHat className="w-3 h-3" /> ChefHat
+            </span>{" "}
+            são fabricados internamente — o custo é calculado pela receita.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          {/* Barra de Ferramentas */}
+          {/* Search */}
           <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-md border w-fit">
             <div className="relative w-[300px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -308,62 +386,34 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Tabela */}
+          {/* Table */}
           <div className="rounded-md border border-border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-semibold text-foreground">
-                    Produto
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground">
-                    Categoria
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground">
-                    Estoque
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground">
-                    Preço Venda
-                  </TableHead>
-                  <TableHead className="text-right font-semibold text-foreground w-[80px]">
-                    Ações
-                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">Produto</TableHead>
+                  <TableHead className="font-semibold text-foreground">Categoria</TableHead>
+                  <TableHead className="font-semibold text-foreground">Estoque</TableHead>
+                  <TableHead className="font-semibold text-foreground">Custo / Venda</TableHead>
+                  <TableHead className="text-right font-semibold text-foreground w-[80px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-32 text-center text-muted-foreground"
-                    >
-                      <div className="flex flex-col justify-center items-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                        <span className="text-sm">Carregando catálogo...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeleton />
                 ) : isError ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-32 text-center text-destructive"
-                    >
+                    <TableCell colSpan={5} className="h-32 text-center text-destructive">
                       <div className="flex flex-col items-center gap-2">
                         <AlertTriangle className="h-6 w-6" />
-                        <span>
-                          Erro ao carregar dados. Verifique a conexão.
-                        </span>
+                        <span>Erro ao carregar dados. Verifique a conexão.</span>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : data?.data?.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-32 text-center text-muted-foreground"
-                    >
-                      Nenhum produto encontrado para "{search}".
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                      Nenhum produto encontrado{search ? ` para "${search}"` : ""}.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -374,31 +424,49 @@ export default function ProductsPage() {
                         key={product.id}
                         className="group hover:bg-muted/30 transition-colors"
                       >
+                        {/* Nome */}
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 bg-muted rounded-lg text-muted-foreground border border-border">
-                              <Package className="h-5 w-5" />
+                            <div
+                              className={`p-2 rounded-lg border ${
+                                product.isManufactured
+                                  ? "bg-accent/10 text-accent border-accent/25"
+                                  : "bg-muted text-muted-foreground border-border"
+                              }`}
+                            >
+                              {product.isManufactured ? (
+                                <ChefHat className="h-5 w-5" />
+                              ) : (
+                                <Package className="h-5 w-5" />
+                              )}
                             </div>
                             <div>
-                              <div className="font-semibold text-foreground">
+                              <div className="font-semibold text-foreground flex items-center gap-2">
                                 {product.name}
+                                {product.isManufactured && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] h-4 px-1.5 bg-accent/10 text-accent border-accent/30 font-normal"
+                                  >
+                                    Fabricado
+                                  </Badge>
+                                )}
                               </div>
-                              <div className="text-xs text-muted-foreground flex gap-2">
+                              <div className="text-xs text-muted-foreground">
                                 <span className="font-mono bg-muted px-1 rounded text-[10px]">
-                                  CÓD: {product.internalCode}
+                                  {product.internalCode}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </TableCell>
+
+                        {/* Categoria */}
                         <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="font-normal text-muted-foreground bg-background"
-                          >
-                            {product.category || "Geral"}
-                          </Badge>
+                          <CategoryBadge category={product.category} />
                         </TableCell>
+
+                        {/* Estoque */}
                         <TableCell>
                           <div
                             className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
@@ -415,12 +483,27 @@ export default function ProductsPage() {
                             {product.currentStock} {product.unit}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium text-foreground">
-                          {new Intl.NumberFormat("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(product.salePrice || 0)}
+
+                        {/* Custo / Venda */}
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground w-10">Custo</span>
+                              <span className="text-sm font-medium text-foreground tabular-nums">
+                                {fmt.format(product.costPrice ?? 0)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground w-10">Venda</span>
+                              <span className="text-sm font-semibold tabular-nums">
+                                {fmt.format(product.salePrice ?? 0)}
+                              </span>
+                              <MarginBadge costPrice={product.costPrice ?? 0} salePrice={product.salePrice} />
+                            </div>
+                          </div>
                         </TableCell>
+
+                        {/* Ações */}
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -431,19 +514,36 @@ export default function ProductsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() => openEdit(product)}
-                              >
+
+                              <DropdownMenuItem onClick={() => openEdit(product)}>
                                 <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openMove(product)}
-                              >
-                                <ArrowLeftRight className="mr-2 h-4 w-4 text-muted-foreground" />
-                                Movimentar
-                              </DropdownMenuItem>
+
+                              {product.isManufactured ? (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => router.push(`/recipes?product=${product.id}`)}
+                                  >
+                                    <ChefHat className="mr-2 h-4 w-4 text-muted-foreground" />
+                                    Ver Receita
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => router.push(`/productions?product=${product.id}`)}
+                                  >
+                                    <Factory className="mr-2 h-4 w-4 text-muted-foreground" />
+                                    Registrar Produção
+                                  </DropdownMenuItem>
+                                </>
+                              ) : (
+                                <DropdownMenuItem onClick={() => openMove(product)}>
+                                  <ArrowLeftRight className="mr-2 h-4 w-4 text-muted-foreground" />
+                                  Movimentar
+                                </DropdownMenuItem>
+                              )}
+
                               <DropdownMenuSeparator />
+
                               <DropdownMenuItem
                                 onClick={() => handleDelete(product.id)}
                                 className="text-red-600 focus:text-red-600"
@@ -466,7 +566,7 @@ export default function ProductsPage() {
           <div className="flex items-center justify-between pt-4">
             <div className="text-xs text-muted-foreground">
               {data?.meta?.itemCount
-                ? `Total de ${data.meta.itemCount} registro(s)`
+                ? `Total de ${data.meta.itemCount} produto(s)`
                 : ""}
             </div>
             <div className="flex items-center gap-2">
@@ -487,9 +587,7 @@ export default function ProductsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={
-                  !data?.meta?.hasNextPage || isLoading || isPlaceholderData
-                }
+                disabled={!data?.meta?.hasNextPage || isLoading || isPlaceholderData}
                 className="h-8 text-xs"
               >
                 Próximo
@@ -499,7 +597,7 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
 
-      {/* Renderização dos Modais */}
+      {/* Dialogs */}
       <ProductFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
@@ -507,7 +605,6 @@ export default function ProductsPage() {
         onSuccess={handleSuccess}
       />
 
-      {/* Modal de Movimentação */}
       {isMoveOpen && movingProduct && (
         <StockMovementDialog
           open={isMoveOpen}
