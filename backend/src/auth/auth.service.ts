@@ -19,24 +19,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // 1. Valida o usuário (verifica email e senha)
-  async validateUser(username: string, pass: string): Promise<any> {
-    // Busca usuário no banco (precisamos criar um método findOneByEmail no UsersService depois)
-    // Por enquanto, vamos usar o prisma service injetado no UsersService se ele expuser,
-    // ou melhor: vamos adicionar um método helper no UsersService.
+  async validateUser(username: string, pass: string) {
     const user = await this.usersService.findByUsername(username);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     if (user && (await bcrypt.compare(pass, user.password))) {
-      const { password, ...result } = user;
+      const { password: _password, ...result } = user;
       return result;
     }
     return null;
   }
 
-  // 2. Gera o Token JWT
   async login(loginDto: LoginDto) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const user = await this.validateUser(loginDto.username, loginDto.password);
 
     if (!user) {
@@ -75,20 +68,23 @@ export class AuthService {
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    // Lógica similar ao UsersService, mas restrita ao próprio usuário
-    const data: any = { ...updateDto };
+    // role e username não são alteráveis pelo próprio usuário via profile
+    const { role: _role, password, ...rest } = updateDto;
 
-    // Remove campos sensíveis que o usuário comum não deve poder alterar em si mesmo (ex: role, active)
-    delete data.role;
+    const updateData: {
+      name?: string;
+      email?: string;
+      cargo?: string;
+      password?: string;
+    } = { ...rest };
 
-    if (updateDto.password) {
-      data.password = await bcrypt.hash(updateDto.password, 10);
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data,
+      data: updateData,
     });
 
     return new UserEntity(updatedUser);

@@ -23,10 +23,11 @@ export class CreateStockMovementDto {
 
   @ApiProperty({
     example: 10,
-    description: 'Quantidade a movimentar (sempre positivo)',
+    description:
+      'Quantidade a movimentar. Positivo para ENTRADA/SAÍDA. ' +
+      'Para AJUSTE pode ser negativo (redução de inventário) ou positivo (acréscimo).',
   })
   @IsNumber()
-  @Min(0.001)
   quantity: number;
 
   @ApiPropertyOptional({ example: 'Nota Fiscal 123' })

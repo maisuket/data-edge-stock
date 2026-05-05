@@ -57,6 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserFormDialog } from "@/app/components/UserFormDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // --- SCHEMA ---
 const profileSchema = z
@@ -87,6 +88,7 @@ export default function SettingsPage() {
   const [userPage, setUserPage] = useState(1);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
 
   const {
     register,
@@ -154,10 +156,8 @@ export default function SettingsPage() {
     setIsUserModalOpen(true);
   };
 
-  const handleDeleteUser = (id: string) => {
-    if (confirm("Tem certeza?")) {
-      deleteUserMutation.mutate(id);
-    }
+  const handleDeleteUser = (user: User) => {
+    setDeleteUserTarget(user);
   };
 
   const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => handleDeleteUser(user.id)}
+                                  onClick={() => handleDeleteUser(user)}
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -514,6 +514,15 @@ export default function SettingsPage() {
           queryClient.invalidateQueries({ queryKey: ["users"] });
         }}
         userToEdit={editingUser}
+      />
+
+      <ConfirmDialog
+        open={!!deleteUserTarget}
+        onOpenChange={(open) => !open && setDeleteUserTarget(null)}
+        title="Excluir usuário"
+        description={`Tem certeza que deseja excluir o usuário "${deleteUserTarget?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => deleteUserTarget && deleteUserMutation.mutate(deleteUserTarget.id)}
       />
     </div>
   );

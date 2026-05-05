@@ -18,9 +18,6 @@ import { Role } from 'src/auth/enums/role.enum';
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  findByEmail(username: string) {
-    throw new Error('Method not implemented.');
-  }
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -79,8 +76,8 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { username } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
   }
 
   async update(
@@ -88,35 +85,35 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     currentUser: { id: string; role: string },
   ) {
-    // 1. Regra de Segurança:
-    // Pode atualizar se for o próprio usuário OU se for Admin
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
     if (id !== currentUser.id && currentUser.role !== Role.Admin) {
       throw new ForbiddenException(
         'Você não tem permissão para alterar dados de outro usuário.',
       );
     }
 
-    const data: any = { ...updateUserDto };
+    const { role, password, ...rest } = updateUserDto;
 
-    // 2. Se a senha foi informada, criptografa
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (data.password) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      data.password = await bcrypt.hash(data.password, 10);
+    const updateData: {
+      name?: string;
+      email?: string;
+      username?: string;
+      cargo?: string;
+      role?: string;
+      password?: string;
+    } = { ...rest };
+
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
-    // 3. Proteção de Role: Apenas Admin pode alterar a role de alguém
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access
-    if (data.role && currentUser.role !== Role.Admin) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      delete data.role; // Remove silenciosamente ou lança erro
+    // Apenas admins podem alterar role
+    if (role && currentUser.role === Role.Admin) {
+      updateData.role = role;
     }
 
     const user = await this.prisma.user.update({
       where: { id },
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      data,
+      data: updateData,
     });
 
     return new UserEntity(user);

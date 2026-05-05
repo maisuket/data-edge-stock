@@ -5,103 +5,113 @@ import {
   Package,
   DollarSign,
   AlertTriangle,
-  TrendingUp,
+  Factory,
+  Beaker,
   RefreshCw,
-  MoreVertical,
   Database,
   Server,
+  Cpu,
+  TrendingDown,
+  CheckCircle2,
+  XCircle,
   Loader2,
-  Activity,
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 
-// Serviços (Caminho relativo para evitar erro no build)
-import { ProductService } from "../../../lib/services/products";
+import { DashboardService } from "../../../lib/services/dashboard";
 
-// Componentes UI (Shadcn)
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
-// --- Componentes Auxiliares ---
+// ── Formatters ──────────────────────────────────────────────────────────────
 
-// 1. Card de Estatística (KPI)
-const StatCard = ({
+const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+// ── KPI Card ────────────────────────────────────────────────────────────────
+
+function StatCard({
   title,
   value,
   icon: Icon,
-  chartColor, // "chart-1", "chart-2", etc.
+  colorClass,
   subtitle,
+  alert,
 }: {
   title: string;
   value: string | number;
   icon: React.ElementType;
-  chartColor: string;
+  colorClass: string;
   subtitle?: string;
-}) => (
-  <Card className="hover:shadow-md transition-all border-border bg-card">
-    <CardContent className="p-6">
-      <div className="flex items-center justify-between space-y-0 pb-2">
-        <div
-          className={`p-2 rounded-lg bg-[var(--color-${chartColor})]/10 text-[var(--color-${chartColor})]`}
-        >
-          <Icon className="h-6 w-6" />
+  alert?: boolean;
+}) {
+  return (
+    <Card className={`hover:shadow-md transition-all border-border bg-card ${alert ? "border-destructive/40" : ""}`}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between pb-2">
+          <div className={`p-2 rounded-lg ${colorClass}`}>
+            <Icon className="h-5 w-5" />
+          </div>
+          {alert && (
+            <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
+          )}
         </div>
-        {/* Indicador visual opcional no canto */}
-        <div
-          className={`h-2 w-2 rounded-full bg-[var(--color-${chartColor})] opacity-50`}
-        />
-      </div>
-      <div className="mt-4">
-        <div className="text-2xl font-bold tracking-tight text-card-foreground">
-          {value}
+        <div className="mt-4">
+          <div className="text-2xl font-bold tracking-tight text-card-foreground">
+            {value}
+          </div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-1">
+            {title}
+          </p>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground/70 mt-1">{subtitle}</p>
+          )}
         </div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-1">
-          {title}
-        </p>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground/70 mt-2">{subtitle}</p>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+}
 
-// 2. Item de Métrica (Barra de Progresso)
-const MetricItem = ({
+// ── Health indicator ────────────────────────────────────────────────────────
+
+function HealthItem({
   label,
-  value,
-  colorVar = "primary", // nome da variavel css (ex: chart-1, primary)
-  valueLabel,
+  icon: Icon,
+  status,
+  detail,
 }: {
   label: string;
-  value: number;
-  colorVar?: string;
-  valueLabel?: string;
-}) => (
-  <div className="space-y-2">
-    <div className="flex items-center justify-between text-sm">
-      <span className="font-medium text-muted-foreground">{label}</span>
-      <span className="font-bold text-foreground">
-        {valueLabel || `${value}%`}
-      </span>
-    </div>
-    <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-      <div
-        className={`h-full rounded-full transition-all duration-500 bg-[var(--color-${colorVar})]`}
-        style={{ width: `${Math.min(value, 100)}%` }}
-      />
-    </div>
-  </div>
-);
+  icon: React.ElementType;
+  status: "ok" | "error" | "loading";
+  detail?: string;
+}) {
+  const isOk = status === "ok";
+  const isLoading = status === "loading";
 
-// --- PÁGINA PRINCIPAL ---
+  return (
+    <div className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+      <div className={`p-2 rounded-full ${isOk ? "bg-[#4CAF50]/10 text-[#4CAF50]" : isLoading ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground truncate">{detail ?? "—"}</p>
+      </div>
+      {isLoading ? (
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      ) : isOk ? (
+        <CheckCircle2 className="w-4 h-4 text-[#4CAF50] shrink-0" />
+      ) : (
+        <XCircle className="w-4 h-4 text-destructive shrink-0" />
+      )}
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const {
@@ -109,12 +119,24 @@ export default function DashboardPage() {
     isLoading,
     isError,
     refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["dashboard-stats"],
-    queryFn: ProductService.getStats,
+    queryFn: DashboardService.getStats,
+    staleTime: 60_000,
   });
 
-  const handleRefresh = async () => {
+  const {
+    data: health,
+    isLoading: healthLoading,
+  } = useQuery({
+    queryKey: ["health"],
+    queryFn: DashboardService.getHealth,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  const handleRefresh = () => {
     toast.promise(refetch(), {
       loading: "Atualizando...",
       success: "Dados atualizados!",
@@ -130,11 +152,12 @@ export default function DashboardPage() {
           <Skeleton className="h-10 w-24" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))}
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
-        <div className="grid gap-4 md:grid-cols-7">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-7">
           <Skeleton className="col-span-4 h-64 rounded-xl" />
           <Skeleton className="col-span-3 h-64 rounded-xl" />
         </div>
@@ -149,177 +172,223 @@ export default function DashboardPage() {
           <AlertTriangle className="h-8 w-8" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-foreground">
-            Erro ao carregar dados
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            Não foi possível conectar ao servidor.
-          </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            Tentar Novamente
-          </Button>
+          <h2 className="text-lg font-bold text-foreground">Erro ao carregar dados</h2>
+          <p className="text-muted-foreground mb-4">Não foi possível conectar ao servidor.</p>
+          <Button variant="outline" onClick={() => refetch()}>Tentar Novamente</Button>
         </div>
       </div>
     );
   }
 
-  const safeStats = stats || {
-    totalProducts: 0,
-    stockValue: 0,
-    lowStockCount: 0,
-    criticalItems: [],
-  };
-
-  const formattedValue = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(safeStats.stockValue || 0);
-
-  const criticalPercentage =
-    safeStats.totalProducts > 0
-      ? (safeStats.lowStockCount / safeStats.totalProducts) * 100
-      : 0;
+  const s = stats!;
+  const dbStatus = health?.status === "ok" ? "ok" : healthLoading ? "loading" : "error";
+  const memStatus = health?.info?.memory_heap?.status === "up" ? "ok" : healthLoading ? "loading" : "error";
+  const apiStatus = health ? "ok" : healthLoading ? "loading" : "error";
 
   return (
     <div className="p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Visão Geral
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Visão Geral</h1>
           <p className="text-muted-foreground mt-1">
-            Indicadores de performance do estoque em tempo real.
+            Indicadores consolidados — produtos, insumos e produções.
           </p>
         </div>
         <Button
           variant="outline"
           onClick={handleRefresh}
+          disabled={isFetching}
           className="gap-2 bg-background hover:bg-muted"
         >
-          <RefreshCw className="h-4 w-4" />
+          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
       </div>
 
-      {/* Grid de KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Produtos Cadastrados"
-          value={safeStats.totalProducts}
-          icon={Package}
-          chartColor="chart-1" // Azul/Roxo (depende do tema)
-          subtitle="Itens ativos no sistema"
-        />
-        <StatCard
-          title="Valor em Estoque"
-          value={formattedValue}
-          icon={DollarSign}
-          chartColor="chart-2" // Verde/Teal
-          subtitle="Custo total acumulado"
-        />
-        <StatCard
-          title="Estoque Baixo"
-          value={safeStats.lowStockCount}
-          icon={AlertTriangle}
-          chartColor="chart-3" // Laranja/Amarelo
-          subtitle="Abaixo do estoque mínimo"
-        />
-        <StatCard
-          title="Itens Críticos"
-          value={safeStats.criticalItems?.length || 0}
-          icon={TrendingUp}
-          chartColor={
-            safeStats.criticalItems?.length > 0 ? "destructive" : "chart-4"
-          }
-          subtitle="Exigem reposição imediata"
-        />
+      {/* KPIs — Produtos */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+          Produtos
+        </p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Produtos Cadastrados"
+            value={s.totalProducts}
+            icon={Package}
+            colorClass="bg-blue-500/10 text-blue-500"
+            subtitle="Itens no catálogo"
+          />
+          <StatCard
+            title="Valor em Estoque"
+            value={fmt.format(s.stockValue)}
+            icon={DollarSign}
+            colorClass="bg-[#4CAF50]/10 text-[#4CAF50]"
+            subtitle="Custo total acumulado (produtos)"
+          />
+          <StatCard
+            title="Produtos c/ Estoque Baixo"
+            value={s.lowStockCount}
+            icon={AlertTriangle}
+            colorClass={s.lowStockCount > 0 ? "bg-[#FFB300]/10 text-[#FFB300]" : "bg-muted text-muted-foreground"}
+            subtitle="Abaixo do mínimo definido"
+            alert={s.lowStockCount > 0}
+          />
+          <StatCard
+            title="Produções Hoje"
+            value={s.productionsTodayCount}
+            icon={Factory}
+            colorClass="bg-accent/10 text-accent"
+            subtitle={`Custo total: ${fmt.format(s.productionsTodayCost)}`}
+          />
+        </div>
       </div>
 
-      {/* Seção Inferior */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Painel Esquerdo: Análise */}
-        <Card className="col-span-4 shadow-sm border-border">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <div>
-              <CardTitle className="text-base font-bold text-foreground">
-                Saúde do Estoque
-              </CardTitle>
-              <CardDescription>
-                Métricas de eficiência e preenchimento.
-              </CardDescription>
-            </div>
-            <MoreVertical className="h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground transition-colors" />
+      {/* KPIs — Insumos */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+          Insumos (Matérias-primas)
+        </p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Insumos Cadastrados"
+            value={s.totalIngredients}
+            icon={Beaker}
+            colorClass="bg-violet-500/10 text-violet-500"
+            subtitle="Matérias-primas no sistema"
+          />
+          <StatCard
+            title="Valor em Insumos"
+            value={fmt.format(s.ingredientsValue)}
+            icon={DollarSign}
+            colorClass="bg-teal-500/10 text-teal-500"
+            subtitle="Custo médio × estoque atual"
+          />
+          <StatCard
+            title="Insumos c/ Estoque Baixo"
+            value={s.ingredientsLowStockCount}
+            icon={TrendingDown}
+            colorClass={s.ingredientsLowStockCount > 0 ? "bg-[#E53935]/10 text-[#E53935]" : "bg-muted text-muted-foreground"}
+            subtitle="Precisam de reposição"
+            alert={s.ingredientsLowStockCount > 0}
+          />
+        </div>
+      </div>
+
+      {/* Painel inferior */}
+      <div className="grid gap-4 lg:grid-cols-7">
+
+        {/* Produções recentes */}
+        <Card className="col-span-4 border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Factory className="w-4 h-4 text-accent" />
+              Produções Recentes
+            </CardTitle>
+            <CardDescription>Últimos 5 lotes registrados no sistema.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-8 pt-6">
-            <MetricItem
-              label="Capacidade Operacional"
-              value={75}
-              colorVar="chart-1"
-            />
-            <MetricItem
-              label="Giro de Estoque"
-              value={85}
-              colorVar="chart-2"
-              valueLabel="Alto"
-            />
-            <MetricItem
-              label="Alertas de Reposição"
-              value={criticalPercentage > 0 ? 100 : 0}
-              colorVar={criticalPercentage > 0 ? "destructive" : "chart-2"}
-              valueLabel={`${safeStats.lowStockCount} Produtos`}
-            />
+          <CardContent className="p-0">
+            {s.recentProductions.length === 0 ? (
+              <div className="px-6 py-8 text-center text-muted-foreground text-sm">
+                Nenhuma produção registrada ainda.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {s.recentProductions.map((prod) => (
+                  <div key={prod.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{prod.product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", { locale: ptBR })}
+                        {" · "}
+                        {prod.quantity.toLocaleString("pt-BR")} un
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <p className="text-sm font-bold tabular-nums text-foreground">{fmt.format(prod.totalCost)}</p>
+                      <p className="text-xs text-muted-foreground">{fmt.format(prod.unitCost)}/un</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Painel Direito: Status do Sistema */}
-        <Card className="col-span-3 border-border shadow-sm bg-card h-full flex flex-col">
+        {/* Status do sistema */}
+        <Card className="col-span-3 border-border shadow-sm">
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <Activity className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Cpu className="h-4 w-4 text-muted-foreground" />
               Status do Sistema
             </CardTitle>
-            <CardDescription>Monitoramento de serviços.</CardDescription>
+            <CardDescription>Monitoramento em tempo real via /health.</CardDescription>
           </CardHeader>
+          <CardContent className="space-y-3">
+            <HealthItem
+              label="Banco de Dados"
+              icon={Database}
+              status={dbStatus}
+              detail={health?.info?.database?.status === "up" ? "Conectado" : health ? "Falha na conexão" : undefined}
+            />
+            <HealthItem
+              label="Memória (Heap)"
+              icon={Cpu}
+              status={memStatus}
+              detail={health?.info?.memory_heap?.status === "up" ? "Dentro do limite (<150 MB)" : health ? "Limite excedido" : undefined}
+            />
+            <HealthItem
+              label="API Backend"
+              icon={Server}
+              status={apiStatus}
+              detail={health ? "Online" : undefined}
+            />
 
-          <CardContent className="space-y-4 flex-1">
-            {/* Item 1 */}
-            <div className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="p-2 rounded-full bg-chart-2/10 text-chart-2">
-                <Database className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Banco de Dados
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Conectado • Latência 12ms
-                </p>
-              </div>
-            </div>
-
-            {/* Item 2 */}
-            <div className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-              <div className="p-2 rounded-full bg-chart-1/10 text-chart-1">
-                <Server className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  API Backend
-                </p>
-                <p className="text-xs text-muted-foreground">Online • v1.0.0</p>
-              </div>
-            </div>
-
-            <div className="pt-4 mt-auto flex justify-center">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-chart-2/10 border border-chart-2/20 text-xs font-medium text-chart-2">
-                <div className="w-2 h-2 rounded-full bg-chart-2 animate-pulse" />
-                SISTEMA OPERACIONAL
-              </div>
+            <div className="pt-2 flex justify-center">
+              {healthLoading ? (
+                <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Verificando...
+                </Badge>
+              ) : health?.status === "ok" ? (
+                <Badge className="gap-1 text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
+                  SISTEMA OPERACIONAL
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-1 text-xs">
+                  <XCircle className="w-3 h-3" />
+                  ATENÇÃO — VERIFICAR
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Alertas de produtos críticos */}
+      {s.criticalItems.length > 0 && (
+        <Card className="border-[#FFB300]/40 bg-[#FFB300]/5 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#FFB300]">
+              <AlertTriangle className="w-4 h-4" />
+              Produtos com estoque crítico
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {s.criticalItems.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-background/60 border border-[#FFB300]/20">
+                  <span className="font-medium text-foreground truncate pr-2">{item.name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {item.currentStock}/{item.minStock}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

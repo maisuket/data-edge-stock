@@ -52,6 +52,7 @@ import {
 import { IngredientFormDialog } from "@/app/components/IngredientFormDialog";
 import { BuyLotDialog } from "@/app/components/BuyLotDialog";
 import { IngredientDetailDialog } from "@/app/components/IngredientDetailDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
@@ -89,6 +90,7 @@ export default function IngredientsPage() {
   const [editTarget, setEditTarget] = useState<Ingredient | null>(null);
   const [buyTarget, setBuyTarget] = useState<Ingredient | null>(null);
   const [detailTarget, setDetailTarget] = useState<Ingredient | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Ingredient | null>(null);
 
   // ── Queries ──────────────────────────────────────────────────────────────
 
@@ -286,10 +288,7 @@ export default function IngredientsPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => {
-                              if (confirm(`Remover "${ingredient.name}"?`))
-                                deleteMutation.mutate(ingredient.id);
-                            }}
+                            onClick={() => setDeleteTarget(ingredient)}
                           >
                             <Trash2 className="w-4 h-4 mr-2" /> Remover
                           </DropdownMenuItem>
@@ -346,6 +345,14 @@ export default function IngredientsPage() {
         open={!!detailTarget}
         onOpenChange={(open) => !open && setDetailTarget(null)}
         ingredient={detailTarget}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Remover insumo"
+        description={`Tem certeza que deseja remover "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );

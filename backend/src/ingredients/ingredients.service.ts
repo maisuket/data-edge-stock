@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecipesService } from '../recipes/recipes.service';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
@@ -13,7 +15,12 @@ import { BuyLotDto } from './dto/buy-lot.dto';
 
 @Injectable()
 export class IngredientsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(IngredientsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly recipesService: RecipesService,
+  ) {}
 
   // ──────────────────────────────────────────
   // CRUD básico
@@ -103,7 +110,7 @@ export class IngredientsService {
    *  - estoque atual do insumo
    */
   async buyLot(ingredientId: string, dto: BuyLotDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const ingredient = await tx.ingredient.findUnique({
         where: { id: ingredientId },
       });
@@ -169,6 +176,30 @@ export class IngredientsService {
         },
       };
     });
+
+    // Recalcula o custo dos produtos fabricados que usam este insumo.
+    // Feito fora da transação para não bloquear o commit; falhas aqui são não-críticas.
+    await this.refreshAffectedProductCosts(ingredientId);
+
+    return result;
+  }
+
+  private async refreshAffectedProductCosts(ingredientId: string): Promise<void> {
+    const recipeItems = await this.prisma.recipeItem.findMany({
+      where: { ingredientId },
+      select: { productId: true },
+      distinct: ['productId'],
+    });
+
+    await Promise.allSettled(
+      recipeItems.map(({ productId }) =>
+        this.recipesService.refreshProductCost(productId).catch((err: Error) => {
+          this.logger.warn(
+            `Falha ao recalcular custo do produto ${productId} após compra de lote: ${err.message}`,
+          );
+        }),
+      ),
+    );
   }
 
   // ──────────────────────────────────────────
@@ -176,13 +207,12 @@ export class IngredientsService {
   // ──────────────────────────────────────────
 
   async getLowStockIngredients() {
-    return this.prisma.$queryRaw<
-      { id: string; name: string; unit: string; currentStock: number; minStock: number }[]
-    >`
-      SELECT id, name, unit, current_stock as "currentStock", min_stock as "minStock"
-      FROM ingredients
-      WHERE current_stock <= min_stock
-      ORDER BY current_stock ASC
-    `;
+    return this.prisma.ingredient.findMany({
+      where: {
+        currentStock: { lte: this.prisma.ingredient.fields.minStock },
+      },
+      orderBy: { currentStock: 'asc' },
+      select: { id: true, name: true, unit: true, currentStock: true, minStock: true },
+    });
   }
 }

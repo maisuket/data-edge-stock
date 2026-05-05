@@ -1,14 +1,30 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  private deleteFileSafe(filePath: string): void {
+    try {
+      const uploadsDir = path.resolve(process.cwd(), 'uploads');
+      const resolved = path.resolve(process.cwd(), filePath);
+      if (resolved.startsWith(uploadsDir + path.sep) && fs.existsSync(resolved)) {
+        fs.unlinkSync(resolved);
+      }
+    } catch (err) {
+      this.logger.warn(`Falha ao remover arquivo físico: ${filePath} — ${(err as Error).message}`);
+    }
+  }
 
   async create(createProductDto: CreateProductDto) {
     const { specifications, attachments, ...productData } = createProductDto;
@@ -80,21 +96,25 @@ export class ProductsService {
 
   async update(id: string, updateProductDto: UpdateProductDto) {
     const { specifications, attachments, ...productData } = updateProductDto;
+
+    // Remove os arquivos físicos dos anexos antigos antes de deletar do banco
+    if (attachments) {
+      const existing = await this.prisma.attachment.findMany({
+        where: { productId: id },
+        select: { filePath: true },
+      });
+      existing.forEach((a) => this.deleteFileSafe(a.filePath));
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: {
         ...productData,
         specifications: specifications
-          ? {
-              deleteMany: {}, // Apaga specs antigas
-              create: specifications, // Cria as novas
-            }
+          ? { deleteMany: {}, create: specifications }
           : undefined,
         attachments: attachments
-          ? {
-              deleteMany: {}, // Apaga anexos antigos (CUIDADO: isso não deleta o arquivo do disco, apenas do banco)
-              create: attachments,
-            }
+          ? { deleteMany: {}, create: attachments }
           : undefined,
       },
       include: {
@@ -105,69 +125,102 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const movements = await this.prisma.stockMovement.findMany({
       where: { productId: id },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (movements.length > 0) {
       throw new BadRequestException(
         'Não é possível excluir um produto que possui movimentações.',
       );
     }
 
-    return this.prisma.product.delete({
-      where: { id },
+    // Remove arquivos físicos dos anexos antes de deletar o produto
+    const attachments = await this.prisma.attachment.findMany({
+      where: { productId: id },
+      select: { filePath: true },
     });
+    attachments.forEach((a) => this.deleteFileSafe(a.filePath));
+
+    return this.prisma.product.delete({ where: { id } });
   }
 
   async getDashboardStats() {
-    // 1. Total de Produtos
-    const totalProducts = await this.prisma.product.count();
+    const productLowStockWhere = {
+      currentStock: { lte: this.prisma.product.fields.minStock },
+    };
+    const ingredientLowStockWhere = {
+      currentStock: { lte: this.prisma.ingredient.fields.minStock },
+    };
 
-    // 2. Produtos com Estoque Baixo (Estoque Atual <= Estoque Mínimo)
-    const lowStockProducts = await this.prisma.product.count({
-      where: {
-        currentStock: {
-          lte: this.prisma.product.fields.minStock,
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [
+      totalProducts,
+      lowStockCount,
+      stockValueResult,
+      criticalItems,
+      totalIngredients,
+      ingredientsLowStockCount,
+      ingredientsValueResult,
+      productionsTodayCount,
+      productionsTodayCostResult,
+      recentProductions,
+    ] = await Promise.all([
+      this.prisma.product.count(),
+      this.prisma.product.count({ where: productLowStockWhere }),
+      this.prisma.$queryRaw<{ totalValue: number }[]>`
+        SELECT COALESCE(SUM(current_stock * cost_price), 0) as totalValue FROM products
+      `,
+      this.prisma.product.findMany({
+        where: productLowStockWhere,
+        take: 5,
+        orderBy: { currentStock: 'asc' },
+        select: { id: true, name: true, currentStock: true, minStock: true },
+      }),
+      this.prisma.ingredient.count(),
+      this.prisma.ingredient.count({ where: ingredientLowStockWhere }),
+      this.prisma.$queryRaw<{ totalValue: number }[]>`
+        SELECT COALESCE(SUM(current_stock * average_cost), 0) as totalValue FROM ingredients
+      `,
+      this.prisma.production.count({
+        where: { producedAt: { gte: todayStart } },
+      }),
+      this.prisma.$queryRaw<{ totalCost: number }[]>`
+        SELECT COALESCE(SUM(total_cost), 0) as totalCost
+        FROM productions
+        WHERE produced_at >= ${todayStart}
+      `,
+      this.prisma.production.findMany({
+        take: 5,
+        orderBy: { producedAt: 'desc' },
+        include: { product: { select: { name: true } } },
+        select: {
+          id: true,
+          quantity: true,
+          unitCost: true,
+          totalCost: true,
+          producedAt: true,
+          product: { select: { name: true } },
         },
-      },
-    });
-
-    // 3. Valor Total do Estoque (Soma de currentStock * costPrice)
-    // O Prisma não faz "SUM(colA * colB)" nativamente fácil no SQLite sem raw query
-    // Vamos fazer via Raw Query para ser performático
-    const result: any[] = await this.prisma.$queryRaw`
-      SELECT SUM(current_stock * cost_price) as totalValue FROM products
-    `;
-
-    const totalValue = result[0]?.totalValue || 0;
-
-    // 4. Lista dos 5 produtos com menor estoque para exibir na tela
-    const criticalItems = await this.prisma.product.findMany({
-      where: {
-        currentStock: {
-          lte: this.prisma.product.fields.minStock,
-        },
-      },
-      take: 5,
-      orderBy: {
-        currentStock: 'asc',
-      },
-      select: {
-        id: true,
-        name: true,
-        currentStock: true,
-        minStock: true,
-      },
-    });
+      }),
+    ]);
 
     return {
+      // Produtos
       totalProducts,
-      lowStockCount: lowStockProducts,
-      stockValue: totalValue,
+      lowStockCount,
+      stockValue: stockValueResult[0]?.totalValue ?? 0,
       criticalItems,
+      // Insumos
+      totalIngredients,
+      ingredientsLowStockCount,
+      ingredientsValue: ingredientsValueResult[0]?.totalValue ?? 0,
+      // Produções
+      productionsTodayCount,
+      productionsTodayCost: productionsTodayCostResult[0]?.totalCost ?? 0,
+      recentProductions,
     };
   }
 }

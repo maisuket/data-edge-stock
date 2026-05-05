@@ -26,7 +26,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/auth/enums/role.enum';
 
 @ApiTags('products')
-@UseGuards(JwtAuthGuard, RolesGuard) // Protege TODAS as rotas de produtos
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 @Controller('products')
 export class ProductsController {
@@ -35,10 +35,7 @@ export class ProductsController {
   @Post()
   @ApiOperation({ summary: 'Cadastrar produto' })
   @ApiResponse({ status: 201, description: 'Produto criado.' })
-  @ApiResponse({
-    status: 409,
-    description: 'Código ou Código de Barras já existe.',
-  })
+  @ApiResponse({ status: 409, description: 'Código ou Código de Barras já existe.' })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
@@ -48,6 +45,13 @@ export class ProductsController {
   @ApiResponse({ status: 200, type: PageDto })
   findAll(@Query() pageOptionsDto: PageOptionsDto) {
     return this.productsService.findAll(pageOptionsDto);
+  }
+
+  // Rota estática ANTES da parametrizada (:id) para evitar conflito de matching
+  @Get('dashboard-stats')
+  @ApiOperation({ summary: 'Estatísticas consolidadas do Dashboard' })
+  getDashboardStats() {
+    return this.productsService.getDashboardStats();
   }
 
   @Get(':id')
@@ -67,11 +71,5 @@ export class ProductsController {
   @ApiOperation({ summary: 'Remover produto' })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
-  }
-
-  @Get('dashboard-stats')
-  @ApiOperation({ summary: 'Estatísticas do Dashboard' })
-  getDashboardStats() {
-    return this.productsService.getDashboardStats();
   }
 }

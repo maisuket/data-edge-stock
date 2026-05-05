@@ -57,6 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SupplierFormDialog } from "@/app/components/SupllierFormDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function SuppliersPage() {
   const [search, setSearch] = useState("");
@@ -66,6 +67,7 @@ export default function SuppliersPage() {
   // Controle do Modal
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -100,10 +102,8 @@ export default function SuppliersPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este fornecedor?")) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = (supplier: Supplier) => {
+    setDeleteTarget(supplier);
   };
 
   return (
@@ -299,7 +299,7 @@ export default function SuppliersPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => handleDelete(row.id)}
+                              onClick={() => handleDelete(row)}
                               className="text-destructive focus:text-destructive focus:bg-destructive/10"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
@@ -360,6 +360,15 @@ export default function SuppliersPage() {
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ["suppliers"] });
         }}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Excluir fornecedor"
+        description={`Tem certeza que deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
     </div>
   );

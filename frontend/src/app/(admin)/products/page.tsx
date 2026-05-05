@@ -67,6 +67,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { ProductFormDialog } from "@/app/components/ProductFormDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
@@ -280,6 +281,7 @@ export default function ProductsPage() {
 
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [movingProduct, setMovingProduct] = useState<Product | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<Product | undefined>(undefined);
 
   const queryClient = useQueryClient();
 
@@ -298,10 +300,8 @@ export default function ProductsPage() {
     onError: () => toast.error("Erro ao excluir. Verifique movimentações."),
   });
 
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este produto?")) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = (product: Product) => {
+    setDeleteTarget(product);
   };
 
   const handleExport = () => {
@@ -545,7 +545,7 @@ export default function ProductsPage() {
                               <DropdownMenuSeparator />
 
                               <DropdownMenuItem
-                                onClick={() => handleDelete(product.id)}
+                                onClick={() => handleDelete(product)}
                                 className="text-red-600 focus:text-red-600"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -612,6 +612,15 @@ export default function ProductsPage() {
           product={movingProduct}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(undefined)}
+        title="Excluir produto"
+        description={`Tem certeza que deseja excluir "${deleteTarget?.name}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
     </div>
   );
 }

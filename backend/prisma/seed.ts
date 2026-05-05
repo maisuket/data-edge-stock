@@ -6,10 +6,17 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando o seed do banco de dados...');
 
-  // 1. Defina os dados do usuário inicial
-  const adminEmail = 'admin@exemplo.com';
-  const adminUsername = 'admin';
-  const adminPassword = 'admin123'; // Senha forte em produção, ok?
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@exemplo.com';
+  const adminUsername = process.env.SEED_ADMIN_USERNAME ?? 'admin';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!adminPassword) {
+    console.error(
+      '❌ SEED_ADMIN_PASSWORD não definida. ' +
+      'Defina a variável de ambiente antes de rodar o seed.',
+    );
+    process.exit(1);
+  }
 
   // 2. Verifica se já existe para não dar erro de duplicidade
   const userExists = await prisma.user.findFirst({
