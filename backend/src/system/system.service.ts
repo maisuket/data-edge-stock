@@ -125,7 +125,6 @@ export class SystemService implements OnModuleInit {
     void this.createLocalBackup('daily');
   }
 
-  // Rotina de Limpeza
   private async cleanOldBackups(dir: string, prefix: string) {
     try {
       const files = await fs.readdir(dir);
@@ -135,18 +134,17 @@ export class SystemService implements OnModuleInit {
           name: f,
           time: fs.statSync(path.join(dir, f)).mtime.getTime(),
         }))
-        .sort((a, b) => b.time - a.time); // Mais recentes primeiro
+        .sort((a, b) => b.time - a.time);
 
-      // Se tiver mais que 5, apaga os excedentes
       if (backups.length > 5) {
         const toDelete = backups.slice(5);
         for (const file of toDelete) {
           await fs.remove(path.join(dir, file.name));
-          this.logger.log(`🗑️ Backup antigo removido: ${file.name}`);
+          this.logger.log(`Backup antigo removido: ${file.name}`);
         }
       }
     } catch (e) {
-      // Ignora erro de limpeza
+      this.logger.warn(`Falha na rotina de limpeza de backups (${prefix}): ${(e as Error).message}`);
     }
   }
 }

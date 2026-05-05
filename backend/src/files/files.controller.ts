@@ -5,6 +5,7 @@ import {
   Req,
   UseGuards,
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   Delete,
   Body,
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import * as fs from 'fs';
 import * as util from 'util';
 import { pipeline } from 'stream';
+import * as path from 'path';
 import { join } from 'path';
 import { SavedMultipartFile } from '@fastify/multipart';
 
@@ -110,30 +112,26 @@ export class FilesController {
     if (!filePath)
       throw new BadRequestException('Caminho do arquivo não informado');
 
-    // Segurança básica: impedir navegação de diretório (../) e garantir que está na pasta uploads
-    // Normaliza o caminho
-    const normalizedPath = join(process.cwd(), filePath); // filePath vem como 'uploads\arquivo.jpg'
-    const uploadsDir = join(process.cwd(), 'uploads');
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    const resolvedPath = path.resolve(process.cwd(), filePath);
 
-    // Verifica se o caminho está dentro da pasta permitida
-    if (!normalizedPath.startsWith(uploadsDir)) {
-      // Em dev o caminho pode variar um pouco dependendo de como foi salvo (relativo vs absoluto)
-      // Vamos simplificar: se o arquivo existe e tem 'uploads' no nome, apaga.
+    // Rejeita qualquer caminho que não esteja dentro de /uploads
+    if (!resolvedPath.startsWith(uploadsDir + path.sep)) {
+      throw new ForbiddenException('Acesso negado: caminho inválido.');
     }
 
     try {
-      if (fs.existsSync(filePath)) {
-        // Usa o caminho relativo salvo no banco/front
-        fs.unlinkSync(filePath);
+      if (fs.existsSync(resolvedPath)) {
+        fs.unlinkSync(resolvedPath);
         return { message: 'Arquivo apagado com sucesso' };
       } else {
         throw new NotFoundException('Arquivo não encontrado no disco');
       }
     } catch (error) {
-      console.error('Erro ao apagar arquivo:', error);
-      throw new InternalServerErrorException(
-        'Não foi possível apagar o arquivo',
-      );
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Não foi possível apagar o arquivo');
     }
   }
 }
