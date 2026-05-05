@@ -189,7 +189,10 @@ export class ProductionsService {
     ]);
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-    return new PageDto(productions, pageMetaDto);
+    return new PageDto(
+      productions.map((p) => ({ ...p, producedBy: p.user.name })),
+      pageMetaDto,
+    );
   }
 
   async findOne(id: string) {

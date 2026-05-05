@@ -146,30 +146,81 @@ export class ProductsService {
   }
 
   async getDashboardStats() {
-    const lowStockWhere = {
+    const productLowStockWhere = {
       currentStock: { lte: this.prisma.product.fields.minStock },
     };
+    const ingredientLowStockWhere = {
+      currentStock: { lte: this.prisma.ingredient.fields.minStock },
+    };
 
-    const [totalProducts, lowStockCount, stockValueResult, criticalItems] =
-      await Promise.all([
-        this.prisma.product.count(),
-        this.prisma.product.count({ where: lowStockWhere }),
-        this.prisma.$queryRaw<{ totalValue: number }[]>`
-          SELECT COALESCE(SUM(current_stock * cost_price), 0) as totalValue FROM products
-        `,
-        this.prisma.product.findMany({
-          where: lowStockWhere,
-          take: 5,
-          orderBy: { currentStock: 'asc' },
-          select: { id: true, name: true, currentStock: true, minStock: true },
-        }),
-      ]);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [
+      totalProducts,
+      lowStockCount,
+      stockValueResult,
+      criticalItems,
+      totalIngredients,
+      ingredientsLowStockCount,
+      ingredientsValueResult,
+      productionsTodayCount,
+      productionsTodayCostResult,
+      recentProductions,
+    ] = await Promise.all([
+      this.prisma.product.count(),
+      this.prisma.product.count({ where: productLowStockWhere }),
+      this.prisma.$queryRaw<{ totalValue: number }[]>`
+        SELECT COALESCE(SUM(current_stock * cost_price), 0) as totalValue FROM products
+      `,
+      this.prisma.product.findMany({
+        where: productLowStockWhere,
+        take: 5,
+        orderBy: { currentStock: 'asc' },
+        select: { id: true, name: true, currentStock: true, minStock: true },
+      }),
+      this.prisma.ingredient.count(),
+      this.prisma.ingredient.count({ where: ingredientLowStockWhere }),
+      this.prisma.$queryRaw<{ totalValue: number }[]>`
+        SELECT COALESCE(SUM(current_stock * average_cost), 0) as totalValue FROM ingredients
+      `,
+      this.prisma.production.count({
+        where: { producedAt: { gte: todayStart } },
+      }),
+      this.prisma.$queryRaw<{ totalCost: number }[]>`
+        SELECT COALESCE(SUM(total_cost), 0) as totalCost
+        FROM productions
+        WHERE produced_at >= ${todayStart}
+      `,
+      this.prisma.production.findMany({
+        take: 5,
+        orderBy: { producedAt: 'desc' },
+        include: { product: { select: { name: true } } },
+        select: {
+          id: true,
+          quantity: true,
+          unitCost: true,
+          totalCost: true,
+          producedAt: true,
+          product: { select: { name: true } },
+        },
+      }),
+    ]);
 
     return {
+      // Produtos
       totalProducts,
       lowStockCount,
       stockValue: stockValueResult[0]?.totalValue ?? 0,
       criticalItems,
+      // Insumos
+      totalIngredients,
+      ingredientsLowStockCount,
+      ingredientsValue: ingredientsValueResult[0]?.totalValue ?? 0,
+      // Produções
+      productionsTodayCount,
+      productionsTodayCost: productionsTodayCostResult[0]?.totalCost ?? 0,
+      recentProductions,
     };
   }
 }

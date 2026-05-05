@@ -40,13 +40,9 @@ export const StockMovementService = {
     return api.post("/stock-movements", data);
   },
 
-  // Busca histórico (com filtro opcional por produto)
   getAll: async (page = 1, pageSize = 10, productId?: string) => {
-    const params: any = { page, take: pageSize };
-    if (productId) params.productId = productId;
-
     const response = await api.get<Page<StockMovement>>("/stock-movements", {
-      params,
+      params: { page, take: pageSize, productId: productId || undefined },
     });
     return response.data;
   },

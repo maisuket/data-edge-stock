@@ -3,9 +3,8 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
-  IsNotEmpty,
   IsNumber,
-  IsString,
+  IsUUID,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -15,8 +14,7 @@ export class RecipeItemDto {
     example: 'uuid-do-insumo',
     description: 'ID do insumo (Ingredient)',
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   ingredientId: string;
 
   @ApiProperty({

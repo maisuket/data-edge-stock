@@ -1,13 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateProductionDto {
   @ApiProperty({
     example: 'uuid-do-produto',
     description: 'ID do produto a ser produzido (deve ter receita cadastrada)',
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   productId: string;
 
   @ApiProperty({
