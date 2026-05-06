@@ -1,9 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
   IsNumber,
+  IsOptional,
   IsUUID,
   Min,
   ValidateNested,
@@ -19,7 +20,8 @@ export class RecipeItemDto {
 
   @ApiProperty({
     example: 0.5,
-    description: 'Quantidade do insumo necessária para produzir 1 unidade do produto',
+    description:
+      'Quantidade do insumo necessária para produzir 1 unidade do produto',
   })
   @IsNumber()
   @Min(0.001)
@@ -37,4 +39,13 @@ export class SetRecipeDto {
   @ValidateNested({ each: true })
   @Type(() => RecipeItemDto)
   items: RecipeItemDto[];
+
+  @ApiPropertyOptional({
+    example: 15.5,
+    description:
+      'Preço de venda do produto. Se enviado, atualiza o cadastro principal.',
+  })
+  @IsOptional()
+  @IsNumber()
+  salePrice?: number | null;
 }

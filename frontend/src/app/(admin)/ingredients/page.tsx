@@ -67,13 +67,7 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-function StockBadge({
-  current,
-  min,
-}: {
-  current: number;
-  min: number;
-}) {
+function StockBadge({ current, min }: { current: number; min: number }) {
   if (current <= 0)
     return (
       <Badge className="bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30 border">
@@ -128,8 +122,18 @@ export default function IngredientsPage() {
       toast.success("Insumo removido.");
       qc.invalidateQueries({ queryKey: ["ingredients"] });
     },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      toast.error(e?.response?.data?.message ?? "Erro ao remover insumo."),
+    onError: (e: any) => {
+      let errMsg = e?.response?.data?.message ?? "Erro ao remover insumo.";
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg[0]?.constraints
+          ? Object.values(errMsg[0].constraints)[0]
+          : errMsg.join(", ");
+      } else if (typeof errMsg === "object") {
+        errMsg = JSON.stringify(errMsg);
+      }
+
+      toast.error(String(errMsg));
+    },
   });
 
   // ── Handlers ─────────────────────────────────────────────────────────────

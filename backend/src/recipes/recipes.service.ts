@@ -64,6 +64,7 @@ export class RecipesService {
         data: {
           isManufactured: true,
           costPrice: productionCost,
+          ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
         },
       });
 

@@ -130,6 +130,7 @@ export default function RecipesPage() {
   const saveMutation = useMutation({
     mutationFn: () =>
       RecipeService.setRecipe(selectedProductId, {
+        salePrice: salePriceNum > 0 ? salePriceNum : null,
         items: rows.map((r) => ({
           ingredientId: r.ingredientId,
           quantity: r.quantity,
@@ -142,8 +143,16 @@ export default function RecipesPage() {
       qc.invalidateQueries({ queryKey: ["recipe", selectedProductId] });
       qc.invalidateQueries({ queryKey: ["products"] });
     },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      toast.error(e?.response?.data?.message ?? "Erro ao salvar receita."),
+    onError: (e: any) => {
+      let errMsg = e?.response?.data?.message ?? "Erro ao salvar receita.";
+      if (Array.isArray(errMsg)) {
+        errMsg = errMsg[0]?.constraints ? Object.values(errMsg[0].constraints)[0] : errMsg.join(", ");
+      } else if (typeof errMsg === "object") {
+        errMsg = JSON.stringify(errMsg);
+      }
+      
+      toast.error(String(errMsg));
+    },
   });
 
   const refreshMutation = useMutation({
