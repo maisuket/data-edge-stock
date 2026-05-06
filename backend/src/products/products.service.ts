@@ -86,17 +86,35 @@ export class ProductsService {
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
-    return new PageDto(products, pageMetaDto);
+    const mappedProducts = products.map((p) => ({
+      ...p,
+      costPrice: p.costPrice.toNumber(),
+      salePrice: p.salePrice ? p.salePrice.toNumber() : null,
+      currentStock: p.currentStock.toNumber(),
+      minStock: p.minStock.toNumber(),
+    }));
+
+    return new PageDto(mappedProducts, pageMetaDto);
   }
 
   async findOne(id: string) {
-    return this.prisma.product.findUnique({
+    const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
         specifications: true,
         attachments: true,
       },
     });
+
+    if (!product) return null;
+
+    return {
+      ...product,
+      costPrice: product.costPrice.toNumber(),
+      salePrice: product.salePrice ? product.salePrice.toNumber() : null,
+      currentStock: product.currentStock.toNumber(),
+      minStock: product.minStock.toNumber(),
+    };
   }
 
   async update(id: string, updateProductDto: UpdateProductDto) {
@@ -216,7 +234,11 @@ export class ProductsService {
       totalProducts,
       lowStockCount,
       stockValue: stockValueResult[0]?.totalValue ?? 0,
-      criticalItems,
+      criticalItems: criticalItems.map((i) => ({
+        ...i,
+        currentStock: i.currentStock.toNumber(),
+        minStock: i.minStock.toNumber(),
+      })),
       // Insumos
       totalIngredients,
       ingredientsLowStockCount,
@@ -224,7 +246,12 @@ export class ProductsService {
       // Produções
       productionsTodayCount,
       productionsTodayCost: productionsTodayCostResult[0]?.totalCost ?? 0,
-      recentProductions,
+      recentProductions: recentProductions.map((p) => ({
+        ...p,
+        quantity: p.quantity.toNumber(),
+        unitCost: p.unitCost.toNumber(),
+        totalCost: p.totalCost.toNumber(),
+      })),
     };
   }
 }

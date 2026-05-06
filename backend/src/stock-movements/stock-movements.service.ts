@@ -93,7 +93,7 @@ export class StockMovementsService {
         },
       });
 
-      return await tx.stockMovement.create({
+      const movement = await tx.stockMovement.create({
         data: {
           type,
           quantity,
@@ -111,6 +111,14 @@ export class StockMovementsService {
           supplierId: type === MovementType.ENTRY ? (supplierId ?? null) : null,
         },
       });
+
+      return {
+        ...movement,
+        quantity: movement.quantity.toNumber(),
+        unitValue: movement.unitValue ? movement.unitValue.toNumber() : null,
+        stockBefore: movement.stockBefore.toNumber(),
+        stockAfter: movement.stockAfter.toNumber(),
+      };
     });
   }
 
@@ -133,6 +141,15 @@ export class StockMovementsService {
     ]);
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-    return new PageDto(movements, pageMetaDto);
+    return new PageDto(
+      movements.map((m) => ({
+        ...m,
+        quantity: m.quantity.toNumber(),
+        unitValue: m.unitValue ? m.unitValue.toNumber() : null,
+        stockBefore: m.stockBefore.toNumber(),
+        stockAfter: m.stockAfter.toNumber(),
+      })),
+      pageMetaDto,
+    );
   }
 }

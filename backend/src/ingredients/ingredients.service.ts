@@ -52,8 +52,15 @@ export class IngredientsService {
       this.prisma.ingredient.count({ where }),
     ]);
 
+    const mappedIngredients = ingredients.map((i) => ({
+      ...i,
+      currentStock: i.currentStock.toNumber(),
+      averageCost: i.averageCost.toNumber(),
+      minStock: i.minStock.toNumber(),
+    }));
+
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-    return new PageDto(ingredients, pageMetaDto);
+    return new PageDto(mappedIngredients, pageMetaDto);
   }
 
   async findOne(id: string) {
@@ -71,7 +78,19 @@ export class IngredientsService {
       throw new NotFoundException(`Insumo ${id} não encontrado.`);
     }
 
-    return ingredient;
+    return {
+      ...ingredient,
+      currentStock: ingredient.currentStock.toNumber(),
+      averageCost: ingredient.averageCost.toNumber(),
+      minStock: ingredient.minStock.toNumber(),
+      lots: ingredient.lots.map((lot) => ({
+        ...lot,
+        quantity: lot.quantity.toNumber(),
+        totalCost: lot.totalCost.toNumber(),
+        unitCost: lot.unitCost.toNumber(),
+        remainingQty: lot.remainingQty.toNumber(),
+      })),
+    };
   }
 
   async update(id: string, dto: UpdateIngredientDto) {
@@ -170,11 +189,17 @@ export class IngredientsService {
       });
 
       return {
-        lot,
+        lot: {
+          ...lot,
+          quantity: lot.quantity.toNumber(),
+          totalCost: lot.totalCost.toNumber(),
+          unitCost: lot.unitCost.toNumber(),
+          remainingQty: lot.remainingQty.toNumber(),
+        },
         ingredient: {
           id: ingredientId,
-          newStock: newTotalStock,
-          newAverageCost: newAverageCost,
+          newStock: newTotalStock.toNumber(),
+          newAverageCost: newAverageCost.toNumber(),
         },
       };
     });
@@ -213,18 +238,26 @@ export class IngredientsService {
   // ──────────────────────────────────────────
 
   async getLowStockIngredients() {
-    return this.prisma.ingredient.findMany({
-      where: {
-        currentStock: { lte: this.prisma.ingredient.fields.minStock },
-      },
-      orderBy: { currentStock: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        unit: true,
-        currentStock: true,
-        minStock: true,
-      },
-    });
+    return this.prisma.ingredient
+      .findMany({
+        where: {
+          currentStock: { lte: this.prisma.ingredient.fields.minStock },
+        },
+        orderBy: { currentStock: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          unit: true,
+          currentStock: true,
+          minStock: true,
+        },
+      })
+      .then((items) =>
+        items.map((i) => ({
+          ...i,
+          currentStock: i.currentStock.toNumber(),
+          minStock: i.minStock.toNumber(),
+        })),
+      );
   }
 }

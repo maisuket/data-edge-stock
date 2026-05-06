@@ -39,7 +39,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -56,9 +62,18 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
-function StockBadge({ current, min }: { current: number; min: number }) {
+function StockBadge({
+  current,
+  min,
+}: {
+  current: number;
+  min: number;
+}) {
   if (current <= 0)
     return (
       <Badge className="bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30 border">
@@ -146,7 +161,10 @@ export default function IngredientsPage() {
           </p>
         </div>
         <Button
-          onClick={() => { setEditTarget(null); setFormOpen(true); }}
+          onClick={() => {
+            setEditTarget(null);
+            setFormOpen(true);
+          }}
           className="gap-2 bg-primary text-primary-foreground hover:bg-[#A65E2E] shadow-sm"
         >
           <Plus className="w-4 h-4" />
@@ -161,7 +179,8 @@ export default function IngredientsPage() {
             <TrendingDown className="w-5 h-5 text-[#FFB300] shrink-0" />
             <div>
               <p className="text-sm font-semibold text-foreground">
-                {lowStock.length} insumo{lowStock.length > 1 ? "s" : ""} com estoque abaixo do mínimo
+                {lowStock.length} insumo{lowStock.length > 1 ? "s" : ""} com
+                estoque abaixo do mínimo
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {lowStock.map((i) => i.name).join(", ")}
@@ -176,9 +195,13 @@ export default function IngredientsPage() {
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
             <div>
-              <CardTitle className="text-base font-bold">Lista de Insumos</CardTitle>
+              <CardTitle className="text-base font-bold">
+                Lista de Insumos
+              </CardTitle>
               <CardDescription>
-                {meta ? `${meta.itemCount} insumo${meta.itemCount !== 1 ? "s" : ""} cadastrado${meta.itemCount !== 1 ? "s" : ""}` : ""}
+                {meta
+                  ? `${meta.itemCount} insumo${meta.itemCount !== 1 ? "s" : ""} cadastrado${meta.itemCount !== 1 ? "s" : ""}`
+                  : ""}
               </CardDescription>
             </div>
             <div className="relative w-full sm:w-64">
@@ -187,7 +210,10 @@ export default function IngredientsPage() {
                 placeholder="Buscar insumo..."
                 className="pl-9 bg-background"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
           </div>
@@ -218,7 +244,10 @@ export default function IngredientsPage() {
                 ))
               ) : ingredients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-40 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={6}
+                    className="h-40 text-center text-muted-foreground"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <Beaker className="w-8 h-8 opacity-30" />
                       <p>Nenhum insumo encontrado.</p>
@@ -249,7 +278,9 @@ export default function IngredientsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
-                      {ingredient.currentStock.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}
+                      {ingredient.currentStock.toLocaleString("pt-BR", {
+                        maximumFractionDigits: 3,
+                      })}
                       <span className="text-xs text-muted-foreground ml-1">
                         {UNIT_SHORT[ingredient.unit]}
                       </span>
@@ -261,9 +292,15 @@ export default function IngredientsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <StockBadge current={ingredient.currentStock} min={ingredient.minStock} />
+                      <StockBadge
+                        current={ingredient.currentStock}
+                        min={ingredient.minStock}
+                      />
                     </TableCell>
-                    <TableCell className="pr-6 text-right" onClick={(e) => e.stopPropagation()}>
+                    <TableCell
+                      className="pr-6 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon-sm">
@@ -273,16 +310,21 @@ export default function IngredientsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setDetailTarget(ingredient)}>
+                          <DropdownMenuItem
+                            onClick={() => setDetailTarget(ingredient)}
+                          >
                             <Eye className="w-4 h-4 mr-2" /> Ver detalhes
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setBuyTarget(ingredient)}
                             className="text-[#4CAF50] focus:text-[#4CAF50]"
                           >
-                            <ShoppingCart className="w-4 h-4 mr-2" /> Registrar compra
+                            <ShoppingCart className="w-4 h-4 mr-2" /> Registrar
+                            compra
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(ingredient)}>
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(ingredient)}
+                          >
                             <Pencil className="w-4 h-4 mr-2" /> Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />

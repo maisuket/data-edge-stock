@@ -7,71 +7,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
-// Modelos base (sem alteração de colunas)
-// ─────────────────────────────────────────────
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  username  String   @unique
-  name      String
-  cargo     String?  @default("EMPLOYEE")
-  role      String   @default("USER")
-  password  String
-
-  stockMovements StockMovement[]
+  id             String          @id @default(uuid())
+  email          String          @unique
+  username       String          @unique
+  name           String
+  cargo          String?         @default("EMPLOYEE")
+  role           String          @default("USER")
+  password       String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   productions    Production[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  stockMovements StockMovement[]
 
   @@map("users")
 }
 
 model Supplier {
-  id        String   @id @default(uuid())
-  name      String
-  cnpj      String?  @unique
-  email     String?
-  phone     String?
-  address   String?
-
-  stockMovements StockMovement[]
+  id             String          @id @default(uuid())
+  name           String
+  cnpj           String?         @unique
+  email          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt
   ingredientLots IngredientLot[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt
+  stockMovements StockMovement[]
 
   @@map("suppliers")
 }
 
 model Product {
-  id            String   @id @default(uuid())
-  name          String
-  category      String
-  internalCode  String   @unique @map("internal_code")
-  barcode       String   @unique
-  unit          String
-  costPrice     Decimal  @map("cost_price")
-  salePrice     Decimal? @map("sale_price")
-  currentStock  Decimal  @map("current_stock")
-  minStock      Decimal  @map("min_stock")
-  location      String?
-
-  // Flag: true = produto fabricado internamente (tem receita)
-  isManufactured Boolean @default(false) @map("is_manufactured")
-
-  specifications Specification[]
+  id             String          @id @default(uuid())
+  name           String
+  category       String
+  internalCode   String          @unique @map("internal_code")
+  barcode        String          @unique
+  unit           String
+  costPrice      Decimal         @map("cost_price")
+  salePrice      Decimal?        @map("sale_price")
+  currentStock   Decimal         @map("current_stock")
+  minStock       Decimal         @map("min_stock")
+  location       String?
+  isManufactured Boolean         @default(false) @map("is_manufactured")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   attachments    Attachment[]
+  productions    Production[]
+  recipeItems    RecipeItem[]
+  specifications Specification[]
   stockMovements StockMovement[]
-
-  // Relações do módulo de produção
-  recipeItems  RecipeItem[]
-  productions  Production[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("products")
 }
@@ -79,7 +65,6 @@ model Product {
 model StockMovement {
   id          String    @id @default(uuid())
   productId   String    @map("product_id")
-  product     Product   @relation(fields: [productId], references: [id])
   type        String
   batch       String?
   quantity    Decimal
@@ -89,10 +74,11 @@ model StockMovement {
   stockAfter  Decimal   @map("stock_after")
   description String?
   userId      String    @map("user_id")
-  user        User      @relation(fields: [userId], references: [id])
   supplierId  String?   @map("supplier_id")
-  supplier    Supplier? @relation(fields: [supplierId], references: [id])
   createdAt   DateTime  @default(now()) @map("created_at")
+  product     Product   @relation(fields: [productId], references: [id])
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
 
   @@map("stock_movements")
 }
@@ -108,38 +94,32 @@ model Specification {
 }
 
 model Attachment {
-  id        String  @id @default(uuid())
+  id        String   @id @default(uuid())
   fileName  String
   filePath  String
   fileType  String
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
   createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("attachments")
 }
 
-// ─────────────────────────────────────────────
-// Módulo de Insumos (Ingredients)
-// ─────────────────────────────────────────────
-
 /// Insumo: matéria-prima usada na produção (leite, açúcar, etc.)
 model Ingredient {
-  id           String  @id @default(uuid())
-  name         String
+  id                     String                  @id @default(uuid())
+  name                   String
   /// Unidade de medida: LITER | ML | KG | G | UNIT
-  unit         String
-  currentStock Decimal @default(0) @map("current_stock")
+  unit                   String
+  currentStock           Decimal                 @default(0) @map("current_stock")
   /// Custo médio ponderado calculado automaticamente a cada compra
-  averageCost  Decimal @default(0) @map("average_cost")
-  minStock     Decimal @default(0) @map("min_stock")
-
+  averageCost            Decimal                 @default(0) @map("average_cost")
+  minStock               Decimal                 @default(0) @map("min_stock")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
   lots                   IngredientLot[]
-  recipeItems            RecipeItem[]
   productionConsumptions ProductionConsumption[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt     @map("updated_at")
+  recipeItems            RecipeItem[]
 
   @@map("ingredients")
 }
@@ -149,8 +129,6 @@ model IngredientLot {
   id           String     @id @default(uuid())
   lotNumber    String     @map("lot_number")
   ingredientId String     @map("ingredient_id")
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-
   /// Quantidade comprada (em unidade do insumo)
   quantity     Decimal
   /// Custo total da nota/compra
@@ -159,62 +137,47 @@ model IngredientLot {
   unitCost     Decimal    @map("unit_cost")
   /// Quantidade ainda disponível neste lote (para FIFO)
   remainingQty Decimal    @map("remaining_qty")
-
-  purchasedAt DateTime  @default(now()) @map("purchased_at")
-  expiresAt   DateTime? @map("expires_at")
-
-  supplierId String?   @map("supplier_id")
-  supplier   Supplier? @relation(fields: [supplierId], references: [id])
-
-  createdAt DateTime @default(now()) @map("created_at")
+  purchasedAt  DateTime   @default(now()) @map("purchased_at")
+  expiresAt    DateTime?  @map("expires_at")
+  supplierId   String?    @map("supplier_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  supplier     Supplier?  @relation(fields: [supplierId], references: [id])
 
   @@map("ingredient_lots")
 }
-
-// ─────────────────────────────────────────────
-// Módulo de Receitas (Recipes)
-// ─────────────────────────────────────────────
 
 /// Item da receita: qual insumo e quanto é usado por unidade produzida
 model RecipeItem {
   id           String     @id @default(uuid())
   productId    String     @map("product_id")
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
   ingredientId String     @map("ingredient_id")
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-
   /// Quantidade do insumo para produzir 1 unidade do produto
-  quantity Decimal
+  quantity     Decimal
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, ingredientId])
   @@map("recipe_items")
 }
 
-// ─────────────────────────────────────────────
-// Módulo de Produção (Productions)
-// ─────────────────────────────────────────────
-
 /// Registro de um lote de produção
 model Production {
-  id        String  @id @default(uuid())
-  productId String  @map("product_id")
-  product   Product @relation(fields: [productId], references: [id])
-
+  id           String                  @id @default(uuid())
+  productId    String                  @map("product_id")
   /// Quantidade de unidades produzidas
-  quantity  Decimal
+  quantity     Decimal
   /// Custo por unidade produzida (calculado)
-  unitCost  Decimal @map("unit_cost")
+  unitCost     Decimal                 @map("unit_cost")
   /// Custo total do lote = quantity * unitCost (calculado)
-  totalCost Decimal @map("total_cost")
-
-  notes  String?
-  userId String  @map("user_id")
-  user   User    @relation(fields: [userId], references: [id])
-
+  totalCost    Decimal                 @map("total_cost")
+  notes        String?
+  userId       String                  @map("user_id")
+  producedAt   DateTime                @default(now()) @map("produced_at")
+  createdAt    DateTime                @default(now()) @map("created_at")
   consumptions ProductionConsumption[]
-
-  producedAt DateTime @default(now()) @map("produced_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  product      Product                 @relation(fields: [productId], references: [id])
+  user         User                    @relation(fields: [userId], references: [id])
 
   @@map("productions")
 }
@@ -223,16 +186,15 @@ model Production {
 model ProductionConsumption {
   id           String     @id @default(uuid())
   productionId String     @map("production_id")
-  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
   ingredientId String     @map("ingredient_id")
-  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
-
   /// Quantidade total consumida neste lote de produção
-  quantityUsed Decimal @map("quantity_used")
+  quantityUsed Decimal    @map("quantity_used")
   /// Custo médio do insumo no momento da produção (snapshot)
-  unitCost     Decimal @map("unit_cost")
+  unitCost     Decimal    @map("unit_cost")
   /// quantityUsed * unitCost
-  totalCost    Decimal @map("total_cost")
+  totalCost    Decimal    @map("total_cost")
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+  production   Production @relation(fields: [productionId], references: [id], onDelete: Cascade)
 
   @@map("production_consumptions")
 }

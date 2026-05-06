@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,6 +38,14 @@ export class ProductionsService {
 
       if (!product) {
         throw new NotFoundException(`Produto ${dto.productId} não encontrado.`);
+      }
+
+      // ── 1.5. Valida se o usuário existe ─────
+      const userExists = await tx.user.findUnique({ where: { id: userId } });
+      if (!userExists) {
+        throw new UnauthorizedException(
+          'Usuário logado inválido ou não encontrado no banco de dados.',
+        );
       }
 
       // ── 2. Carrega a receita ────────────────
@@ -153,18 +162,18 @@ export class ProductionsService {
       return {
         id: production.id,
         product: production.product,
-        quantity: production.quantity,
-        unitCost,
-        totalCost: totalProductionCost,
+        quantity: production.quantity.toNumber(),
+        unitCost: unitCost.toNumber(),
+        totalCost: totalProductionCost.toNumber(),
         notes: production.notes,
         producedBy: production.user.name,
         producedAt: production.producedAt,
         consumptions: production.consumptions.map((c) => ({
           ingredient: c.ingredient.name,
           unit: c.ingredient.unit,
-          quantityUsed: c.quantityUsed,
-          unitCost: c.unitCost,
-          totalCost: c.totalCost,
+          quantityUsed: c.quantityUsed.toNumber(),
+          unitCost: c.unitCost.toNumber(),
+          totalCost: c.totalCost.toNumber(),
         })),
       };
     });
@@ -193,7 +202,13 @@ export class ProductionsService {
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
     return new PageDto(
-      productions.map((p) => ({ ...p, producedBy: p.user.name })),
+      productions.map((p) => ({
+        ...p,
+        producedBy: p.user.name,
+        quantity: p.quantity.toNumber(),
+        unitCost: p.unitCost.toNumber(),
+        totalCost: p.totalCost.toNumber(),
+      })),
       pageMetaDto,
     );
   }
@@ -228,7 +243,20 @@ export class ProductionsService {
 
     return {
       ...production,
-      profitMarginPercent,
+      quantity: production.quantity.toNumber(),
+      unitCost: production.unitCost.toNumber(),
+      totalCost: production.totalCost.toNumber(),
+      consumptions: production.consumptions.map((c) => ({
+        ...c,
+        ingredient: c.ingredient.name,
+        unit: c.ingredient.unit,
+        quantityUsed: c.quantityUsed.toNumber(),
+        unitCost: c.unitCost.toNumber(),
+        totalCost: c.totalCost.toNumber(),
+      })),
+      profitMarginPercent: profitMarginPercent
+        ? profitMarginPercent.toNumber()
+        : null,
     };
   }
 }

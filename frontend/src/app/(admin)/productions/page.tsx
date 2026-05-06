@@ -25,7 +25,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { ProductionService, type ProductionDetail } from "../../../lib/services/productions";
+import {
+  ProductionService,
+  type ProductionDetail,
+} from "../../../lib/services/productions";
 import { ProductService } from "../../../lib/services/products";
 import { RecipeService } from "../../../lib/services/recipes";
 import { UNIT_SHORT } from "../../../lib/services/ingredients";
@@ -33,7 +36,13 @@ import { UNIT_SHORT } from "../../../lib/services/ingredients";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -69,7 +78,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 // ── Production form schema ────────────────────────────────────────────────
 
@@ -116,7 +128,9 @@ function ProductionFormDialog({
   });
 
   // Live cost estimate
-  const estimatedTotalCost = recipe ? recipe.productionCostPerUnit * quantity : 0;
+  const estimatedTotalCost = recipe
+    ? recipe.productionCostPerUnit * quantity
+    : 0;
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
@@ -127,7 +141,7 @@ function ProductionFormDialog({
       }),
     onSuccess: (result) => {
       toast.success(
-        `Produção registrada! ${result.quantity} un — Custo total: ${fmt.format(result.totalCost)}`
+        `Produção registrada! ${result.quantity} un — Custo total: ${fmt.format(result.totalCost)}`,
       );
       qc.invalidateQueries({ queryKey: ["productions"] });
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -223,10 +237,17 @@ function ProductionFormDialog({
                 ) : (
                   <>
                     {recipe?.items.map((item) => (
-                      <div key={item.ingredientId} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{item.ingredientName}</span>
+                      <div
+                        key={item.ingredientId}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground">
+                          {item.ingredientName}
+                        </span>
                         <span className="font-medium tabular-nums text-foreground">
-                          {(item.quantity * quantity).toLocaleString("pt-BR", { maximumFractionDigits: 3 })}{" "}
+                          {(item.quantity * quantity).toLocaleString("pt-BR", {
+                            maximumFractionDigits: 3,
+                          })}{" "}
                           {UNIT_SHORT[item.unit] ?? item.unit}
                         </span>
                       </div>
@@ -268,7 +289,10 @@ function ProductionFormDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { onOpenChange(false); form.reset(); }}
+                onClick={() => {
+                  onOpenChange(false);
+                  form.reset();
+                }}
               >
                 Cancelar
               </Button>
@@ -277,7 +301,9 @@ function ProductionFormDialog({
                 disabled={mutation.isPending}
                 className="bg-primary text-primary-foreground hover:bg-[#A65E2E]"
               >
-                {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {mutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                )}
                 Confirmar produção
               </Button>
             </DialogFooter>
@@ -296,13 +322,14 @@ function ProductionDetailRow({ productionId }: { productionId: string }) {
     queryFn: () => ProductionService.getOne(productionId),
   });
 
-  if (isLoading) return (
-    <TableRow>
-      <TableCell colSpan={7} className="py-3 px-6 bg-muted/10">
-        <Skeleton className="h-16 w-full rounded-md" />
-      </TableCell>
-    </TableRow>
-  );
+  if (isLoading)
+    return (
+      <TableRow>
+        <TableCell colSpan={7} className="py-3 px-6 bg-muted/10">
+          <Skeleton className="h-16 w-full rounded-md" />
+        </TableCell>
+      </TableRow>
+    );
 
   if (!data) return null;
 
@@ -311,12 +338,19 @@ function ProductionDetailRow({ productionId }: { productionId: string }) {
       <TableCell colSpan={7} className="px-6 py-3">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {data.consumptions.map((c, i) => (
-            <div key={i} className="text-xs flex justify-between bg-card rounded p-2 border border-border">
+            <div
+              key={i}
+              className="text-xs flex justify-between bg-card rounded p-2 border border-border"
+            >
               <span className="text-muted-foreground">{c.ingredient}</span>
               <span className="font-medium tabular-nums">
-                {c.quantityUsed.toLocaleString("pt-BR", { maximumFractionDigits: 3 })}{" "}
+                {c.quantityUsed.toLocaleString("pt-BR", {
+                  maximumFractionDigits: 3,
+                })}{" "}
                 {UNIT_SHORT[c.unit] ?? c.unit}
-                <span className="text-muted-foreground ml-1">({fmt.format(c.totalCost)})</span>
+                <span className="text-muted-foreground ml-1">
+                  ({fmt.format(c.totalCost)})
+                </span>
               </span>
             </div>
           ))}
@@ -372,9 +406,13 @@ export default function ProductionsPage() {
       {/* Table */}
       <Card className="border-border bg-card shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-bold">Histórico de Produções</CardTitle>
+          <CardTitle className="text-base font-bold">
+            Histórico de Produções
+          </CardTitle>
           <CardDescription>
-            {meta ? `${meta.itemCount} lote${meta.itemCount !== 1 ? "s" : ""} registrado${meta.itemCount !== 1 ? "s" : ""}` : ""}
+            {meta
+              ? `${meta.itemCount} lote${meta.itemCount !== 1 ? "s" : ""} registrado${meta.itemCount !== 1 ? "s" : ""}`
+              : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -403,7 +441,10 @@ export default function ProductionsPage() {
                 ))
               ) : productions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-40 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={7}
+                    className="h-40 text-center text-muted-foreground"
+                  >
                     <div className="flex flex-col items-center gap-2">
                       <Factory className="w-8 h-8 opacity-30" />
                       <p>Nenhuma produção registrada.</p>
@@ -450,13 +491,20 @@ export default function ProductionsPage() {
                         {fmt.format(prod.totalCost)}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", { locale: ptBR })}
+                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", {
+                          locale: ptBR,
+                        })}
                       </TableCell>
                       <TableCell className="pr-6 text-sm text-muted-foreground">
                         {prod.producedBy ?? "—"}
                       </TableCell>
                     </TableRow>,
-                    isExpanded ? <ProductionDetailRow key={`${prod.id}-detail`} productionId={prod.id} /> : null,
+                    isExpanded ? (
+                      <ProductionDetailRow
+                        key={`${prod.id}-detail`}
+                        productionId={prod.id}
+                      />
+                    ) : null,
                   ].filter(Boolean);
                 })
               )}

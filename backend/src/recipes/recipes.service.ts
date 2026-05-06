@@ -80,14 +80,14 @@ export class RecipesService {
       return {
         productId,
         productName: product.name,
-        productionCostPerUnit: productionCost,
+        productionCostPerUnit: productionCost.toNumber(),
         items: recipeItems.map((item) => ({
           ingredientId: item.ingredientId,
           ingredientName: item.ingredient.name,
           unit: item.ingredient.unit,
-          quantity: item.quantity,
-          unitCost: item.ingredient.averageCost,
-          itemCost: item.quantity.mul(item.ingredient.averageCost),
+          quantity: item.quantity.toNumber(),
+          unitCost: item.ingredient.averageCost.toNumber(),
+          itemCost: item.quantity.mul(item.ingredient.averageCost).toNumber(),
         })),
       };
     });
@@ -139,17 +139,17 @@ export class RecipesService {
       productId,
       productName: product.name,
       isManufactured: product.isManufactured,
-      productionCostPerUnit,
-      salePrice: product.salePrice,
-      profitMargin,
+      productionCostPerUnit: productionCostPerUnit.toNumber(),
+      salePrice: product.salePrice ? product.salePrice.toNumber() : null,
+      profitMargin: profitMargin ? profitMargin.toNumber() : null,
       items: items.map((item) => ({
         ingredientId: item.ingredientId,
         ingredientName: item.ingredient.name,
         unit: item.ingredient.unit,
-        quantity: item.quantity,
-        currentStock: item.ingredient.currentStock,
-        unitCost: item.ingredient.averageCost,
-        itemCost: item.quantity.mul(item.ingredient.averageCost),
+        quantity: item.quantity.toNumber(),
+        currentStock: item.ingredient.currentStock.toNumber(),
+        unitCost: item.ingredient.averageCost.toNumber(),
+        itemCost: item.quantity.mul(item.ingredient.averageCost).toNumber(),
       })),
     };
   }
@@ -184,7 +184,7 @@ export class RecipesService {
       data: { costPrice: newCost },
     });
 
-    return { productId, newCostPrice: newCost };
+    return { productId, newCostPrice: newCost.toNumber() };
   }
 
   // ──────────────────────────────────────────
