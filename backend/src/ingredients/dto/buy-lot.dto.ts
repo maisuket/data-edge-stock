@@ -19,7 +19,8 @@ export class BuyLotDto {
 
   @ApiProperty({
     example: 50,
-    description: 'Valor total da compra (R$). O custo unitário é calculado automaticamente.',
+    description:
+      'Valor total da compra (R$). O custo unitário é calculado automaticamente.',
   })
   @IsNumber()
   @Min(0)

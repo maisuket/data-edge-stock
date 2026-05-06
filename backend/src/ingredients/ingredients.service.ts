@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RecipesService } from '../recipes/recipes.service';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
@@ -39,9 +40,7 @@ export class IngredientsService {
   async findAll(pageOptionsDto: PageOptionsDto) {
     const { q, skip, take, order } = pageOptionsDto;
 
-    const where = q
-      ? { name: { contains: q } }
-      : {};
+    const where = q ? { name: { contains: q } } : {};
 
     const [ingredients, itemCount] = await this.prisma.$transaction([
       this.prisma.ingredient.findMany({
@@ -120,19 +119,22 @@ export class IngredientsService {
       }
 
       // 1. Custo unitário do lote
-      const unitCost = dto.totalCost / dto.quantity;
+      const qtyDecimal = new Prisma.Decimal(dto.quantity);
+      const totalCostDecimal = new Prisma.Decimal(dto.totalCost);
+      const unitCost = totalCostDecimal.div(qtyDecimal);
 
       // 2. Custo médio ponderado
       //    CMP = (EstoqueAtual * CustoMédioAtual + QtdEntrada * CustoUnitárioLote)
       //          / (EstoqueAtual + QtdEntrada)
-      const currentTotalValue = ingredient.currentStock * ingredient.averageCost;
-      const incomingTotalValue = dto.quantity * unitCost;
-      const newTotalStock = ingredient.currentStock + dto.quantity;
+      const currentTotalValue = ingredient.currentStock.mul(
+        ingredient.averageCost,
+      );
+      const incomingTotalValue = qtyDecimal.mul(unitCost);
+      const newTotalStock = ingredient.currentStock.add(qtyDecimal);
 
-      const newAverageCost =
-        newTotalStock > 0
-          ? (currentTotalValue + incomingTotalValue) / newTotalStock
-          : unitCost;
+      const newAverageCost = newTotalStock.gt(0)
+        ? currentTotalValue.add(incomingTotalValue).div(newTotalStock)
+        : unitCost;
 
       // 3. Número do lote — gerado automaticamente se não fornecido
       const lotNumber =
@@ -172,7 +174,7 @@ export class IngredientsService {
         ingredient: {
           id: ingredientId,
           newStock: newTotalStock,
-          newAverageCost: Math.round(newAverageCost * 10000) / 10000,
+          newAverageCost: newAverageCost,
         },
       };
     });
@@ -184,7 +186,9 @@ export class IngredientsService {
     return result;
   }
 
-  private async refreshAffectedProductCosts(ingredientId: string): Promise<void> {
+  private async refreshAffectedProductCosts(
+    ingredientId: string,
+  ): Promise<void> {
     const recipeItems = await this.prisma.recipeItem.findMany({
       where: { ingredientId },
       select: { productId: true },
@@ -193,11 +197,13 @@ export class IngredientsService {
 
     await Promise.allSettled(
       recipeItems.map(({ productId }) =>
-        this.recipesService.refreshProductCost(productId).catch((err: Error) => {
-          this.logger.warn(
-            `Falha ao recalcular custo do produto ${productId} após compra de lote: ${err.message}`,
-          );
-        }),
+        this.recipesService
+          .refreshProductCost(productId)
+          .catch((err: Error) => {
+            this.logger.warn(
+              `Falha ao recalcular custo do produto ${productId} após compra de lote: ${err.message}`,
+            );
+          }),
       ),
     );
   }
@@ -212,7 +218,13 @@ export class IngredientsService {
         currentStock: { lte: this.prisma.ingredient.fields.minStock },
       },
       orderBy: { currentStock: 'asc' },
-      select: { id: true, name: true, unit: true, currentStock: true, minStock: true },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        currentStock: true,
+        minStock: true,
+      },
     });
   }
 }

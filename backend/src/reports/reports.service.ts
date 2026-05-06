@@ -56,9 +56,9 @@ export class ReportsService {
         name: p.name,
         category: p.category,
         internalCode: p.internalCode,
-        currentStock: p.currentStock,
-        costPrice: p.costPrice,
-        totalValue: p.currentStock * p.costPrice,
+        currentStock: p.currentStock.toNumber(),
+        costPrice: p.costPrice.toNumber(),
+        totalValue: p.currentStock.mul(p.costPrice).toNumber(),
       });
     });
 
@@ -112,7 +112,7 @@ export class ReportsService {
                 p.category,
                 p.currentStock.toString(),
                 `R$ ${p.costPrice.toFixed(2)}`,
-                `R$ ${(p.currentStock * p.costPrice).toFixed(2)}`,
+                `R$ ${p.currentStock.mul(p.costPrice).toFixed(2)}`,
               ]),
             ],
           },

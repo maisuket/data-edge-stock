@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { CreateStockMovementDto } from './dto/create-stock-movement.dto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MovementType } from './enums/movement-type.enum';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
@@ -30,46 +31,52 @@ export class StockMovementsService {
       const product = await tx.product.findUnique({ where: { id: productId } });
       if (!product) throw new NotFoundException('Produto não encontrado.');
 
-      let newStock = product.currentStock;
-      let newCostPrice = product.costPrice;
+      let newStock = new Prisma.Decimal(product.currentStock);
+      let newCostPrice = new Prisma.Decimal(product.costPrice);
+      const qtyDecimal = new Prisma.Decimal(quantity);
 
       switch (type) {
         case MovementType.ENTRY: {
-          if (quantity <= 0) {
-            throw new BadRequestException('Quantidade de entrada deve ser positiva.');
+          if (qtyDecimal.lte(0)) {
+            throw new BadRequestException(
+              'Quantidade de entrada deve ser positiva.',
+            );
           }
           // Custo médio ponderado: ((EstoqueAtual * CustoAtual) + (QtdEntrada * CustoEntrada)) / (EstoqueAtual + QtdEntrada)
           if (entryPrice !== undefined && entryPrice !== null) {
-            const currentTotalValue = product.currentStock * product.costPrice;
-            const entryTotalValue = quantity * entryPrice;
-            const totalQuantity = product.currentStock + quantity;
-            newCostPrice =
-              totalQuantity > 0
-                ? (currentTotalValue + entryTotalValue) / totalQuantity
-                : entryPrice;
+            const entryPriceDecimal = new Prisma.Decimal(entryPrice);
+            const currentTotalValue = newStock.mul(newCostPrice);
+            const entryTotalValue = qtyDecimal.mul(entryPriceDecimal);
+            const totalQuantity = newStock.add(qtyDecimal);
+
+            newCostPrice = totalQuantity.gt(0)
+              ? currentTotalValue.add(entryTotalValue).div(totalQuantity)
+              : entryPriceDecimal;
           }
-          newStock += quantity;
+          newStock = newStock.add(qtyDecimal);
           break;
         }
 
         case MovementType.EXIT: {
-          if (quantity <= 0) {
-            throw new BadRequestException('Quantidade de saída deve ser positiva.');
+          if (qtyDecimal.lte(0)) {
+            throw new BadRequestException(
+              'Quantidade de saída deve ser positiva.',
+            );
           }
           // Na saída, o custo médio NÃO muda (princípio contábil)
-          if (product.currentStock < quantity) {
+          if (newStock.lt(qtyDecimal)) {
             throw new BadRequestException('Estoque insuficiente.');
           }
-          newStock -= quantity;
+          newStock = newStock.sub(qtyDecimal);
           break;
         }
 
         case MovementType.ADJUSTMENT: {
           // Ajuste pode ser positivo (acréscimo) ou negativo (redução de inventário)
-          const resultingStock = product.currentStock + quantity;
-          if (resultingStock < 0) {
+          const resultingStock = newStock.add(qtyDecimal);
+          if (resultingStock.lt(0)) {
             throw new BadRequestException(
-              `Ajuste resultaria em estoque negativo (${resultingStock}).`,
+              `Ajuste resultaria em estoque negativo (${resultingStock.toNumber()}).`,
             );
           }
           newStock = resultingStock;
@@ -97,7 +104,10 @@ export class StockMovementsService {
           userId,
           batch,
           expiryDate: expiryDate ? new Date(expiryDate) : null,
-          unitValue: entryPrice ?? product.costPrice,
+          unitValue:
+            entryPrice !== undefined && entryPrice !== null
+              ? new Prisma.Decimal(entryPrice)
+              : product.costPrice,
           supplierId: type === MovementType.ENTRY ? (supplierId ?? null) : null,
         },
       });

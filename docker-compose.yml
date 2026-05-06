@@ -1,26 +1,16 @@
 services:
-  backend:
-    build: ./backend
-    container_name: stock-backend
+  db:
+    image: postgres:15-alpine
+    container_name: stock-db
     ports:
-      - "3001:3001"
-    volumes:
-      - ./backend/prisma/dev.db:/app/prisma/dev.db
-    env_file:
-      - ./backend/.env
+      - "5432:5432"
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - HOST=0.0.0.0
-      - DATABASE_URL=file:./dev.db
-      # JWT_SECRET e ALLOWED_ORIGINS devem vir do arquivo .env (não commitar!)
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: stock_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     restart: always
 
-  frontend:
-    build: ./frontend
-    container_name: stock-frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    restart: always
+volumes:
+  postgres_data:

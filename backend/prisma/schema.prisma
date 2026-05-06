@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -53,10 +53,10 @@ model Product {
   internalCode  String   @unique @map("internal_code")
   barcode       String   @unique
   unit          String
-  costPrice     Float    @map("cost_price")
-  salePrice     Float?   @map("sale_price")
-  currentStock  Float    @map("current_stock")
-  minStock      Float    @map("min_stock")
+  costPrice     Decimal  @map("cost_price")
+  salePrice     Decimal? @map("sale_price")
+  currentStock  Decimal  @map("current_stock")
+  minStock      Decimal  @map("min_stock")
   location      String?
 
   // Flag: true = produto fabricado internamente (tem receita)
@@ -82,11 +82,11 @@ model StockMovement {
   product     Product   @relation(fields: [productId], references: [id])
   type        String
   batch       String?
-  quantity    Float
+  quantity    Decimal
   expiryDate  DateTime? @map("expiry_date")
-  unitValue   Float?    @map("unit_value")
-  stockBefore Float     @map("stock_before")
-  stockAfter  Float     @map("stock_after")
+  unitValue   Decimal?  @map("unit_value")
+  stockBefore Decimal   @map("stock_before")
+  stockAfter  Decimal   @map("stock_after")
   description String?
   userId      String    @map("user_id")
   user        User      @relation(fields: [userId], references: [id])
@@ -129,10 +129,10 @@ model Ingredient {
   name         String
   /// Unidade de medida: LITER | ML | KG | G | UNIT
   unit         String
-  currentStock Float   @default(0) @map("current_stock")
+  currentStock Decimal @default(0) @map("current_stock")
   /// Custo médio ponderado calculado automaticamente a cada compra
-  averageCost  Float   @default(0) @map("average_cost")
-  minStock     Float   @default(0) @map("min_stock")
+  averageCost  Decimal @default(0) @map("average_cost")
+  minStock     Decimal @default(0) @map("min_stock")
 
   lots                   IngredientLot[]
   recipeItems            RecipeItem[]
@@ -152,13 +152,13 @@ model IngredientLot {
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   /// Quantidade comprada (em unidade do insumo)
-  quantity     Float
+  quantity     Decimal
   /// Custo total da nota/compra
-  totalCost    Float      @map("total_cost")
+  totalCost    Decimal    @map("total_cost")
   /// Custo por unidade = totalCost / quantity (calculado na service)
-  unitCost     Float      @map("unit_cost")
+  unitCost     Decimal    @map("unit_cost")
   /// Quantidade ainda disponível neste lote (para FIFO)
-  remainingQty Float      @map("remaining_qty")
+  remainingQty Decimal    @map("remaining_qty")
 
   purchasedAt DateTime  @default(now()) @map("purchased_at")
   expiresAt   DateTime? @map("expires_at")
@@ -184,7 +184,7 @@ model RecipeItem {
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   /// Quantidade do insumo para produzir 1 unidade do produto
-  quantity Float
+  quantity Decimal
 
   @@unique([productId, ingredientId])
   @@map("recipe_items")
@@ -201,11 +201,11 @@ model Production {
   product   Product @relation(fields: [productId], references: [id])
 
   /// Quantidade de unidades produzidas
-  quantity  Float
+  quantity  Decimal
   /// Custo por unidade produzida (calculado)
-  unitCost  Float   @map("unit_cost")
+  unitCost  Decimal @map("unit_cost")
   /// Custo total do lote = quantity * unitCost (calculado)
-  totalCost Float   @map("total_cost")
+  totalCost Decimal @map("total_cost")
 
   notes  String?
   userId String  @map("user_id")
@@ -228,11 +228,11 @@ model ProductionConsumption {
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   /// Quantidade total consumida neste lote de produção
-  quantityUsed Float  @map("quantity_used")
+  quantityUsed Decimal @map("quantity_used")
   /// Custo médio do insumo no momento da produção (snapshot)
-  unitCost     Float  @map("unit_cost")
+  unitCost     Decimal @map("unit_cost")
   /// quantityUsed * unitCost
-  totalCost    Float  @map("total_cost")
+  totalCost    Decimal @map("total_cost")
 
   @@map("production_consumptions")
 }

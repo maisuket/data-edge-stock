@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
@@ -63,13 +64,14 @@ export class ProductionsService {
 
       // ── 3. Valida estoque de cada insumo ───
       const insufficientIngredients: string[] = [];
+      const qtyDecimal = new Prisma.Decimal(dto.quantity);
 
       for (const item of recipeItems) {
-        const required = item.quantity * dto.quantity;
-        if (item.ingredient.currentStock < required) {
+        const required = item.quantity.mul(qtyDecimal);
+        if (item.ingredient.currentStock.lt(required)) {
           insufficientIngredients.push(
-            `"${item.ingredient.name}": necessário ${required} ${item.ingredient.unit}, ` +
-              `disponível ${item.ingredient.currentStock} ${item.ingredient.unit}`,
+            `"${item.ingredient.name}": necessário ${required.toNumber()} ${item.ingredient.unit}, ` +
+              `disponível ${item.ingredient.currentStock.toNumber()} ${item.ingredient.unit}`,
           );
         }
       }
@@ -82,18 +84,18 @@ export class ProductionsService {
       }
 
       // ── 4. Calcula custo total da produção ─
-      let totalProductionCost = 0;
+      let totalProductionCost = new Prisma.Decimal(0);
       const consumptions: {
         ingredientId: string;
-        quantityUsed: number;
-        unitCost: number;
-        totalCost: number;
+        quantityUsed: Prisma.Decimal;
+        unitCost: Prisma.Decimal;
+        totalCost: Prisma.Decimal;
       }[] = [];
 
       for (const item of recipeItems) {
-        const quantityUsed = item.quantity * dto.quantity;
-        const itemTotalCost = quantityUsed * item.ingredient.averageCost;
-        totalProductionCost += itemTotalCost;
+        const quantityUsed = item.quantity.mul(qtyDecimal);
+        const itemTotalCost = quantityUsed.mul(item.ingredient.averageCost);
+        totalProductionCost = totalProductionCost.add(itemTotalCost);
 
         consumptions.push({
           ingredientId: item.ingredientId,
@@ -103,13 +105,14 @@ export class ProductionsService {
         });
       }
 
-      const unitCost =
-        dto.quantity > 0 ? totalProductionCost / dto.quantity : 0;
+      const unitCost = qtyDecimal.gt(0)
+        ? totalProductionCost.div(qtyDecimal)
+        : new Prisma.Decimal(0);
 
       // ── 5. Deduz estoque dos insumos ───────
       await Promise.all(
         recipeItems.map((item) => {
-          const consumed = item.quantity * dto.quantity;
+          const consumed = item.quantity.mul(qtyDecimal);
           return tx.ingredient.update({
             where: { id: item.ingredientId },
             data: { currentStock: { decrement: consumed } },
@@ -151,8 +154,8 @@ export class ProductionsService {
         id: production.id,
         product: production.product,
         quantity: production.quantity,
-        unitCost: Math.round(unitCost * 10000) / 10000,
-        totalCost: Math.round(totalProductionCost * 10000) / 10000,
+        unitCost,
+        totalCost: totalProductionCost,
         notes: production.notes,
         producedBy: production.user.name,
         producedAt: production.producedAt,
@@ -215,18 +218,17 @@ export class ProductionsService {
 
     // Adiciona margem de lucro se o produto tiver preço de venda
     const profitMarginPercent =
-      production.product.salePrice && production.unitCost > 0
-        ? ((production.product.salePrice - production.unitCost) /
-            production.product.salePrice) *
-          100
+      production.product.salePrice && production.unitCost.gt(0)
+        ? production.product.salePrice
+            .sub(production.unitCost)
+            .div(production.product.salePrice)
+            .mul(100)
+            .toDecimalPlaces(2)
         : null;
 
     return {
       ...production,
-      profitMarginPercent:
-        profitMarginPercent !== null
-          ? Math.round(profitMarginPercent * 100) / 100
-          : null,
+      profitMarginPercent,
     };
   }
 }

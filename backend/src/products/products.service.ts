@@ -18,11 +18,16 @@ export class ProductsService {
     try {
       const uploadsDir = path.resolve(process.cwd(), 'uploads');
       const resolved = path.resolve(process.cwd(), filePath);
-      if (resolved.startsWith(uploadsDir + path.sep) && fs.existsSync(resolved)) {
+      if (
+        resolved.startsWith(uploadsDir + path.sep) &&
+        fs.existsSync(resolved)
+      ) {
         fs.unlinkSync(resolved);
       }
     } catch (err) {
-      this.logger.warn(`Falha ao remover arquivo físico: ${filePath} — ${(err as Error).message}`);
+      this.logger.warn(
+        `Falha ao remover arquivo físico: ${filePath} — ${(err as Error).message}`,
+      );
     }
   }
 
@@ -171,7 +176,7 @@ export class ProductsService {
       this.prisma.product.count(),
       this.prisma.product.count({ where: productLowStockWhere }),
       this.prisma.$queryRaw<{ totalValue: number }[]>`
-        SELECT COALESCE(SUM(current_stock * cost_price), 0) as totalValue FROM products
+        SELECT COALESCE(SUM(current_stock * cost_price), 0)::FLOAT as "totalValue" FROM products
       `,
       this.prisma.product.findMany({
         where: productLowStockWhere,
@@ -182,20 +187,19 @@ export class ProductsService {
       this.prisma.ingredient.count(),
       this.prisma.ingredient.count({ where: ingredientLowStockWhere }),
       this.prisma.$queryRaw<{ totalValue: number }[]>`
-        SELECT COALESCE(SUM(current_stock * average_cost), 0) as totalValue FROM ingredients
+        SELECT COALESCE(SUM(current_stock * average_cost), 0)::FLOAT as "totalValue" FROM ingredients
       `,
       this.prisma.production.count({
         where: { producedAt: { gte: todayStart } },
       }),
       this.prisma.$queryRaw<{ totalCost: number }[]>`
-        SELECT COALESCE(SUM(total_cost), 0) as totalCost
+        SELECT COALESCE(SUM(total_cost), 0)::FLOAT as "totalCost"
         FROM productions
         WHERE produced_at >= ${todayStart}
       `,
       this.prisma.production.findMany({
         take: 5,
         orderBy: { producedAt: 'desc' },
-        include: { product: { select: { name: true } } },
         select: {
           id: true,
           quantity: true,

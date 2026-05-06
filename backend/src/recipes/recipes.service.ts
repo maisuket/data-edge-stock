@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SetRecipeDto } from './dto/set-recipe.dto';
 
@@ -86,7 +87,7 @@ export class RecipesService {
           unit: item.ingredient.unit,
           quantity: item.quantity,
           unitCost: item.ingredient.averageCost,
-          itemCost: item.quantity * item.ingredient.averageCost,
+          itemCost: item.quantity.mul(item.ingredient.averageCost),
         })),
       };
     });
@@ -109,19 +110,29 @@ export class RecipesService {
       where: { productId },
       include: {
         ingredient: {
-          select: { id: true, name: true, unit: true, averageCost: true, currentStock: true },
+          select: {
+            id: true,
+            name: true,
+            unit: true,
+            averageCost: true,
+            currentStock: true,
+          },
         },
       },
     });
 
     const productionCostPerUnit = items.reduce(
-      (sum, item) => sum + item.quantity * item.ingredient.averageCost,
-      0,
+      (sum, item) => sum.add(item.quantity.mul(item.ingredient.averageCost)),
+      new Prisma.Decimal(0),
     );
 
     const profitMargin =
-      product.salePrice && productionCostPerUnit > 0
-        ? ((product.salePrice - productionCostPerUnit) / product.salePrice) * 100
+      product.salePrice && productionCostPerUnit.gt(0)
+        ? product.salePrice
+            .sub(productionCostPerUnit)
+            .div(product.salePrice)
+            .mul(100)
+            .toDecimalPlaces(2)
         : null;
 
     return {
@@ -130,7 +141,7 @@ export class RecipesService {
       isManufactured: product.isManufactured,
       productionCostPerUnit,
       salePrice: product.salePrice,
-      profitMargin: profitMargin !== null ? Math.round(profitMargin * 100) / 100 : null,
+      profitMargin,
       items: items.map((item) => ({
         ingredientId: item.ingredientId,
         ingredientName: item.ingredient.name,
@@ -138,7 +149,7 @@ export class RecipesService {
         quantity: item.quantity,
         currentStock: item.ingredient.currentStock,
         unitCost: item.ingredient.averageCost,
-        itemCost: item.quantity * item.ingredient.averageCost,
+        itemCost: item.quantity.mul(item.ingredient.averageCost),
       })),
     };
   }
@@ -164,8 +175,8 @@ export class RecipesService {
     }
 
     const newCost = items.reduce(
-      (sum, item) => sum + item.quantity * item.ingredient.averageCost,
-      0,
+      (sum, item) => sum.add(item.quantity.mul(item.ingredient.averageCost)),
+      new Prisma.Decimal(0),
     );
 
     await this.prisma.product.update({
@@ -173,7 +184,7 @@ export class RecipesService {
       data: { costPrice: newCost },
     });
 
-    return { productId, newCostPrice: Math.round(newCost * 10000) / 10000 };
+    return { productId, newCostPrice: newCost };
   }
 
   // ──────────────────────────────────────────
@@ -182,13 +193,14 @@ export class RecipesService {
 
   private calculateCostFromIngredients(
     items: { ingredientId: string; quantity: number }[],
-    ingredients: { id: string; averageCost: number }[],
-  ): number {
+    ingredients: { id: string; averageCost: Prisma.Decimal }[],
+  ): Prisma.Decimal {
     const costMap = new Map(ingredients.map((i) => [i.id, i.averageCost]));
     const total = items.reduce((sum, item) => {
-      const cost = costMap.get(item.ingredientId) ?? 0;
-      return sum + item.quantity * cost;
-    }, 0);
-    return Math.round(total * 10000) / 10000;
+      const cost = costMap.get(item.ingredientId) ?? new Prisma.Decimal(0);
+      const qty = new Prisma.Decimal(item.quantity);
+      return sum.add(qty.mul(cost));
+    }, new Prisma.Decimal(0));
+    return total;
   }
 }
