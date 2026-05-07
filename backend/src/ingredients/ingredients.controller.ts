@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { BuyLotDto } from './dto/buy-lot.dto';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
+import { BuyBulkDto } from './dto/buy-bulk.dto';
 import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { IngredientsService } from './ingredients.service';
 
@@ -49,6 +50,13 @@ export class IngredientsController {
   @ApiOperation({ summary: 'Listar insumos com estoque abaixo do mínimo' })
   getLowStock() {
     return this.ingredientsService.getLowStockIngredients();
+  }
+
+  @Get('expiring')
+  @ApiOperation({ summary: 'Listar lotes próximos do vencimento' })
+  getExpiringLots(@Query('days') days?: string) {
+    const daysNum = days ? parseInt(days, 10) : 30;
+    return this.ingredientsService.getExpiringLots(daysNum);
   }
 
   @Get(':id')
@@ -85,5 +93,19 @@ export class IngredientsController {
   })
   buyLot(@Param('id') id: string, @Body() dto: BuyLotDto) {
     return this.ingredientsService.buyLot(id, dto);
+  }
+
+  @Post('bulk-purchase')
+  @ApiOperation({
+    summary: 'Registrar compra em lote de múltiplos insumos',
+    description:
+      'Registra a compra de múltiplos insumos em uma única transação, atualizando o estoque e gerando um lote para cada item comprado.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Lotes registrados e estoques atualizados.',
+  })
+  buyBulk(@Body() dto: BuyBulkDto) {
+    return this.ingredientsService.buyBulk(dto);
   }
 }

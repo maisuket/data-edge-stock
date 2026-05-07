@@ -30,6 +30,7 @@ export interface DashboardStats {
   productionsTodayCount: number;
   productionsTodayCost: number;
   recentProductions: RecentProduction[];
+  productionsTrend?: { date: string; value: number }[];
 }
 
 export interface HealthStatus {

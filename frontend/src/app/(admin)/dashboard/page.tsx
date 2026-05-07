@@ -12,6 +12,7 @@ import {
   Server,
   Cpu,
   TrendingDown,
+  TrendingUp,
   CheckCircle2,
   XCircle,
   Loader2,
@@ -19,6 +20,15 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 import { DashboardService } from "../../../lib/services/dashboard";
 
@@ -40,6 +50,17 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+// Dados fictícios para o gráfico até integrarmos com o backend
+const mockChartData = [
+  { date: "Seg", value: 320 },
+  { date: "Ter", value: 450 },
+  { date: "Qua", value: 210 },
+  { date: "Qui", value: 550 },
+  { date: "Sex", value: 700 },
+  { date: "Sáb", value: 400 },
+  { date: "Dom", value: 650 },
+];
+
 // ── KPI Card ────────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -59,12 +80,12 @@ function StatCard({
 }) {
   return (
     <Card
-      className={`hover:shadow-md transition-all border-border bg-card ${alert ? "border-destructive/40" : ""}`}
+      className={`hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-border bg-card ${alert ? "border-destructive/40 bg-destructive/5" : ""}`}
     >
       <CardContent className="p-6">
         <div className="flex items-center justify-between pb-2">
-          <div className={`p-2 rounded-lg ${colorClass}`}>
-            <Icon className="h-5 w-5" />
+          <div className={`p-2.5 rounded-xl ${colorClass}`}>
+            <Icon className="h-6 w-6" />
           </div>
           {alert && (
             <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
@@ -214,7 +235,7 @@ export default function DashboardPage() {
   const apiStatus = health ? "ok" : healthLoading ? "loading" : "error";
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -229,7 +250,7 @@ export default function DashboardPage() {
           variant="outline"
           onClick={handleRefresh}
           disabled={isFetching}
-          className="gap-2 bg-background hover:bg-muted"
+          className="gap-2 bg-background hover:bg-muted rounded-xl"
         >
           <RefreshCw
             className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
@@ -238,231 +259,292 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* KPIs — Produtos */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          Produtos
-        </p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Produtos Cadastrados"
-            value={s.totalProducts}
-            icon={Package}
-            colorClass="bg-amber-500/20 text-amber-700 dark:text-amber-500"
-            subtitle="Itens no catálogo"
-          />
-          <StatCard
-            title="Valor em Estoque"
-            value={fmt.format(s.stockValue)}
-            icon={DollarSign}
-            colorClass="bg-[#4CAF50]/10 text-[#4CAF50]"
-            subtitle="Custo total acumulado (produtos)"
-          />
-          <StatCard
-            title="Produtos c/ Estoque Baixo"
-            value={s.lowStockCount}
-            icon={AlertTriangle}
-            colorClass={
-              s.lowStockCount > 0
-                ? "bg-red-500/10 text-red-500"
-                : "bg-muted text-muted-foreground"
-            }
-            subtitle="Abaixo do mínimo definido"
-            alert={s.lowStockCount > 0}
-          />
-          <StatCard
-            title="Produções Hoje"
-            value={s.productionsTodayCount}
-            icon={Factory}
-            colorClass="bg-orange-500/20 text-orange-700 dark:text-orange-500"
-            subtitle={`Custo total: ${fmt.format(s.productionsTodayCost)}`}
-          />
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna Principal (Esquerda) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* KPIs */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <StatCard
+              title="Produtos Cadastrados"
+              value={s.totalProducts}
+              icon={Package}
+              colorClass="bg-amber-500/20 text-amber-700 dark:text-amber-500"
+              subtitle="Itens no catálogo"
+            />
+            <StatCard
+              title="Valor em Estoque (Produtos)"
+              value={fmt.format(s.stockValue)}
+              icon={DollarSign}
+              colorClass="bg-emerald-500/10 text-emerald-500"
+              subtitle="Custo total acumulado"
+            />
+            <StatCard
+              title="Insumos Cadastrados"
+              value={s.totalIngredients}
+              icon={Beaker}
+              colorClass="bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"
+              subtitle="Matérias-primas no sistema"
+            />
+            <StatCard
+              title="Valor em Estoque (Insumos)"
+              value={fmt.format(s.ingredientsValue)}
+              icon={DollarSign}
+              colorClass="bg-amber-600/10 text-amber-600"
+              subtitle="Custo médio × estoque atual"
+            />
+          </div>
 
-      {/* KPIs — Insumos */}
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-          Insumos (Matérias-primas)
-        </p>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="Insumos Cadastrados"
-            value={s.totalIngredients}
-            icon={Beaker}
-            colorClass="bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"
-            subtitle="Matérias-primas no sistema"
-          />
-          <StatCard
-            title="Valor em Insumos"
-            value={fmt.format(s.ingredientsValue)}
-            icon={DollarSign}
-            colorClass="bg-amber-600/10 text-amber-600"
-            subtitle="Custo médio × estoque atual"
-          />
-          <StatCard
-            title="Insumos c/ Estoque Baixo"
-            value={s.ingredientsLowStockCount}
-            icon={TrendingDown}
-            colorClass={
-              s.ingredientsLowStockCount > 0
-                ? "bg-[#E53935]/10 text-[#E53935]"
-                : "bg-muted text-muted-foreground"
-            }
-            subtitle="Precisam de reposição"
-            alert={s.ingredientsLowStockCount > 0}
-          />
-        </div>
-      </div>
-
-      {/* Painel inferior */}
-      <div className="grid gap-4 lg:grid-cols-7">
-        {/* Produções recentes */}
-        <Card className="col-span-4 border-border shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Factory className="w-4 h-4 text-accent" />
-              Produções Recentes
-            </CardTitle>
-            <CardDescription>
-              Últimos 5 lotes registrados no sistema.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            {s.recentProductions.length === 0 ? (
-              <div className="px-6 py-8 text-center text-muted-foreground text-sm">
-                Nenhuma produção registrada ainda.
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {s.recentProductions.map((prod) => (
-                  <div
-                    key={prod.id}
-                    className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors"
+          {/* Gráfico de Produções (Últimos 7 dias) */}
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-accent" />
+                Evolução de Produções (Últimos 7 dias)
+              </CardTitle>
+              <CardDescription>
+                Valor total em R$ das produções realizadas na última semana.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px] w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={s.productionsTrend || mockChartData}
+                    margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
                   >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">
-                        {prod.product.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", {
-                          locale: ptBR,
-                        })}
-                        {" · "}
-                        {prod.quantity.toLocaleString("pt-BR")} un
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-bold tabular-nums text-foreground">
-                        {fmt.format(prod.totalCost)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {fmt.format(prod.unitCost)}/un
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="hsl(var(--muted-foreground)/0.2)"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `R$ ${value}`}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        borderColor: "hsl(var(--border))",
+                        borderRadius: "8px",
+                      }}
+                      itemStyle={{ color: "hsl(var(--foreground))" }}
+                      formatter={(value: number) => [
+                        fmt.format(value),
+                        "Produzido",
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={3}
+                      dot={{
+                        r: 4,
+                        fill: "hsl(var(--background))",
+                        stroke: "hsl(var(--primary))",
+                        strokeWidth: 2,
+                      }}
+                      activeDot={{
+                        r: 6,
+                        fill: "hsl(var(--primary))",
+                        stroke: "hsl(var(--background))",
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Status do sistema */}
-        <Card className="col-span-3 border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-              Status do Sistema
-            </CardTitle>
-            <CardDescription>
-              Monitoramento em tempo real via /health.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <HealthItem
-              label="Banco de Dados"
-              icon={Database}
-              status={dbStatus}
-              detail={
-                health?.info?.database?.status === "up"
-                  ? "Conectado"
-                  : health
-                    ? "Falha na conexão"
-                    : undefined
-              }
-            />
-            <HealthItem
-              label="Memória (Heap)"
-              icon={Cpu}
-              status={memStatus}
-              detail={
-                health?.info?.memory_heap?.status === "up"
-                  ? "Dentro do limite (<150 MB)"
-                  : health
-                    ? "Limite excedido"
-                    : undefined
-              }
-            />
-            <HealthItem
-              label="API Backend"
-              icon={Server}
-              status={apiStatus}
-              detail={health ? "Online" : undefined}
-            />
-
-            <div className="pt-2 flex justify-center">
-              {healthLoading ? (
-                <Badge
-                  variant="outline"
-                  className="gap-1 text-xs text-muted-foreground"
-                >
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Verificando...
-                </Badge>
-              ) : health?.status === "ok" ? (
-                <Badge className="gap-1 text-xs bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
-                  SISTEMA OPERACIONAL
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="gap-1 text-xs">
-                  <XCircle className="w-3 h-3" />
-                  ATENÇÃO — VERIFICAR
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alertas de produtos críticos */}
-      {s.criticalItems.length > 0 && (
-        <Card className="border-[#FFB300]/40 bg-[#FFB300]/5 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-[#FFB300]">
-              <AlertTriangle className="w-4 h-4" />
-              Produtos com estoque crítico
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {s.criticalItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-center text-sm p-2 rounded-md bg-background/60 border border-[#FFB300]/20"
-                >
-                  <span className="font-medium text-foreground truncate pr-2">
-                    {item.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {item.currentStock}/{item.minStock}
-                  </span>
+          {/* Produções recentes */}
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Factory className="w-4 h-4 text-accent" />
+                Produções Recentes
+              </CardTitle>
+              <CardDescription>
+                Últimos 5 lotes registrados no sistema.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {s.recentProductions.length === 0 ? (
+                <div className="px-6 py-8 text-center text-muted-foreground text-sm">
+                  Nenhuma produção registrada ainda.
                 </div>
-              ))}
+              ) : (
+                <div className="divide-y divide-border">
+                  {s.recentProductions.map((prod) => (
+                    <div
+                      key={prod.id}
+                      className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {prod.product.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", {
+                            locale: ptBR,
+                          })}
+                          {" · "}
+                          {prod.quantity.toLocaleString("pt-BR")} un
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0 ml-4">
+                        <p className="text-sm font-bold tabular-nums text-foreground">
+                          {fmt.format(prod.totalCost)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {fmt.format(prod.unitCost)}/un
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Coluna Lateral (Direita) */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Alertas de produtos críticos */}
+          {s.criticalItems.length > 0 && (
+            <div className="relative">
+              <div className="absolute -inset-0.5 bg-destructive/40 blur rounded-xl animate-pulse" />
+              <Card className="relative border-destructive/50 bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="w-5 h-5 animate-pulse" />
+                    Estoque Crítico
+                  </CardTitle>
+                  <CardDescription className="text-destructive/80 pt-1">
+                    {s.criticalItems.length} produto(s) precisam de atenção
+                    imediata.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {s.criticalItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-center text-sm p-2 rounded-md bg-destructive/5 border border-destructive/20"
+                      >
+                        <span className="font-medium text-foreground truncate pr-2">
+                          {item.name}
+                        </span>
+                        <span className="text-xs font-bold text-destructive shrink-0">
+                          {item.currentStock}/{item.minStock}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+
+          <div className="space-y-4">
+            <StatCard
+              title="Produções Hoje"
+              value={s.productionsTodayCount}
+              icon={Factory}
+              colorClass="bg-orange-500/20 text-orange-700 dark:text-orange-500"
+              subtitle={`Custo total: ${fmt.format(s.productionsTodayCost)}`}
+            />
+            <StatCard
+              title="Insumos c/ Estoque Baixo"
+              value={s.ingredientsLowStockCount}
+              icon={TrendingDown}
+              colorClass={
+                s.ingredientsLowStockCount > 0
+                  ? "bg-red-500/10 text-red-500"
+                  : "bg-muted text-muted-foreground"
+              }
+              subtitle="Precisam de reposição"
+              alert={s.ingredientsLowStockCount > 0}
+            />
+          </div>
+
+          {/* Status do sistema */}
+          <Card className="border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <Cpu className="h-4 w-4 text-muted-foreground" />
+                Status do Sistema
+              </CardTitle>
+              <CardDescription>
+                Monitoramento em tempo real via /health.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <HealthItem
+                label="Banco de Dados"
+                icon={Database}
+                status={dbStatus}
+                detail={
+                  health?.info?.database?.status === "up"
+                    ? "Conectado"
+                    : health
+                      ? "Falha na conexão"
+                      : undefined
+                }
+              />
+              <HealthItem
+                label="Memória (Heap)"
+                icon={Cpu}
+                status={memStatus}
+                detail={
+                  health?.info?.memory_heap?.status === "up"
+                    ? "Dentro do limite (<150 MB)"
+                    : health
+                      ? "Limite excedido"
+                      : undefined
+                }
+              />
+              <HealthItem
+                label="API Backend"
+                icon={Server}
+                status={apiStatus}
+                detail={health ? "Online" : undefined}
+              />
+
+              <div className="pt-2 flex justify-center">
+                {healthLoading ? (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 text-xs text-muted-foreground"
+                  >
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Verificando...
+                  </Badge>
+                ) : health?.status === "ok" ? (
+                  <Badge className="gap-1 text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    SISTEMA OPERACIONAL
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="gap-1 text-xs">
+                    <XCircle className="w-3 h-3" />
+                    ATENÇÃO — VERIFICAR
+                  </Badge>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

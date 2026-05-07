@@ -35,14 +35,24 @@ export class ProductionsController {
       'Valida estoque dos insumos, deduz automaticamente, calcula custo real e incrementa o produto. Tudo em transação.',
   })
   @ApiResponse({ status: 201, description: 'Produção registrada com sucesso.' })
-  @ApiResponse({ status: 400, description: 'Estoque insuficiente ou receita não cadastrada.' })
-  create(@Body() dto: CreateProductionDto, @Request() req: { user: { userId: string } }) {
+  @ApiResponse({
+    status: 400,
+    description: 'Estoque insuficiente ou receita não cadastrada.',
+  })
+  create(
+    @Body() dto: CreateProductionDto,
+    @Request() req: { user: { userId: string } },
+  ) {
     return this.productionsService.create(dto, req.user.userId);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar produções (paginado)' })
-  @ApiQuery({ name: 'productId', required: false, description: 'Filtrar por produto' })
+  @ApiQuery({
+    name: 'productId',
+    required: false,
+    description: 'Filtrar por produto',
+  })
   findAll(
     @Query() pageOptionsDto: PageOptionsDto,
     @Query('productId') productId?: string,
@@ -51,7 +61,9 @@ export class ProductionsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Detalhar produção (com consumos e margem de lucro)' })
+  @ApiOperation({
+    summary: 'Detalhar produção (com consumos e margem de lucro)',
+  })
   @ApiParam({ name: 'id', description: 'UUID da produção' })
   findOne(@Param('id') id: string) {
     return this.productionsService.findOne(id);

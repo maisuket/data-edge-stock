@@ -12,12 +12,12 @@ import {
   Search,
   Pencil,
   Trash2,
-  ShoppingCart,
   AlertTriangle,
   Loader2,
   MoreHorizontal,
   Beaker,
   TrendingDown,
+  Clock,
   Eye,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -56,7 +56,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { IngredientFormDialog } from "@/app/components/IngredientFormDialog";
-import { BuyLotDialog } from "@/app/components/BuyLotDialog";
 import { IngredientDetailDialog } from "@/app/components/IngredientDetailDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -97,7 +96,6 @@ export default function IngredientsPage() {
   // Dialogs state
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Ingredient | null>(null);
-  const [buyTarget, setBuyTarget] = useState<Ingredient | null>(null);
   const [detailTarget, setDetailTarget] = useState<Ingredient | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Ingredient | null>(null);
 
@@ -112,6 +110,11 @@ export default function IngredientsPage() {
   const { data: lowStock } = useQuery({
     queryKey: ["ingredients-low-stock"],
     queryFn: () => IngredientService.getLowStock(),
+  });
+
+  const { data: expiringLots } = useQuery({
+    queryKey: ["ingredients-expiring"],
+    queryFn: () => IngredientService.getExpiringLots(30),
   });
 
   // ── Mutations ────────────────────────────────────────────────────────────
@@ -176,22 +179,54 @@ export default function IngredientsPage() {
         </Button>
       </div>
 
-      {/* Alerta de estoque baixo */}
-      {lowStock && lowStock.length > 0 && (
-        <Card className="border-[#FFB300]/40 bg-[#FFB300]/5">
-          <CardContent className="p-4 flex items-center gap-3">
-            <TrendingDown className="w-5 h-5 text-[#FFB300] shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                {lowStock.length} insumo{lowStock.length > 1 ? "s" : ""} com
-                estoque abaixo do mínimo
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {lowStock.map((i) => i.name).join(", ")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Alertas */}
+      {((lowStock && lowStock.length > 0) ||
+        (expiringLots && expiringLots.length > 0)) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Estoque Baixo */}
+          {lowStock && lowStock.length > 0 && (
+            <Card className="border-[#FFB300]/40 bg-[#FFB300]/5">
+              <CardContent className="p-4 flex items-center gap-3">
+                <TrendingDown className="w-5 h-5 text-[#FFB300] shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {lowStock.length} insumo{lowStock.length > 1 ? "s" : ""} com
+                    estoque abaixo do mínimo
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {lowStock.map((i) => i.name).join(", ")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Vencimento Próximo */}
+          {expiringLots && expiringLots.length > 0 && (
+            <Card className="border-[#E53935]/40 bg-[#E53935]/5">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Clock className="w-5 h-5 text-[#E53935] shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {expiringLots.length} lote
+                    {expiringLots.length > 1 ? "s" : ""} vencido ou próximo do
+                    vencimento (30 dias)
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {expiringLots
+                      .map(
+                        (l) =>
+                          `${l.ingredient.name} (Vence: ${new Date(
+                            l.expiresAt!,
+                          ).toLocaleDateString("pt-BR", { timeZone: "UTC" })})`,
+                      )
+                      .join(", ")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* Tabela */}
@@ -305,41 +340,36 @@ export default function IngredientsPage() {
                       className="pr-6 text-right"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => setDetailTarget(ingredient)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setBuyTarget(ingredient)}
-                            className="text-[#4CAF50] focus:text-[#4CAF50]"
-                          >
-                            <ShoppingCart className="w-4 h-4 mr-2" /> Registrar
-                            compra
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEdit(ingredient)}
-                          >
-                            <Pencil className="w-4 h-4 mr-2" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setDeleteTarget(ingredient)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" /> Remover
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDetailTarget(ingredient)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(ingredient)}
+                            >
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setDeleteTarget(ingredient)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -381,11 +411,6 @@ export default function IngredientsPage() {
         open={formOpen}
         onOpenChange={handleFormClose}
         ingredient={editTarget}
-      />
-      <BuyLotDialog
-        open={!!buyTarget}
-        onOpenChange={(open) => !open && setBuyTarget(null)}
-        ingredient={buyTarget}
       />
       <IngredientDetailDialog
         open={!!detailTarget}

@@ -35,7 +35,10 @@ export class ProductsController {
   @Post()
   @ApiOperation({ summary: 'Cadastrar produto' })
   @ApiResponse({ status: 201, description: 'Produto criado.' })
-  @ApiResponse({ status: 409, description: 'Código ou Código de Barras já existe.' })
+  @ApiResponse({
+    status: 409,
+    description: 'Código ou Código de Barras já existe.',
+  })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }

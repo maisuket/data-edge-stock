@@ -476,6 +476,17 @@ export default function ProductsPage() {
                 ) : (
                   data?.data?.map((product) => {
                     const isLowStock = product.currentStock <= product.minStock;
+
+                    const specsText = Array.isArray(product.specifications)
+                      ? product.specifications
+                          .map((s: any) =>
+                            s.name || s.key
+                              ? `${s.name || s.key}: ${s.value}`
+                              : s.value || s,
+                          )
+                          .join(" • ")
+                      : product.specifications;
+
                     return (
                       <TableRow
                         key={product.id}
@@ -509,10 +520,18 @@ export default function ProductsPage() {
                                   </Badge>
                                 )}
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
                                 <span className="font-mono bg-muted px-1 rounded text-[10px]">
                                   {product.internalCode}
                                 </span>
+                                {specsText && (
+                                  <span
+                                    className="truncate max-w-[250px]"
+                                    title={specsText}
+                                  >
+                                    • {specsText}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

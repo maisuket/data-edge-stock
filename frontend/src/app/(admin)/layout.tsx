@@ -18,19 +18,20 @@ import {
   ChefHat,
   Factory,
   ShoppingCart,
+  Store,
 } from "lucide-react";
 import { toast } from "sonner";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 
 // --- Itens do Menu ---
 const menuItems = [
   { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { href: "/products", label: "Produtos", icon: Package },
-  { href: "/sales", label: "Saídas de Produtos", icon: ShoppingCart },
+  { href: "/sales", label: "Saídas/Vendas", icon: Store },
+  { href: "/purchases", label: "Entradas/Compras", icon: ShoppingCart },
   { href: "/stock-history", label: "Movimentações", icon: ArrowLeftRight },
   { href: "/suppliers", label: "Fornecedores", icon: Truck },
 ];
@@ -153,13 +154,14 @@ export default function AdminLayout({
         `}
       >
         {/* Logo Area */}
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-sidebar-border">
-          <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded-xl shadow-sm">
-            <Boxes className="w-5 h-5" />
-          </div>
-          <span className="font-bold text-lg tracking-wide">StockFlow</span>
+        <div className="h-36 flex items-center justify-center px-6 border-b border-sidebar-border shrink-0 relative">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="h-32 w-auto object-contain"
+          />
           <button
-            className="ml-auto lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            className="absolute right-6 lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground"
             onClick={() => setIsSidebarOpen(false)}
           >
             <X className="w-6 h-6" />

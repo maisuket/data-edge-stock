@@ -179,6 +179,9 @@ export class ProductsService {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    const sevenDaysAgo = new Date(todayStart);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
     const [
       totalProducts,
       lowStockCount,
@@ -190,6 +193,7 @@ export class ProductsService {
       productionsTodayCount,
       productionsTodayCostResult,
       recentProductions,
+      trendProductions,
     ] = await Promise.all([
       this.prisma.product.count(),
       this.prisma.product.count({ where: productLowStockWhere }),
@@ -227,7 +231,30 @@ export class ProductsService {
           product: { select: { name: true } },
         },
       }),
+      this.prisma.production.findMany({
+        where: { producedAt: { gte: sevenDaysAgo } },
+        select: { producedAt: true, totalCost: true },
+      }),
     ]);
+
+    // Prepara o array para o gráfico (últimos 7 dias agrupados)
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    
+    const trendMap = new Map<string, { date: string; value: number }>();
+    const daysShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(todayStart);
+      d.setDate(d.getDate() - i);
+      trendMap.set(formatDate(d), { date: daysShort[d.getDay()], value: 0 });
+    }
+    for (const p of trendProductions) {
+      const key = formatDate(p.producedAt);
+      if (trendMap.has(key)) {
+        trendMap.get(key)!.value += p.totalCost.toNumber();
+      }
+    }
 
     return {
       // Produtos
@@ -252,6 +279,7 @@ export class ProductsService {
         unitCost: p.unitCost.toNumber(),
         totalCost: p.totalCost.toNumber(),
       })),
+      productionsTrend: Array.from(trendMap.values()),
     };
   }
 }

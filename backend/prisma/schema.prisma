@@ -127,6 +127,7 @@ model Ingredient {
 /// Lote de compra de insumo — base para FIFO e rastreabilidade
 model IngredientLot {
   id           String     @id @default(uuid())
+  brand        String?
   lotNumber    String     @map("lot_number")
   ingredientId String     @map("ingredient_id")
   /// Quantidade comprada (em unidade do insumo)

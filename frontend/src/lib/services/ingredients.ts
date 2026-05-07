@@ -51,6 +51,7 @@ export interface IngredientLot {
   purchasedAt: string;
   expiresAt?: string;
   supplier?: { name: string };
+  brand?: string;
 }
 
 export interface IngredientDetail extends Ingredient {
@@ -63,6 +64,13 @@ export interface LowStockIngredient {
   unit: string;
   currentStock: number;
   minStock: number;
+}
+
+export interface ExpiringLot extends IngredientLot {
+  ingredient: {
+    name: string;
+    unit: string;
+  };
 }
 
 // ── DTOs ───────────────────────────────────────────────────────────────────
@@ -84,6 +92,21 @@ export interface BuyLotDto {
   lotNumber?: string;
   supplierId?: string;
   expiresAt?: string;
+  brand?: string;
+}
+
+export interface BuyBulkItemDto {
+  ingredientId: string;
+  quantity: number;
+  totalCost: number;
+  expiresAt?: string;
+  brand?: string;
+}
+
+export interface BuyBulkDto {
+  items: BuyBulkItemDto[];
+  supplier?: string;
+  notes?: string;
 }
 
 // ── Service ────────────────────────────────────────────────────────────────
@@ -106,6 +129,13 @@ export const IngredientService = {
     return response.data;
   },
 
+  getExpiringLots: async (days = 30) => {
+    const response = await api.get<ExpiringLot[]>("/ingredients/expiring", {
+      params: { days },
+    });
+    return response.data;
+  },
+
   create: async (dto: CreateIngredientDto) => {
     const response = await api.post<Ingredient>("/ingredients", dto);
     return response.data;
@@ -122,6 +152,11 @@ export const IngredientService = {
 
   buyLot: async (ingredientId: string, dto: BuyLotDto) => {
     const response = await api.post(`/ingredients/${ingredientId}/buy`, dto);
+    return response.data;
+  },
+
+  buyBulk: async (dto: BuyBulkDto) => {
+    const response = await api.post("/ingredients/bulk-purchase", dto);
     return response.data;
   },
 };

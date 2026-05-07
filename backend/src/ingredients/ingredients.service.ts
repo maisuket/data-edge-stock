@@ -13,6 +13,7 @@ import { PageMetaDto } from '../common/dto/page-meta.dto';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
 import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { BuyLotDto } from './dto/buy-lot.dto';
+import { BuyBulkDto } from './dto/buy-bulk.dto';
 
 @Injectable()
 export class IngredientsService {
@@ -172,6 +173,7 @@ export class IngredientsService {
           purchasedAt: new Date(),
           expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
           supplierId: dto.supplierId ?? null,
+          brand: (dto as any).brand ?? null,
         },
         include: {
           ingredient: { select: { name: true, unit: true } },
@@ -207,6 +209,98 @@ export class IngredientsService {
     // Recalcula o custo dos produtos fabricados que usam este insumo.
     // Feito fora da transação para não bloquear o commit; falhas aqui são não-críticas.
     await this.refreshAffectedProductCosts(ingredientId);
+
+    return result;
+  }
+
+  /**
+   * Registra a compra em lote de múltiplos insumos em uma única transação,
+   * atualizando o estoque e gerando um lote para cada item comprado.
+   */
+  async buyBulk(dto: BuyBulkDto) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const processedItems: any[] = [];
+
+      for (const item of dto.items) {
+        const ingredient = await tx.ingredient.findUnique({
+          where: { id: item.ingredientId },
+        });
+
+        if (!ingredient) {
+          throw new NotFoundException(
+            `Insumo ${item.ingredientId} não encontrado.`,
+          );
+        }
+
+        // 1. Custo unitário do lote
+        const qtyDecimal = new Prisma.Decimal(item.quantity);
+        const totalCostDecimal = new Prisma.Decimal(item.totalCost);
+        const unitCost = totalCostDecimal.div(qtyDecimal);
+
+        // 2. Custo médio ponderado
+        const currentTotalValue = ingredient.currentStock.mul(
+          ingredient.averageCost,
+        );
+        const incomingTotalValue = qtyDecimal.mul(unitCost);
+        const newTotalStock = ingredient.currentStock.add(qtyDecimal);
+
+        const newAverageCost = newTotalStock.gt(0)
+          ? currentTotalValue.add(incomingTotalValue).div(newTotalStock)
+          : unitCost;
+
+        // 3. Número do lote
+        const lotNumber = `LOT-${item.ingredientId.slice(0, 8).toUpperCase()}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+        // 4. Cria o lote
+        const lot = await tx.ingredientLot.create({
+          data: {
+            lotNumber,
+            ingredientId: item.ingredientId,
+            quantity: item.quantity,
+            totalCost: item.totalCost,
+            unitCost,
+            remainingQty: item.quantity,
+            purchasedAt: new Date(),
+            expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
+            brand: item.brand ?? null,
+          },
+        });
+
+        // 5. Atualiza o insumo
+        await tx.ingredient.update({
+          where: { id: item.ingredientId },
+          data: {
+            currentStock: newTotalStock,
+            averageCost: newAverageCost,
+          },
+        });
+
+        processedItems.push({
+          lot: {
+            ...lot,
+            quantity: lot.quantity.toNumber(),
+            totalCost: lot.totalCost.toNumber(),
+            unitCost: lot.unitCost.toNumber(),
+            remainingQty: lot.remainingQty.toNumber(),
+          },
+          ingredient: {
+            id: item.ingredientId,
+            newStock: newTotalStock.toNumber(),
+            newAverageCost: newAverageCost.toNumber(),
+          },
+        });
+      }
+
+      return processedItems;
+    });
+
+    // Recalcula o custo dos produtos fabricados que usam estes insumos.
+    const affectedIngredientIds = [
+      ...new Set(dto.items.map((i) => i.ingredientId)),
+    ];
+    await Promise.allSettled(
+      affectedIngredientIds.map((id) => this.refreshAffectedProductCosts(id)),
+    );
 
     return result;
   }
@@ -257,6 +351,35 @@ export class IngredientsService {
           ...i,
           currentStock: i.currentStock.toNumber(),
           minStock: i.minStock.toNumber(),
+        })),
+      );
+  }
+
+  async getExpiringLots(days = 30) {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + days);
+
+    return this.prisma.ingredientLot
+      .findMany({
+        where: {
+          remainingQty: { gt: 0 },
+          expiresAt: {
+            lte: targetDate,
+            not: null,
+          },
+        },
+        include: {
+          ingredient: { select: { name: true, unit: true } },
+        },
+        orderBy: { expiresAt: 'asc' },
+      })
+      .then((lots) =>
+        lots.map((lot) => ({
+          ...lot,
+          quantity: lot.quantity.toNumber(),
+          totalCost: lot.totalCost.toNumber(),
+          unitCost: lot.unitCost.toNumber(),
+          remainingQty: lot.remainingQty.toNumber(),
         })),
       );
   }

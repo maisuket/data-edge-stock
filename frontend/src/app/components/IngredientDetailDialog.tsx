@@ -122,6 +122,7 @@ export function IngredientDetailDialog({
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">
                         <TableHead>Lote</TableHead>
+                        <TableHead>Marca</TableHead>
                         <TableHead className="text-right">Qtd</TableHead>
                         <TableHead className="text-right">
                           Custo Unit.
@@ -129,6 +130,7 @@ export function IngredientDetailDialog({
                         <TableHead className="text-right">Total</TableHead>
                         <TableHead className="text-right">Restante</TableHead>
                         <TableHead>Data</TableHead>
+                        <TableHead>Validade</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -144,6 +146,9 @@ export function IngredientDetailDialog({
                             >
                               {lot.lotNumber}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs font-medium text-foreground">
+                            {lot.brand || "-"}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             {lot.quantity} {unit}
@@ -169,6 +174,17 @@ export function IngredientDetailDialog({
                             {format(new Date(lot.purchasedAt), "dd/MM/yy", {
                               locale: ptBR,
                             })}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {lot.expiresAt ? (
+                              <span className={new Date(lot.expiresAt).getTime() < new Date().getTime() ? "text-destructive font-bold" : "text-muted-foreground font-medium"}>
+                                {format(new Date(lot.expiresAt), "dd/MM/yy", {
+                                  locale: ptBR,
+                                })}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
