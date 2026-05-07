@@ -119,20 +119,44 @@ export class ProductionsService {
         : new Prisma.Decimal(0);
 
       // ── 5. Deduz estoque dos insumos ───────
-      await Promise.all(
-        recipeItems.map((item) => {
-          const consumed = item.quantity.mul(qtyDecimal);
-          return tx.ingredient.update({
-            where: { id: item.ingredientId },
-            data: { currentStock: { decrement: consumed } },
-          });
-        }),
-      );
+      for (const item of recipeItems) {
+        const consumed = item.quantity.mul(qtyDecimal);
+        await tx.ingredient.update({
+          where: { id: item.ingredientId },
+          data: { currentStock: { decrement: consumed } },
+        });
+
+        // Registra a Saída (EXIT) do insumo no histórico
+        await tx.stockMovement.create({
+          data: {
+            ingredientId: item.ingredientId,
+            type: 'EXIT',
+            quantity: consumed.toNumber(),
+            stockBefore: item.ingredient.currentStock.toNumber(),
+            stockAfter: item.ingredient.currentStock.sub(consumed).toNumber(),
+            userId,
+            description: `Consumo na produção do item: ${product.name}`,
+          },
+        });
+      }
 
       // ── 6. Incrementa estoque do produto ───
       await tx.product.update({
         where: { id: dto.productId },
         data: { currentStock: { increment: dto.quantity } },
+      });
+
+      // ── 6.5. Registra o histórico da movimentação (ENTRY) ──
+      await tx.stockMovement.create({
+        data: {
+          productId: dto.productId,
+          type: 'ENTRY',
+          quantity: dto.quantity,
+          stockBefore: product.currentStock.toNumber(),
+          stockAfter: product.currentStock.add(qtyDecimal).toNumber(),
+          userId,
+          description: 'Produção Interna',
+        },
       });
 
       // ── 7. Cria o registro de produção ─────

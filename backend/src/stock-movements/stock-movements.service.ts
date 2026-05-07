@@ -122,8 +122,14 @@ export class StockMovementsService {
     });
   }
 
-  async findAll(pageOptionsDto: PageOptionsDto, productId?: string) {
-    const where = productId ? { productId } : {};
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+    productId?: string,
+    type?: string,
+  ) {
+    const where: any = {};
+    if (productId) where.productId = productId;
+    if (type) where.type = type;
 
     const [movements, itemCount] = await this.prisma.$transaction([
       this.prisma.stockMovement.findMany({
@@ -133,6 +139,7 @@ export class StockMovementsService {
         orderBy: { createdAt: 'desc' },
         include: {
           product: { select: { name: true, internalCode: true } },
+          ingredient: { select: { name: true, unit: true } },
           user: { select: { name: true } },
           supplier: { select: { name: true } },
         },

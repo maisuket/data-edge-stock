@@ -45,11 +45,17 @@ export class StockMovementsController {
     required: false,
     description: 'Filtrar por produto',
   })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Filtrar por tipo de movimentação (ENTRY, EXIT, ADJUSTMENT)',
+  })
   @ApiResponse({ status: 200, type: PageDto })
   findAll(
     @Query() pageOptionsDto: PageOptionsDto,
     @Query('productId') productId?: string,
+    @Query('type') type?: string,
   ) {
-    return this.stockService.findAll(pageOptionsDto, productId);
+    return this.stockService.findAll(pageOptionsDto, productId, type);
   }
 }

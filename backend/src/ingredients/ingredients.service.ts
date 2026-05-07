@@ -190,6 +190,20 @@ export class IngredientsService {
         },
       });
 
+      // 6. Registra a Entrada (ENTRY) do insumo no histórico
+      await tx.stockMovement.create({
+        data: {
+          ingredientId,
+          type: 'ENTRY',
+          quantity: dto.quantity,
+          stockBefore: ingredient.currentStock.toNumber(),
+          stockAfter: newTotalStock.toNumber(),
+          unitValue: unitCost.toNumber(),
+          supplierId: dto.supplierId ?? null,
+          description: 'Entrada avulsa (Compra)',
+        },
+      });
+
       return {
         lot: {
           ...lot,
@@ -272,6 +286,18 @@ export class IngredientsService {
           data: {
             currentStock: newTotalStock,
             averageCost: newAverageCost,
+          },
+        });
+
+        // 6. Registra a Entrada (ENTRY) do insumo no histórico
+        await tx.stockMovement.create({
+          data: {
+            ingredientId: item.ingredientId,
+            type: 'ENTRY',
+            quantity: item.quantity,
+            stockBefore: ingredient.currentStock.toNumber(),
+            stockAfter: newTotalStock.toNumber(),
+            description: 'Entrada em lote (Compra)',
           },
         });
 

@@ -53,8 +53,13 @@ export default function MovementsPage() {
 
   // Query de Movimentações
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["movements", page, pageSize],
-    queryFn: () => StockMovementService.getAll(page, pageSize),
+    queryKey: ["movements", page, pageSize, filterType],
+    queryFn: () =>
+      StockMovementService.getAll(
+        page,
+        pageSize,
+        filterType === "ALL" ? undefined : filterType,
+      ),
     placeholderData: keepPreviousData,
   });
 
@@ -117,7 +122,13 @@ export default function MovementsPage() {
             </div>
 
             <div className="flex gap-2">
-              <Select value={filterType} onValueChange={setFilterType}>
+              <Select
+                value={filterType}
+                onValueChange={(val) => {
+                  setFilterType(val);
+                  setPage(1); // Volta para a página 1 ao filtrar
+                }}
+              >
                 <SelectTrigger className="w-[180px]">
                   <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Filtrar por tipo" />
@@ -140,7 +151,7 @@ export default function MovementsPage() {
                 <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                   <TableHead className="pl-6 w-[180px]">Data/Hora</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Produto</TableHead>
+                  <TableHead>Item Movimentado</TableHead>
                   <TableHead>Quantidade</TableHead>
                   <TableHead>Usuário</TableHead>
                   <TableHead className="w-[300px]">Observação</TableHead>
@@ -190,7 +201,7 @@ export default function MovementsPage() {
                             ? format(
                                 new Date(row.createdAt),
                                 "dd/MM/yyyy HH:mm",
-                                { locale: ptBR }
+                                { locale: ptBR },
                               )
                             : "-"}
                         </div>
@@ -201,10 +212,10 @@ export default function MovementsPage() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground text-sm">
-                            {row.product?.name || "Produto excluído"}
+                            {row.product?.name || row.ingredient?.name || "Item excluído"}
                           </span>
                           <span className="text-xs text-muted-foreground font-mono">
-                            {row.product?.internalCode}
+                            {row.product?.internalCode || (row.ingredient && `Insumo (${row.ingredient.unit})`)}
                           </span>
                         </div>
                       </TableCell>
