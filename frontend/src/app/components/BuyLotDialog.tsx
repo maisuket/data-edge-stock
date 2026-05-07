@@ -52,7 +52,10 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -67,7 +70,13 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { quantity: 0, totalCost: 0, lotNumber: "", supplierId: "", expiresAt: "" },
+    defaultValues: {
+      quantity: 0,
+      totalCost: 0,
+      lotNumber: "",
+      supplierId: "",
+      expiresAt: "",
+    },
   });
 
   // Cálculo em tempo real do custo unitário
@@ -76,7 +85,14 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
   const unitCost = quantity > 0 ? totalCost / quantity : 0;
 
   useEffect(() => {
-    if (open) form.reset({ quantity: 0, totalCost: 0, lotNumber: "", supplierId: "", expiresAt: "" });
+    if (open)
+      form.reset({
+        quantity: 0,
+        totalCost: 0,
+        lotNumber: "",
+        supplierId: "",
+        expiresAt: "",
+      });
   }, [open, form]);
 
   const { data: suppliersData } = useQuery({
@@ -94,9 +110,11 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
         supplierId: data.supplierId || undefined,
         expiresAt: data.expiresAt || undefined,
       }),
-    onSuccess: (result: { ingredient: { newStock: number; newAverageCost: number } }) => {
+    onSuccess: (result: {
+      ingredient: { newStock: number; newAverageCost: number };
+    }) => {
       toast.success(
-        `Compra registrada! Novo estoque: ${result.ingredient.newStock.toFixed(3)} — CMP: ${fmt.format(result.ingredient.newAverageCost)}`
+        `Compra registrada! Novo estoque: ${result.ingredient.newStock.toFixed(3)} — CMP: ${fmt.format(result.ingredient.newAverageCost)}`,
       );
       qc.invalidateQueries({ queryKey: ["ingredients"] });
       qc.invalidateQueries({ queryKey: ["ingredients-low-stock"] });
@@ -107,22 +125,30 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
   });
 
   const suppliers = suppliersData?.data ?? [];
-  const unit = ingredient ? UNIT_SHORT[ingredient.unit] ?? ingredient.unit : "";
+  const unit = ingredient
+    ? (UNIT_SHORT[ingredient.unit] ?? ingredient.unit)
+    : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-card">
+      <DialogContent className="sm:max-w-lg bg-card sm:rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
-            <ShoppingCart className="w-5 h-5 text-[#4CAF50]" />
+            <div className="p-2 bg-[#4CAF50]/10 text-[#4CAF50] rounded-xl shadow-sm">
+              <ShoppingCart className="w-5 h-5" />
+            </div>
             Registrar Compra
           </DialogTitle>
           {ingredient && (
             <p className="text-sm text-muted-foreground">
               Insumo:{" "}
-              <span className="font-semibold text-foreground">{ingredient.name}</span>
-              {" "}— Estoque atual:{" "}
-              <span className="font-semibold">{ingredient.currentStock.toLocaleString("pt-BR")} {unit}</span>
+              <span className="font-semibold text-foreground">
+                {ingredient.name}
+              </span>{" "}
+              — Estoque atual:{" "}
+              <span className="font-semibold">
+                {ingredient.currentStock.toLocaleString("pt-BR")} {unit}
+              </span>
             </p>
           )}
         </DialogHeader>
@@ -141,7 +167,13 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
                   <FormItem>
                     <FormLabel>Quantidade ({unit})</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.001" min={0} {...field} />
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        {...field}
+                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,7 +186,13 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
                   <FormItem>
                     <FormLabel>Valor total (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min={0} {...field} />
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min={0}
+                        {...field}
+                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,8 +201,8 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
             </div>
 
             {/* Cálculo em tempo real */}
-            <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 flex items-center gap-3">
-              <Calculator className="w-5 h-5 text-accent shrink-0" />
+            <div className="rounded-xl border border-accent/30 bg-accent/5 p-3 flex items-center gap-3 shadow-sm transition-all duration-300 hover:shadow-md hover:border-accent/50 group">
+              <Calculator className="w-5 h-5 text-accent shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" />
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
                   Custo unitário calculado
@@ -186,7 +224,11 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
                 <FormItem>
                   <FormLabel>Número do lote (opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Gerado automaticamente se vazio" {...field} />
+                    <Input
+                      placeholder="Gerado automaticamente se vazio"
+                      {...field}
+                      className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -202,7 +244,7 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
                   <FormLabel>Fornecedor (opcional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20">
                         <SelectValue placeholder="Selecionar fornecedor..." />
                       </SelectTrigger>
                     </FormControl>
@@ -230,7 +272,11 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
                 <FormItem>
                   <FormLabel>Data de vencimento (opcional)</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input
+                      type="date"
+                      {...field}
+                      className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -238,15 +284,22 @@ export function BuyLotDialog({ open, onOpenChange, ingredient }: Props) {
             />
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="rounded-xl transition-all duration-300 hover:scale-[1.02]"
+              >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={mutation.isPending}
-                className="bg-[#4CAF50] text-white hover:bg-[#43A047]"
+                className="bg-[#4CAF50] text-white hover:bg-[#43A047] rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
               >
-                {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {mutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                )}
                 Confirmar compra
               </Button>
             </DialogFooter>

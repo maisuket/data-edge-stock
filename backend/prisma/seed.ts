@@ -13,7 +13,7 @@ async function main() {
   if (!adminPassword) {
     console.error(
       '❌ SEED_ADMIN_PASSWORD não definida. ' +
-      'Defina a variável de ambiente antes de rodar o seed.',
+        'Defina a variável de ambiente antes de rodar o seed.',
     );
     process.exit(1);
   }
@@ -46,13 +46,36 @@ async function main() {
   }
 
   // ─────────────────────────────────────────────────────────────────
+  // 4.5 SEED DE CONFIGURAÇÕES INICIAIS (Settings)
+  // ─────────────────────────────────────────────────────────────────
+  console.log('⚙️ Verificando configurações padrão do sistema...');
+
+  await prisma.setting.upsert({
+    where: { key: 'LOGIN_IMAGE_URL' },
+    update: {}, // Mantém o valor existente caso o usuário já tenha alterado
+    create: {
+      key: 'LOGIN_IMAGE_URL',
+      value:
+        'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?auto=format&fit=crop&w=1200&q=80',
+    },
+  });
+
+  await prisma.setting.upsert({
+    where: { key: 'STORE_NAME' },
+    update: {},
+    create: { key: 'STORE_NAME', value: 'StockFlow' },
+  });
+
+  // ─────────────────────────────────────────────────────────────────
   // 5. SEED DE DADOS DE EXEMPLO (Insumos, Produtos, Receitas)
   // ─────────────────────────────────────────────────────────────────
   const ingredientsCount = await prisma.ingredient.count();
   const productsCount = await prisma.product.count();
 
   if (ingredientsCount === 0 && productsCount === 0) {
-    console.log('📦 Criando dados de exemplo (Fornecedores, Insumos, Produtos e Receitas)...');
+    console.log(
+      '📦 Criando dados de exemplo (Fornecedores, Insumos, Produtos e Receitas)...',
+    );
 
     // 5.1 Fornecedor de Exemplo
     const supplier = await prisma.supplier.create({
@@ -115,7 +138,7 @@ async function main() {
           create: [
             { ingredientId: flour.id, quantity: 0.3 }, // 300g de farinha
             { ingredientId: sugar.id, quantity: 0.2 }, // 200g de açúcar
-            { ingredientId: eggs.id, quantity: 3 },    // 3 unidades de ovo
+            { ingredientId: eggs.id, quantity: 3 }, // 3 unidades de ovo
           ],
         },
       },
@@ -139,7 +162,9 @@ async function main() {
 
     console.log('✅ Dados de exemplo criados com sucesso!');
   } else {
-    console.log('⚠️ O banco já possui insumos/produtos. Pulando a criação de dados de exemplo.');
+    console.log(
+      '⚠️ O banco já possui insumos/produtos. Pulando a criação de dados de exemplo.',
+    );
   }
 }
 

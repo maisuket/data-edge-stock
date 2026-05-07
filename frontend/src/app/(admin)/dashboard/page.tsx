@@ -23,13 +23,22 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import { DashboardService } from "../../../lib/services/dashboard";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 // ── Formatters ──────────────────────────────────────────────────────────────
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 // ── KPI Card ────────────────────────────────────────────────────────────────
 
@@ -49,7 +58,9 @@ function StatCard({
   alert?: boolean;
 }) {
   return (
-    <Card className={`hover:shadow-md transition-all border-border bg-card ${alert ? "border-destructive/40" : ""}`}>
+    <Card
+      className={`hover:shadow-md transition-all border-border bg-card ${alert ? "border-destructive/40" : ""}`}
+    >
       <CardContent className="p-6">
         <div className="flex items-center justify-between pb-2">
           <div className={`p-2 rounded-lg ${colorClass}`}>
@@ -93,12 +104,16 @@ function HealthItem({
 
   return (
     <div className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
-      <div className={`p-2 rounded-full ${isOk ? "bg-[#4CAF50]/10 text-[#4CAF50]" : isLoading ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"}`}>
+      <div
+        className={`p-2 rounded-full ${isOk ? "bg-[#4CAF50]/10 text-[#4CAF50]" : isLoading ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"}`}
+      >
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground">{label}</p>
-        <p className="text-xs text-muted-foreground truncate">{detail ?? "—"}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {detail ?? "—"}
+        </p>
       </div>
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -126,10 +141,7 @@ export default function DashboardPage() {
     staleTime: 60_000,
   });
 
-  const {
-    data: health,
-    isLoading: healthLoading,
-  } = useQuery({
+  const { data: health, isLoading: healthLoading } = useQuery({
     queryKey: ["health"],
     queryFn: DashboardService.getHealth,
     staleTime: 30_000,
@@ -152,10 +164,14 @@ export default function DashboardPage() {
           <Skeleton className="h-10 w-24" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-7">
           <Skeleton className="col-span-4 h-64 rounded-xl" />
@@ -172,17 +188,29 @@ export default function DashboardPage() {
           <AlertTriangle className="h-8 w-8" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-foreground">Erro ao carregar dados</h2>
-          <p className="text-muted-foreground mb-4">Não foi possível conectar ao servidor.</p>
-          <Button variant="outline" onClick={() => refetch()}>Tentar Novamente</Button>
+          <h2 className="text-lg font-bold text-foreground">
+            Erro ao carregar dados
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Não foi possível conectar ao servidor.
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Tentar Novamente
+          </Button>
         </div>
       </div>
     );
   }
 
   const s = stats!;
-  const dbStatus = health?.status === "ok" ? "ok" : healthLoading ? "loading" : "error";
-  const memStatus = health?.info?.memory_heap?.status === "up" ? "ok" : healthLoading ? "loading" : "error";
+  const dbStatus =
+    health?.status === "ok" ? "ok" : healthLoading ? "loading" : "error";
+  const memStatus =
+    health?.info?.memory_heap?.status === "up"
+      ? "ok"
+      : healthLoading
+        ? "loading"
+        : "error";
   const apiStatus = health ? "ok" : healthLoading ? "loading" : "error";
 
   return (
@@ -190,7 +218,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Visão Geral</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Visão Geral
+          </h1>
           <p className="text-muted-foreground mt-1">
             Indicadores consolidados — produtos, insumos e produções.
           </p>
@@ -201,7 +231,9 @@ export default function DashboardPage() {
           disabled={isFetching}
           className="gap-2 bg-background hover:bg-muted"
         >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+          />
           Atualizar
         </Button>
       </div>
@@ -216,7 +248,7 @@ export default function DashboardPage() {
             title="Produtos Cadastrados"
             value={s.totalProducts}
             icon={Package}
-            colorClass="bg-blue-500/10 text-blue-500"
+            colorClass="bg-amber-500/20 text-amber-700 dark:text-amber-500"
             subtitle="Itens no catálogo"
           />
           <StatCard
@@ -230,7 +262,11 @@ export default function DashboardPage() {
             title="Produtos c/ Estoque Baixo"
             value={s.lowStockCount}
             icon={AlertTriangle}
-            colorClass={s.lowStockCount > 0 ? "bg-[#FFB300]/10 text-[#FFB300]" : "bg-muted text-muted-foreground"}
+            colorClass={
+              s.lowStockCount > 0
+                ? "bg-red-500/10 text-red-500"
+                : "bg-muted text-muted-foreground"
+            }
             subtitle="Abaixo do mínimo definido"
             alert={s.lowStockCount > 0}
           />
@@ -238,7 +274,7 @@ export default function DashboardPage() {
             title="Produções Hoje"
             value={s.productionsTodayCount}
             icon={Factory}
-            colorClass="bg-accent/10 text-accent"
+            colorClass="bg-orange-500/20 text-orange-700 dark:text-orange-500"
             subtitle={`Custo total: ${fmt.format(s.productionsTodayCost)}`}
           />
         </div>
@@ -254,21 +290,25 @@ export default function DashboardPage() {
             title="Insumos Cadastrados"
             value={s.totalIngredients}
             icon={Beaker}
-            colorClass="bg-violet-500/10 text-violet-500"
+            colorClass="bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"
             subtitle="Matérias-primas no sistema"
           />
           <StatCard
             title="Valor em Insumos"
             value={fmt.format(s.ingredientsValue)}
             icon={DollarSign}
-            colorClass="bg-teal-500/10 text-teal-500"
+            colorClass="bg-amber-600/10 text-amber-600"
             subtitle="Custo médio × estoque atual"
           />
           <StatCard
             title="Insumos c/ Estoque Baixo"
             value={s.ingredientsLowStockCount}
             icon={TrendingDown}
-            colorClass={s.ingredientsLowStockCount > 0 ? "bg-[#E53935]/10 text-[#E53935]" : "bg-muted text-muted-foreground"}
+            colorClass={
+              s.ingredientsLowStockCount > 0
+                ? "bg-[#E53935]/10 text-[#E53935]"
+                : "bg-muted text-muted-foreground"
+            }
             subtitle="Precisam de reposição"
             alert={s.ingredientsLowStockCount > 0}
           />
@@ -277,7 +317,6 @@ export default function DashboardPage() {
 
       {/* Painel inferior */}
       <div className="grid gap-4 lg:grid-cols-7">
-
         {/* Produções recentes */}
         <Card className="col-span-4 border-border shadow-sm">
           <CardHeader className="pb-3">
@@ -285,7 +324,9 @@ export default function DashboardPage() {
               <Factory className="w-4 h-4 text-accent" />
               Produções Recentes
             </CardTitle>
-            <CardDescription>Últimos 5 lotes registrados no sistema.</CardDescription>
+            <CardDescription>
+              Últimos 5 lotes registrados no sistema.
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {s.recentProductions.length === 0 ? (
@@ -295,18 +336,29 @@ export default function DashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {s.recentProductions.map((prod) => (
-                  <div key={prod.id} className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors">
+                  <div
+                    key={prod.id}
+                    className="flex items-center justify-between px-6 py-3 hover:bg-muted/30 transition-colors"
+                  >
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{prod.product.name}</p>
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {prod.product.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", { locale: ptBR })}
+                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", {
+                          locale: ptBR,
+                        })}
                         {" · "}
                         {prod.quantity.toLocaleString("pt-BR")} un
                       </p>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-bold tabular-nums text-foreground">{fmt.format(prod.totalCost)}</p>
-                      <p className="text-xs text-muted-foreground">{fmt.format(prod.unitCost)}/un</p>
+                      <p className="text-sm font-bold tabular-nums text-foreground">
+                        {fmt.format(prod.totalCost)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {fmt.format(prod.unitCost)}/un
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -322,20 +374,34 @@ export default function DashboardPage() {
               <Cpu className="h-4 w-4 text-muted-foreground" />
               Status do Sistema
             </CardTitle>
-            <CardDescription>Monitoramento em tempo real via /health.</CardDescription>
+            <CardDescription>
+              Monitoramento em tempo real via /health.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <HealthItem
               label="Banco de Dados"
               icon={Database}
               status={dbStatus}
-              detail={health?.info?.database?.status === "up" ? "Conectado" : health ? "Falha na conexão" : undefined}
+              detail={
+                health?.info?.database?.status === "up"
+                  ? "Conectado"
+                  : health
+                    ? "Falha na conexão"
+                    : undefined
+              }
             />
             <HealthItem
               label="Memória (Heap)"
               icon={Cpu}
               status={memStatus}
-              detail={health?.info?.memory_heap?.status === "up" ? "Dentro do limite (<150 MB)" : health ? "Limite excedido" : undefined}
+              detail={
+                health?.info?.memory_heap?.status === "up"
+                  ? "Dentro do limite (<150 MB)"
+                  : health
+                    ? "Limite excedido"
+                    : undefined
+              }
             />
             <HealthItem
               label="API Backend"
@@ -346,7 +412,10 @@ export default function DashboardPage() {
 
             <div className="pt-2 flex justify-center">
               {healthLoading ? (
-                <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
+                <Badge
+                  variant="outline"
+                  className="gap-1 text-xs text-muted-foreground"
+                >
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Verificando...
                 </Badge>
@@ -378,8 +447,13 @@ export default function DashboardPage() {
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {s.criticalItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-sm p-2 rounded-md bg-background/60 border border-[#FFB300]/20">
-                  <span className="font-medium text-foreground truncate pr-2">{item.name}</span>
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center text-sm p-2 rounded-md bg-background/60 border border-[#FFB300]/20"
+                >
+                  <span className="font-medium text-foreground truncate pr-2">
+                    {item.name}
+                  </span>
                   <span className="text-xs text-muted-foreground shrink-0">
                     {item.currentStock}/{item.minStock}
                   </span>

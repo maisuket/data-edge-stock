@@ -19,6 +19,7 @@ import { FilesModule } from './files/files.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ProductionsModule } from './productions/productions.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ProductionsModule } from './productions/productions.module';
     IngredientsModule,
     RecipesModule,
     ProductionsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -73,11 +73,11 @@ function NavGroup({
               key={item.href}
               href={item.href}
               className={`
-                relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group text-sm font-medium overflow-hidden
+                relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group text-sm font-medium overflow-hidden
                 ${
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-1 ring-sidebar-border/20"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-1"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:scale-[1.02] hover:shadow-sm"
                 }
               `}
             >
@@ -154,7 +154,7 @@ export default function AdminLayout({
       >
         {/* Logo Area */}
         <div className="h-16 flex items-center gap-3 px-6 border-b border-sidebar-border">
-          <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded-lg">
+          <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded-xl shadow-sm">
             <Boxes className="w-5 h-5" />
           </div>
           <span className="font-bold text-lg tracking-wide">StockFlow</span>
@@ -204,7 +204,7 @@ export default function AdminLayout({
           <Button
             variant="outline"
             onClick={handleLogout}
-            className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-sidebar-border bg-transparent"
+            className="w-full justify-start gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-sidebar-border bg-transparent rounded-xl transition-all duration-300 hover:scale-[1.02]"
           >
             <LogOut className="w-4 h-4" />
             <span>Sair do Sistema</span>

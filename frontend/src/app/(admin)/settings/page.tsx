@@ -30,6 +30,7 @@ import {
   type ProfileData,
 } from "../../../lib/services/profile";
 import { UserService, type User } from "../../../lib/services/users";
+import { SettingsService } from "../../../lib/services/settings";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [userData, setUserData] = useState<ProfileData | null>(null);
+  const [loginImageUrl, setLoginImageUrl] = useState("");
 
   // Usuários
   const [userSearch, setUserSearch] = useState("");
@@ -110,6 +112,15 @@ export default function SettingsPage() {
       })
       .catch(() => toast.error("Erro ao carregar perfil."));
   }, [setValue]);
+
+  // Load Settings (Imagem de Login)
+  useEffect(() => {
+    SettingsService.getByKey("LOGIN_IMAGE_URL")
+      .then((res) => {
+        if (res?.value) setLoginImageUrl(res.value);
+      })
+      .catch(console.error);
+  }, []);
 
   // Load Users
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
@@ -181,24 +192,24 @@ export default function SettingsPage() {
         className="flex flex-col md:flex-row gap-8 w-full"
       >
         <aside className="w-full md:w-64 shrink-0">
-          <TabsList className="flex flex-col h-auto bg-transparent p-0 space-y-1 w-full justify-start">
+          <TabsList className="flex flex-col h-auto bg-transparent p-0 space-y-2 w-full justify-start">
             <TabsTrigger
               value="profile"
-              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+              className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
             >
               <UserCircle className="mr-2 h-4 w-4" />
               Meu Perfil
             </TabsTrigger>
             <TabsTrigger
               value="users"
-              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+              className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
             >
               <Users className="mr-2 h-4 w-4" />
               Usuários
             </TabsTrigger>
             <TabsTrigger
               value="appearance"
-              className="w-full justify-start px-3 py-2 h-9 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-muted data-[state=active]:text-foreground border border-transparent data-[state=active]:border-border rounded-md transition-all"
+              className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
             >
               <Sun className="mr-2 h-4 w-4" />
               Aparência
@@ -208,7 +219,7 @@ export default function SettingsPage() {
 
         <div className="flex-1">
           <TabsContent value="profile" className="mt-0 space-y-6">
-            <Card className="bg-card border-border shadow-sm">
+            <Card className="bg-card border-border shadow-md sm:rounded-2xl overflow-hidden">
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
                 <CardDescription>Atualize seus dados.</CardDescription>
@@ -221,9 +232,9 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 bg-muted/40 rounded-lg border border-dashed border-border">
-                      <Avatar className="h-20 w-20 border-2 border-background shadow-sm">
-                        <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
+                    <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 bg-muted/30 rounded-2xl border border-dashed border-border shadow-sm">
+                      <Avatar className="h-20 w-20 border-4 border-background shadow-sm transition-transform duration-300 hover:scale-105">
+                        <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold shadow-inner">
                           {getInitials(userData.name)}
                         </AvatarFallback>
                       </Avatar>
@@ -251,7 +262,7 @@ export default function SettingsPage() {
                           <Label>Nome Completo</Label>
                           <Input
                             {...register("name")}
-                            className="bg-background"
+                            className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                           />
                           {errors.name && (
                             <span className="text-red-500 text-xs">
@@ -263,7 +274,7 @@ export default function SettingsPage() {
                           <Label>E-mail</Label>
                           <Input
                             {...register("email")}
-                            className="bg-background"
+                            className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                           />
                           {errors.email && (
                             <span className="text-red-500 text-xs">
@@ -285,7 +296,7 @@ export default function SettingsPage() {
                               type="password"
                               {...register("password")}
                               placeholder="Deixe em branco para manter"
-                              className="bg-background"
+                              className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                             />
                             {errors.password && (
                               <span className="text-red-500 text-xs">
@@ -299,7 +310,7 @@ export default function SettingsPage() {
                               type="password"
                               {...register("confirmPassword")}
                               placeholder="Repita a nova senha"
-                              className="bg-background"
+                              className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                             />
                             {errors.confirmPassword && (
                               <span className="text-red-500 text-xs">
@@ -318,7 +329,7 @@ export default function SettingsPage() {
                   type="submit"
                   form="profile-form"
                   disabled={isSavingProfile}
-                  className="bg-primary text-primary-foreground"
+                  className="bg-primary text-primary-foreground rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
                 >
                   {isSavingProfile ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -332,7 +343,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="users" className="mt-0 space-y-6">
-            <Card className="bg-card border-border shadow-sm">
+            <Card className="bg-card border-border shadow-md sm:rounded-2xl overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between pb-4">
                 <div>
                   <CardTitle>Gestão de Usuários</CardTitle>
@@ -342,18 +353,18 @@ export default function SettingsPage() {
                 </div>
                 <Button
                   onClick={handleAddUser}
-                  className="bg-primary text-primary-foreground"
+                  className="bg-primary text-primary-foreground rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
                 >
                   <Plus className="h-4 w-4 mr-2" /> Novo Usuário
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-md border w-fit">
+                <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
                   <div className="relative w-[300px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar usuários..."
-                      className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent"
+                      className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent rounded-xl"
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
                     />
@@ -398,12 +409,12 @@ export default function SettingsPage() {
                         usersData?.data.map((user) => (
                           <TableRow
                             key={user.id}
-                            className="group hover:bg-muted/30"
+                            className="group hover:bg-muted/40 transition-colors duration-300"
                           >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-3">
-                                <Avatar className="h-9 w-9 border border-border">
-                                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                <Avatar className="h-9 w-9 border border-border shadow-sm transition-transform duration-300 group-hover:scale-110">
+                                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold shadow-inner">
                                     {getInitials(user.name)}
                                   </AvatarFallback>
                                 </Avatar>
@@ -429,6 +440,7 @@ export default function SettingsPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleEditUser(user)}
+                                  className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-amber-500/10"
                                 >
                                   <Pencil className="h-4 w-4 text-amber-500" />
                                 </Button>
@@ -436,6 +448,7 @@ export default function SettingsPage() {
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDeleteUser(user)}
+                                  className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-destructive/10"
                                 >
                                   <Trash2 className="h-4 w-4 text-red-500" />
                                 </Button>
@@ -452,7 +465,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="appearance" className="mt-0">
-            <Card className="bg-card border-border shadow-sm">
+            <Card className="bg-card border-border shadow-md sm:rounded-2xl overflow-hidden">
               <CardHeader>
                 <CardTitle>Aparência</CardTitle>
                 <CardDescription>
@@ -463,17 +476,17 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl">
                   {/* Tema Claro */}
                   <div
-                    className={`cursor-pointer border-2 rounded-xl p-1 hover:border-primary transition-all ${
+                    className={`cursor-pointer border-2 rounded-2xl p-1 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${
                       theme === "light"
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent bg-muted/50"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-transparent bg-muted/30 hover:bg-muted/50"
                     }`}
                     onClick={() => setTheme("light")}
                   >
                     <div className="space-y-2 rounded-lg bg-[#ecedef] p-2">
-                      <div className="space-y-2 rounded-md bg-white p-2 shadow-sm border border-black/5">
-                        <div className="h-2 w-20 rounded-lg bg-[#ecedef]" />
-                        <div className="h-2 w-[80px] rounded-lg bg-[#ecedef]" />
+                      <div className="space-y-2 rounded-xl bg-white p-2 shadow-sm border border-black/5">
+                        <div className="h-2 w-20 rounded-full bg-[#ecedef]" />
+                        <div className="h-2 w-[80px] rounded-full bg-[#ecedef]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
@@ -483,22 +496,64 @@ export default function SettingsPage() {
 
                   {/* Tema Escuro */}
                   <div
-                    className={`cursor-pointer border-2 rounded-xl p-1 hover:border-primary transition-all ${
+                    className={`cursor-pointer border-2 rounded-2xl p-1 transition-all duration-300 hover:scale-[1.02] hover:shadow-md ${
                       theme === "dark"
-                        ? "border-primary bg-primary/5"
-                        : "border-transparent bg-muted/50"
+                        ? "border-primary bg-primary/5 shadow-sm"
+                        : "border-transparent bg-muted/30 hover:bg-muted/50"
                     }`}
                     onClick={() => setTheme("dark")}
                   >
                     <div className="space-y-2 rounded-lg bg-[#09090b] p-2 border border-white/10">
-                      <div className="space-y-2 rounded-md bg-[#18181b] p-2 shadow-sm border border-white/5">
-                        <div className="h-2 w-20 rounded-lg bg-[#27272a]" />
-                        <div className="h-2 w-[80px] rounded-lg bg-[#27272a]" />
+                      <div className="space-y-2 rounded-xl bg-[#18181b] p-2 shadow-sm border border-white/5">
+                        <div className="h-2 w-20 rounded-full bg-[#27272a]" />
+                        <div className="h-2 w-[80px] rounded-full bg-[#27272a]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
                       <Moon className="h-4 w-4" /> Escuro
                     </div>
+                  </div>
+                </div>
+
+                <Separator className="my-8" />
+
+                <div className="space-y-4 max-w-2xl">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    Tela de Login
+                  </h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="loginImage">URL da Imagem de Fundo</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="loginImage"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        value={loginImageUrl}
+                        onChange={(e) => setLoginImageUrl(e.target.value)}
+                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      />
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await SettingsService.update(
+                              "LOGIN_IMAGE_URL",
+                              loginImageUrl,
+                            );
+                            toast.success(
+                              "Imagem do login atualizada com sucesso!",
+                            );
+                          } catch (err) {
+                            toast.error("Erro ao salvar imagem do login.");
+                          }
+                        }}
+                        className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
+                      >
+                        Salvar Imagem
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Insira o link direto para a imagem que aparecerá na tela
+                      de login. Recomendamos imagens em alta resolução.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -522,7 +577,9 @@ export default function SettingsPage() {
         title="Excluir usuário"
         description={`Tem certeza que deseja excluir o usuário "${deleteUserTarget?.name}"? Esta ação não pode ser desfeita.`}
         confirmLabel="Excluir"
-        onConfirm={() => deleteUserTarget && deleteUserMutation.mutate(deleteUserTarget.id)}
+        onConfirm={() =>
+          deleteUserTarget && deleteUserMutation.mutate(deleteUserTarget.id)
+        }
       />
     </div>
   );

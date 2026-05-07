@@ -126,7 +126,7 @@ export function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] sm:rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold">
             <div className="p-2 bg-primary/10 text-primary rounded-lg">
@@ -146,7 +146,7 @@ export function UserFormDialog({
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  className="pl-9"
+                  className="pl-9 rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                   placeholder="Ex: João Silva"
                   required
                 />
@@ -162,7 +162,7 @@ export function UserFormDialog({
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
-                  className="pl-9"
+                  className="pl-9 rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                   placeholder="joao@empresa.com"
                   required
                 />
@@ -178,7 +178,7 @@ export function UserFormDialog({
                   onChange={(e) => handleChange("username", e.target.value)}
                   placeholder="jsilva"
                   disabled={!!userToEdit}
-                  className={!!userToEdit ? "bg-muted" : ""}
+                  className={`rounded-xl transition-all duration-300 focus-visible:ring-primary/20 ${!!userToEdit ? "bg-muted" : ""}`}
                   required
                 />
               </div>
@@ -189,7 +189,7 @@ export function UserFormDialog({
                   value={formData.role}
                   onValueChange={(val) => handleChange("role", val)}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-xl transition-all duration-300 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,7 +211,7 @@ export function UserFormDialog({
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => handleChange("password", e.target.value)}
-                  className="pl-9 pr-10"
+                  className="pl-9 pr-10 rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                   placeholder={
                     userToEdit ? "Deixe em branco para manter" : "******"
                   }
@@ -238,10 +238,15 @@ export function UserFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              className="rounded-xl transition-all duration-300 hover:scale-[1.02]"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading} className="min-w-[100px]">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="min-w-[100px] rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
+            >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (

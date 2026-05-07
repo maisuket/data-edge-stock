@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Beaker } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -58,7 +58,11 @@ interface Props {
   ingredient?: Ingredient | null;
 }
 
-export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) {
+export function IngredientFormDialog({
+  open,
+  onOpenChange,
+  ingredient,
+}: Props) {
   const qc = useQueryClient();
   const isEditing = !!ingredient;
 
@@ -71,8 +75,12 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
     if (open) {
       form.reset(
         ingredient
-          ? { name: ingredient.name, unit: ingredient.unit, minStock: ingredient.minStock }
-          : { name: "", unit: IngredientUnit.KG, minStock: 0 }
+          ? {
+              name: ingredient.name,
+              unit: ingredient.unit,
+              minStock: ingredient.minStock,
+            }
+          : { name: "", unit: IngredientUnit.KG, minStock: 0 },
       );
     }
   }, [open, ingredient, form]);
@@ -80,7 +88,10 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       isEditing
-        ? IngredientService.update(ingredient!.id, { name: data.name, minStock: data.minStock })
+        ? IngredientService.update(ingredient!.id, {
+            name: data.name,
+            minStock: data.minStock,
+          })
         : IngredientService.create(data),
     onSuccess: () => {
       toast.success(isEditing ? "Insumo atualizado!" : "Insumo criado!");
@@ -94,9 +105,12 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-card">
+      <DialogContent className="sm:max-w-md bg-card sm:rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-foreground">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <div className="p-2 bg-primary/10 text-primary rounded-xl shadow-sm">
+              <Beaker className="w-5 h-5" />
+            </div>
             {isEditing ? "Editar Insumo" : "Novo Insumo"}
           </DialogTitle>
         </DialogHeader>
@@ -113,7 +127,11 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
                 <FormItem>
                   <FormLabel>Nome do insumo</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Leite Integral" {...field} />
+                    <Input
+                      placeholder="Ex: Leite Integral"
+                      {...field}
+                      className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -132,7 +150,7 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
                     disabled={isEditing}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20">
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                     </FormControl>
@@ -161,7 +179,13 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
                 <FormItem>
                   <FormLabel>Estoque mínimo (alerta)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.001" min={0} {...field} />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      {...field}
+                      className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,15 +197,18 @@ export function IngredientFormDialog({ open, onOpenChange, ingredient }: Props) 
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="rounded-xl transition-all duration-300 hover:scale-[1.02]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={mutation.isPending}
-                className="bg-primary text-primary-foreground hover:bg-[#A65E2E]"
+                className="bg-primary text-primary-foreground hover:bg-[#A65E2E] rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
               >
-                {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {mutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                )}
                 {isEditing ? "Salvar alterações" : "Criar insumo"}
               </Button>
             </DialogFooter>

@@ -198,3 +198,13 @@ model ProductionConsumption {
 
   @@map("production_consumptions")
 }
+
+/// Tabela genérica de chave-valor para armazenar configurações do sistema (ex: imagem do login)
+model Setting {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

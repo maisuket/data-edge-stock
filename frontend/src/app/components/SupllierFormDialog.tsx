@@ -141,10 +141,10 @@ export function SupplierFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-card border-border">
+      <DialogContent className="sm:max-w-[600px] bg-card border-border sm:rounded-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <div className="p-2 bg-primary/10 text-primary rounded-lg">
+            <div className="p-2 bg-primary/10 text-primary rounded-xl shadow-sm">
               <Truck className="w-5 h-5" />
             </div>
             {supplierToEdit ? "Editar Fornecedor" : "Novo Fornecedor"}
@@ -166,7 +166,7 @@ export function SupplierFormDialog({
                 onChange={handleChange}
                 placeholder="Ex: Distribuidora Silva LTDA"
                 required
-                className="bg-background"
+                className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               />
             </div>
 
@@ -183,7 +183,7 @@ export function SupplierFormDialog({
                 onChange={handleChange}
                 placeholder="00.000.000/0000-00"
                 maxLength={18}
-                className="bg-background font-mono"
+                className="bg-background font-mono rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               />
             </div>
 
@@ -200,7 +200,7 @@ export function SupplierFormDialog({
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="contato@empresa.com"
-                className="bg-background"
+                className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               />
             </div>
 
@@ -217,7 +217,7 @@ export function SupplierFormDialog({
                 onChange={handleChange}
                 placeholder="(00) 00000-0000"
                 maxLength={15}
-                className="bg-background"
+                className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               />
             </div>
 
@@ -233,7 +233,7 @@ export function SupplierFormDialog({
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="Rua, Número, Bairro, Cidade - UF"
-                className="bg-background"
+                className="bg-background rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               />
             </div>
           </div>
@@ -243,14 +243,14 @@ export function SupplierFormDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-background"
+              className="bg-background rounded-xl transition-all duration-300 hover:scale-[1.02]"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="min-w-[120px] bg-primary text-primary-foreground hover:bg-primary/90"
+              className="min-w-[120px] bg-primary text-primary-foreground hover:bg-[#A65E2E] rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
             >
               {loading ? (
                 <>

@@ -214,7 +214,7 @@ function ProductionFormDialog({
                 <FormItem>
                   <FormLabel>Quantidade a produzir (unidades)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.001" min={0} {...field} />
+                    <Input type="number" step="0.1" min={0} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

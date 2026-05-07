@@ -146,11 +146,13 @@ export default function RecipesPage() {
     onError: (e: any) => {
       let errMsg = e?.response?.data?.message ?? "Erro ao salvar receita.";
       if (Array.isArray(errMsg)) {
-        errMsg = errMsg[0]?.constraints ? Object.values(errMsg[0].constraints)[0] : errMsg.join(", ");
+        errMsg = errMsg[0]?.constraints
+          ? Object.values(errMsg[0].constraints)[0]
+          : errMsg.join(", ");
       } else if (typeof errMsg === "object") {
         errMsg = JSON.stringify(errMsg);
       }
-      
+
       toast.error(String(errMsg));
     },
   });
@@ -305,7 +307,7 @@ export default function RecipesPage() {
                           <div className="flex items-center gap-2 shrink-0">
                             <Input
                               type="number"
-                              step="0.001"
+                              step="0.1"
                               min={0}
                               value={row.quantity}
                               onChange={(e) =>
@@ -389,7 +391,7 @@ export default function RecipesPage() {
                   </span>
                   <Input
                     type="number"
-                    step="0.01"
+                    step="0.1"
                     min={0}
                     className="pl-9 tabular-nums"
                     placeholder="0,00"

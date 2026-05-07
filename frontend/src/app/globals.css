@@ -55,10 +55,19 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Sombras quentes temáticas (Pudim) - Substitui o preto padrão do Tailwind */
+  --shadow-sm: 0 1px 2px 0 oklch(0.33 0.09 47 / 0.08);
+  --shadow-md:
+    0 4px 6px -1px oklch(0.33 0.09 47 / 0.08),
+    0 2px 4px -2px oklch(0.33 0.09 47 / 0.08);
+  --shadow-lg:
+    0 10px 15px -3px oklch(0.33 0.09 47 / 0.08),
+    0 4px 6px -4px oklch(0.33 0.09 47 / 0.08);
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem; /* Aumentado para 16px: Bordas mais suaves e arredondadas globalmente */
 
   /* Superfícies */
   --background: oklch(0.92 0.038 84); /* #F5E6C8 — Bege Pudim */
@@ -165,5 +174,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Cor de seleção de texto com tom de caramelo */
+    @apply selection:bg-primary/20 selection:text-primary;
+  }
+  /* Suavidade global para botões e links (Micro-interações) */
+  button,
+  a {
+    @apply transition-all duration-300 ease-in-out;
   }
 }

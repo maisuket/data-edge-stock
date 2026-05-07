@@ -1,12 +1,13 @@
 "use client"; // Necessário para usar hooks como useState e useRouter
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation"; // Importante: use navigation, não router
 import { Loader2, Lock, Mail, AlertCircle, CheckCircle2 } from "lucide-react";
 import { authService } from "@/lib/services/auth";
+import { SettingsService } from "@/lib/services/settings";
 
 // Schema de validação
 const loginSchema = z.object({
@@ -20,6 +21,18 @@ export default function LoginPage() {
   const router = useRouter(); // Hook de navegação
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [bgImage, setBgImage] = useState(
+    "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?auto=format&fit=crop&w=1200&q=80",
+  );
+
+  // Carrega a imagem dinâmica salva nas configurações
+  useEffect(() => {
+    SettingsService.getByKey("LOGIN_IMAGE_URL")
+      .then((res) => {
+        if (res?.value) setBgImage(res.value);
+      })
+      .catch(console.error); // Ignora erro silenciosamente no login para não impedir o usuário de logar
+  }, []);
 
   const {
     register,
@@ -50,113 +63,138 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md bg-card rounded-xl shadow-lg border border-border overflow-hidden">
-        {/* Cabeçalho */}
-        <div className="bg-primary p-8 text-center">
-          <div className="mx-auto w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4 shadow-lg shadow-accent/20">
-            <Lock className="w-6 h-6 text-primary" />
+    <div className="min-h-screen w-full flex bg-background">
+      {/* Lado Esquerdo - Imagem com Tema de Pudim */}
+      <div className="hidden lg:flex w-1/2 relative bg-muted items-center justify-center overflow-hidden">
+        {/* Overlay para dar um tom de caramelo mais aconchegante sobre a imagem */}
+        <div className="absolute inset-0 bg-primary/20 z-10 mix-blend-multiply" />
+        {/* Imagem do Unsplash (Sem Direitos Autorais) de um Pudim / Flan */}
+        <img
+          src={bgImage}
+          alt="Fábrica de Pudins"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Caixa de Texto de boas-vindas flutuando sobre a Imagem */}
+        <div className="relative z-20 flex flex-col items-center text-center text-white bg-black/40 p-10 rounded-3xl backdrop-blur-sm border border-white/10 shadow-2xl max-w-md animate-in fade-in zoom-in duration-700">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md shadow-inner">
+            <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-primary-foreground mb-2">
-            Acesso ao Sistema
-          </h1>
-          <p className="text-primary-foreground/60 text-sm">Gerenciamento de Stock</p>
+          <h2 className="text-4xl font-bold mb-4 tracking-tight">StockFlow</h2>
+          <p className="text-white/90 text-lg leading-relaxed">
+            A doçura de uma gestão eficiente.
+            <br />O controle perfeito para a sua fábrica.
+          </p>
         </div>
+      </div>
 
-        {/* Formulário */}
-        <div className="p-8">
-          <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
-            {/* Erro */}
-            {serverError && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-3 text-destructive text-sm animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-5 h-5 shrink-0" />
-                <span>{serverError}</span>
-              </div>
-            )}
+      {/* Lado Direito - Formulário de Login */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 relative">
+        <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+          {/* Cabeçalho */}
+          <div className="p-8 text-center bg-muted/30 border-b border-border">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              Acesso ao Sistema
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Gerenciamento de Estoque
+            </p>
+          </div>
 
-            {/* Sucesso */}
-            {success && (
-              <div className="p-3 rounded-lg bg-[#4CAF50]/10 border border-[#4CAF50]/20 flex items-center gap-3 text-[#4CAF50] text-sm animate-in fade-in slide-in-from-top-2">
-                <CheckCircle2 className="w-5 h-5 shrink-0" />
-                <span>Login realizado! Redirecionando...</span>
-              </div>
-            )}
-
-            {/* Campos (username/Senha) */}
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-foreground"
-                htmlFor="username"
-              >
-                E-mail
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
+          {/* Formulário */}
+          <div className="p-8">
+            <form onSubmit={handleSubmit(handleLogin)} className="space-y-5">
+              {/* Erro */}
+              {serverError && (
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center gap-3 text-destructive text-sm animate-in fade-in slide-in-from-top-2">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>{serverError}</span>
                 </div>
-                <input
-                  {...register("username")}
-                  id="username"
-                  type="username"
-                  placeholder="usuario.usuario"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30 focus:outline-none transition-all
-                    ${
-                      errors.username
-                        ? "border-destructive focus:border-destructive"
-                        : "border-border focus:border-ring"
-                    }`}
-                />
-              </div>
-              {errors.username && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.username.message}
-                </p>
               )}
-            </div>
 
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-foreground"
-                htmlFor="password"
-              >
-                Senha
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-muted-foreground" />
+              {/* Sucesso */}
+              {success && (
+                <div className="p-3 rounded-xl bg-[#4CAF50]/10 border border-[#4CAF50]/20 flex items-center gap-3 text-[#4CAF50] text-sm animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>Login realizado! Redirecionando...</span>
                 </div>
-                <input
-                  {...register("password")}
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30 focus:outline-none transition-all
-                    ${
-                      errors.password
-                        ? "border-destructive focus:border-destructive"
-                        : "border-border focus:border-ring"
-                    }`}
-                />
-              </div>
-              {errors.password && (
-                <p className="text-xs text-destructive mt-1">
-                  {errors.password.message}
-                </p>
               )}
-            </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting || success}
-              className="w-full bg-primary text-primary-foreground font-medium py-2.5 rounded-lg hover:bg-[oklch(0.480_0.120_50)] active:scale-[0.98] transition-all disabled:opacity-70 flex items-center justify-center gap-2 shadow-sm"
-            >
-              {isSubmitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                "Entrar"
-              )}
-            </button>
-          </form>
+              {/* Campos (username/Senha) */}
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium text-foreground"
+                  htmlFor="username"
+                >
+                  E-mail / Usuário
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 group-focus-within:text-primary">
+                    <Mail className="h-5 w-5 text-muted-foreground group-focus-within:text-primary" />
+                  </div>
+                  <input
+                    {...register("username")}
+                    id="username"
+                    type="username"
+                    placeholder="usuario.usuario"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/20 focus:outline-none transition-all duration-300
+                      ${
+                        errors.username
+                          ? "border-destructive focus-visible:border-destructive"
+                          : "border-border focus-visible:border-primary/50"
+                      }`}
+                  />
+                </div>
+                {errors.username && (
+                  <p className="text-xs text-destructive mt-1 pl-1">
+                    {errors.username.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium text-foreground"
+                  htmlFor="password"
+                >
+                  Senha
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors duration-300 group-focus-within:text-primary">
+                    <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-primary" />
+                  </div>
+                  <input
+                    {...register("password")}
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-background text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/20 focus:outline-none transition-all duration-300
+                      ${
+                        errors.password
+                          ? "border-destructive focus-visible:border-destructive"
+                          : "border-border focus-visible:border-primary/50"
+                      }`}
+                  />
+                </div>
+                {errors.password && (
+                  <p className="text-xs text-destructive mt-1 pl-1">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || success}
+                className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-xl hover:bg-[#A65E2E] hover:scale-[1.02] hover:shadow-md active:scale-95 transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 mt-2"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Entrar"
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

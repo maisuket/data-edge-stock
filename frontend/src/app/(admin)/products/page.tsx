@@ -71,18 +71,21 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
-const fmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
 
 // ── Category badge colors ──────────────────────────────────────────────────
 
 const CATEGORY_STYLES: Record<string, string> = {
-  Pudim:   "bg-[#6B3E26]/10 text-[#6B3E26] border-[#6B3E26]/25",
-  Picolé:  "bg-[#8ED1C6]/20 text-[#2E7D70] border-[#8ED1C6]/40",
-  Dindin:  "bg-[#FF8A65]/15 text-[#BF360C] border-[#FF8A65]/30",
+  Pudim: "bg-[#6B3E26]/10 text-[#6B3E26] border-[#6B3E26]/25",
+  Picolé: "bg-[#8ED1C6]/20 text-[#2E7D70] border-[#8ED1C6]/40",
+  Dindin: "bg-[#FF8A65]/15 text-[#BF360C] border-[#FF8A65]/30",
   Sorvete: "bg-[#D9A441]/15 text-[#7A5C1E] border-[#D9A441]/35",
-  Bolo:    "bg-[#CE93D8]/20 text-[#6A1B9A] border-[#CE93D8]/40",
-  Torta:   "bg-[#A5D6A7]/20 text-[#1B5E20] border-[#A5D6A7]/40",
-  Outros:  "bg-muted text-muted-foreground border-border",
+  Bolo: "bg-[#CE93D8]/20 text-[#6A1B9A] border-[#CE93D8]/40",
+  Torta: "bg-[#A5D6A7]/20 text-[#1B5E20] border-[#A5D6A7]/40",
+  Outros: "bg-muted text-muted-foreground border-border",
 };
 
 function CategoryBadge({ category }: { category: string }) {
@@ -96,17 +99,26 @@ function CategoryBadge({ category }: { category: string }) {
 
 // ── Margin badge ───────────────────────────────────────────────────────────
 
-function MarginBadge({ costPrice, salePrice }: { costPrice: number; salePrice?: number }) {
-  if (!salePrice || salePrice <= 0) return <span className="text-xs text-muted-foreground">—</span>;
+function MarginBadge({
+  costPrice,
+  salePrice,
+}: {
+  costPrice: number;
+  salePrice?: number;
+}) {
+  if (!salePrice || salePrice <= 0)
+    return <span className="text-xs text-muted-foreground">—</span>;
   const margin = ((salePrice - costPrice) / salePrice) * 100;
   const cls =
     margin >= 30
       ? "bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30"
       : margin >= 0
-      ? "bg-[#FFB300]/10 text-[#FFB300] border-[#FFB300]/30"
-      : "bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30";
+        ? "bg-[#FFB300]/10 text-[#FFB300] border-[#FFB300]/30"
+        : "bg-[#E53935]/10 text-[#E53935] border-[#E53935]/30";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded border ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-lg shadow-sm border ${cls}`}
+    >
       <TrendingUp className="w-3 h-3" />
       {margin.toFixed(1)}%
     </span>
@@ -176,8 +188,8 @@ function StockMovementDialog({
               variant={type === MovementType.ENTRY ? "default" : "outline"}
               className={
                 type === MovementType.ENTRY
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent"
-                  : "border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
+                  : "border-emerald-200 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-xl transition-all duration-300 hover:scale-[1.02]"
               }
               onClick={() => setType(MovementType.ENTRY)}
             >
@@ -188,8 +200,8 @@ function StockMovementDialog({
               variant={type === MovementType.EXIT ? "default" : "outline"}
               className={
                 type === MovementType.EXIT
-                  ? "bg-red-600 hover:bg-red-700 text-white border-transparent"
-                  : "border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  ? "bg-red-600 hover:bg-red-700 text-white border-transparent rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
+                  : "border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all duration-300 hover:scale-[1.02]"
               }
               onClick={() => setType(MovementType.EXIT)}
             >
@@ -204,6 +216,7 @@ function StockMovementDialog({
               min="1"
               placeholder="0"
               value={quantity}
+              className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               onChange={(e) => setQuantity(e.target.value)}
             />
           </div>
@@ -213,18 +226,24 @@ function StockMovementDialog({
             <Input
               placeholder="Motivo (ex: Ajuste, Perda, Venda direta)..."
               value={description}
+              className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="rounded-xl transition-all duration-300 hover:scale-[1.02]"
+          >
             Cancelar
           </Button>
           <Button
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !quantity || Number(quantity) <= 0}
+            className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
           >
             {mutation.isPending && (
               <span className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
@@ -253,15 +272,21 @@ function TableSkeleton() {
               </div>
             </div>
           </TableCell>
-          <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </TableCell>
           <TableCell>
             <div className="space-y-1">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-3 w-16" />
             </div>
           </TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded ml-auto" /></TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-8 w-8 rounded ml-auto" />
+          </TableCell>
         </TableRow>
       ))}
     </>
@@ -277,11 +302,17 @@ export default function ProductsPage() {
   const pageSize = 10;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>(
+    undefined,
+  );
 
   const [isMoveOpen, setIsMoveOpen] = useState(false);
-  const [movingProduct, setMovingProduct] = useState<Product | undefined>(undefined);
-  const [deleteTarget, setDeleteTarget] = useState<Product | undefined>(undefined);
+  const [movingProduct, setMovingProduct] = useState<Product | undefined>(
+    undefined,
+  );
+  const [deleteTarget, setDeleteTarget] = useState<Product | undefined>(
+    undefined,
+  );
 
   const queryClient = useQueryClient();
 
@@ -346,18 +377,25 @@ export default function ProductsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} className="gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className="gap-2 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
-          <Button onClick={openNew} className="gap-2">
+          <Button
+            onClick={openNew}
+            className="gap-2 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
+          >
             <Plus className="h-4 w-4" />
             Novo Produto
           </Button>
         </div>
       </div>
 
-      <Card className="border-border shadow-sm bg-card">
+      <Card className="border-border shadow-md bg-card rounded-2xl overflow-hidden">
         <CardHeader className="pb-4">
           <CardTitle>Listagem de Produtos</CardTitle>
           <CardDescription>
@@ -371,12 +409,12 @@ export default function ProductsPage() {
 
         <CardContent>
           {/* Search */}
-          <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-md border w-fit">
+          <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
             <div className="relative w-[300px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome ou código..."
-                className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent"
+                className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent rounded-xl"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -391,11 +429,21 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="font-semibold text-foreground">Produto</TableHead>
-                  <TableHead className="font-semibold text-foreground">Categoria</TableHead>
-                  <TableHead className="font-semibold text-foreground">Estoque</TableHead>
-                  <TableHead className="font-semibold text-foreground">Custo / Venda</TableHead>
-                  <TableHead className="text-right font-semibold text-foreground w-[80px]">Ações</TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Produto
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Categoria
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Estoque
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Custo / Venda
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground w-[80px]">
+                    Ações
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -403,17 +451,26 @@ export default function ProductsPage() {
                   <TableSkeleton />
                 ) : isError ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-destructive">
+                    <TableCell
+                      colSpan={5}
+                      className="h-32 text-center text-destructive"
+                    >
                       <div className="flex flex-col items-center gap-2">
                         <AlertTriangle className="h-6 w-6" />
-                        <span>Erro ao carregar dados. Verifique a conexão.</span>
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
+                        </span>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : data?.data?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                      Nenhum produto encontrado{search ? ` para "${search}"` : ""}.
+                    <TableCell
+                      colSpan={5}
+                      className="h-32 text-center text-muted-foreground"
+                    >
+                      Nenhum produto encontrado
+                      {search ? ` para "${search}"` : ""}.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -422,13 +479,13 @@ export default function ProductsPage() {
                     return (
                       <TableRow
                         key={product.id}
-                        className="group hover:bg-muted/30 transition-colors"
+                        className="group hover:bg-muted/40 transition-colors duration-300"
                       >
                         {/* Nome */}
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-3">
                             <div
-                              className={`p-2 rounded-lg border ${
+                              className={`p-2 rounded-xl border shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 ${
                                 product.isManufactured
                                   ? "bg-accent/10 text-accent border-accent/25"
                                   : "bg-muted text-muted-foreground border-border"
@@ -469,7 +526,7 @@ export default function ProductsPage() {
                         {/* Estoque */}
                         <TableCell>
                           <div
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-sm transition-colors duration-300 ${
                               isLowStock
                                 ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
                                 : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
@@ -488,17 +545,24 @@ export default function ProductsPage() {
                         <TableCell>
                           <div className="space-y-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground w-10">Custo</span>
+                              <span className="text-xs text-muted-foreground w-10">
+                                Custo
+                              </span>
                               <span className="text-sm font-medium text-foreground tabular-nums">
                                 {fmt.format(product.costPrice ?? 0)}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground w-10">Venda</span>
+                              <span className="text-xs text-muted-foreground w-10">
+                                Venda
+                              </span>
                               <span className="text-sm font-semibold tabular-nums">
                                 {fmt.format(product.salePrice ?? 0)}
                               </span>
-                              <MarginBadge costPrice={product.costPrice ?? 0} salePrice={product.salePrice} />
+                              <MarginBadge
+                                costPrice={product.costPrice ?? 0}
+                                salePrice={product.salePrice}
+                              />
                             </div>
                           </div>
                         </TableCell>
@@ -507,7 +571,10 @@ export default function ProductsPage() {
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 rounded-xl transition-all duration-300 hover:scale-105"
+                              >
                                 <span className="sr-only">Abrir menu</span>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
@@ -515,7 +582,9 @@ export default function ProductsPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Ações</DropdownMenuLabel>
 
-                              <DropdownMenuItem onClick={() => openEdit(product)}>
+                              <DropdownMenuItem
+                                onClick={() => openEdit(product)}
+                              >
                                 <Pencil className="mr-2 h-4 w-4 text-muted-foreground" />
                                 Editar
                               </DropdownMenuItem>
@@ -523,20 +592,30 @@ export default function ProductsPage() {
                               {product.isManufactured ? (
                                 <>
                                   <DropdownMenuItem
-                                    onClick={() => router.push(`/recipes?product=${product.id}`)}
+                                    onClick={() =>
+                                      router.push(
+                                        `/recipes?product=${product.id}`,
+                                      )
+                                    }
                                   >
                                     <ChefHat className="mr-2 h-4 w-4 text-muted-foreground" />
                                     Ver Receita
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
-                                    onClick={() => router.push(`/productions?product=${product.id}`)}
+                                    onClick={() =>
+                                      router.push(
+                                        `/productions?product=${product.id}`,
+                                      )
+                                    }
                                   >
                                     <Factory className="mr-2 h-4 w-4 text-muted-foreground" />
                                     Registrar Produção
                                   </DropdownMenuItem>
                                 </>
                               ) : (
-                                <DropdownMenuItem onClick={() => openMove(product)}>
+                                <DropdownMenuItem
+                                  onClick={() => openMove(product)}
+                                >
                                   <ArrowLeftRight className="mr-2 h-4 w-4 text-muted-foreground" />
                                   Movimentar
                                 </DropdownMenuItem>
@@ -575,7 +654,7 @@ export default function ProductsPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Anterior
               </Button>
@@ -587,8 +666,10 @@ export default function ProductsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={!data?.meta?.hasNextPage || isLoading || isPlaceholderData}
-                className="h-8 text-xs"
+                disabled={
+                  !data?.meta?.hasNextPage || isLoading || isPlaceholderData
+                }
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Próximo
               </Button>
