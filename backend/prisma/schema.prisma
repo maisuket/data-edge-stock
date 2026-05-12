@@ -19,6 +19,7 @@ model User {
   updatedAt      DateTime        @updatedAt
   productions    Production[]
   stockMovements StockMovement[]
+  priceHistories ProductPriceHistory[]
 
   @@map("users")
 }
@@ -43,7 +44,7 @@ model Product {
   name           String
   category       String
   internalCode   String          @unique @map("internal_code")
-  barcode        String          @unique
+  barcode        String?         @unique
   unit           String
   costPrice      Decimal         @map("cost_price")
   salePrice      Decimal?        @map("sale_price")
@@ -58,6 +59,7 @@ model Product {
   recipeItems    RecipeItem[]
   specifications Specification[]
   stockMovements StockMovement[]
+  priceHistories ProductPriceHistory[]
 
   @@map("products")
 }
@@ -83,6 +85,22 @@ model StockMovement {
   user        User      @relation(fields: [userId], references: [id])
 
   @@map("stock_movements")
+}
+
+model ProductPriceHistory {
+  id           String   @id @default(uuid())
+  productId    String   @map("product_id")
+  oldCostPrice Decimal  @map("old_cost_price")
+  newCostPrice Decimal  @map("new_cost_price")
+  oldSalePrice Decimal? @map("old_sale_price")
+  newSalePrice Decimal? @map("new_sale_price")
+  userId       String   @map("user_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("product_price_history")
 }
 
 model Specification {

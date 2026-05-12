@@ -90,10 +90,10 @@ async function main() {
     // 5.2 Insumos
     const flour = await prisma.ingredient.create({
       data: {
-        name: 'Farinha de Trigo',
-        unit: 'KG',
-        currentStock: 50,
-        averageCost: 4.5,
+        name: 'Leite Condensado',
+        unit: 'G',
+        currentStock: 395,
+        averageCost: 6.5,
         minStock: 15,
       },
     });
@@ -101,8 +101,8 @@ async function main() {
     const sugar = await prisma.ingredient.create({
       data: {
         name: 'Açúcar Refinado',
-        unit: 'KG',
-        currentStock: 30,
+        unit: 'G',
+        currentStock: 1000,
         averageCost: 3.2,
         minStock: 10,
       },
@@ -110,55 +110,36 @@ async function main() {
 
     const eggs = await prisma.ingredient.create({
       data: {
-        name: 'Ovos Brancos',
-        unit: 'UNIT',
+        name: 'Ovo Branco',
+        unit: 'UN',
         currentStock: 120,
         averageCost: 0.5,
         minStock: 30,
       },
     });
 
+    const eggss = await prisma.ingredient.create({
+      data: {
+        name: 'Gema',
+        unit: 'UN',
+        currentStock: 120,
+        averageCost: 0.5,
+        minStock: 30,
+      },
+    });
+
+    const cremeLeite = await prisma.ingredient.create({
+      data: {
+        name: 'Creme de Leite',
+        unit: 'ML',
+        currentStock: 200,
+        averageCost: 3.5,
+        minStock: 200,
+      },
+    });
+
     // 5.3 Produtos e Receitas
     console.log('🍔 Inserindo Produtos...');
-
-    // Produto Manufaturado (Com Receita)
-    await prisma.product.create({
-      data: {
-        name: 'Bolo Caseiro Simples',
-        category: 'Padaria',
-        internalCode: 'PROD-001',
-        barcode: '7890000000001',
-        unit: 'UNIT',
-        costPrice: 3.49, // (0.3 * 4.5) + (0.2 * 3.2) + (3 * 0.5)
-        salePrice: 15.0,
-        currentStock: 5,
-        minStock: 2,
-        isManufactured: true,
-        recipeItems: {
-          create: [
-            { ingredientId: flour.id, quantity: 0.3 }, // 300g de farinha
-            { ingredientId: sugar.id, quantity: 0.2 }, // 200g de açúcar
-            { ingredientId: eggs.id, quantity: 3 }, // 3 unidades de ovo
-          ],
-        },
-      },
-    });
-
-    // Produto de Revenda Direta
-    await prisma.product.create({
-      data: {
-        name: 'Refrigerante Cola 2L',
-        category: 'Bebidas',
-        internalCode: 'PROD-002',
-        barcode: '7890000000002',
-        unit: 'UNIT',
-        costPrice: 5.5,
-        salePrice: 10.0,
-        currentStock: 40,
-        minStock: 12,
-        isManufactured: false,
-      },
-    });
 
     console.log('✅ Dados de exemplo criados com sucesso!');
   } else {

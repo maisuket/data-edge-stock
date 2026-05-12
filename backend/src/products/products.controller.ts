@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
@@ -63,10 +64,22 @@ export class ProductsController {
     return this.productsService.findOne(id);
   }
 
+  @Get(':id/price-history')
+  @ApiOperation({
+    summary: 'Buscar histórico de alterações de preço do produto',
+  })
+  getPriceHistory(@Param('id') id: string) {
+    return this.productsService.getPriceHistory(id);
+  }
+
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar produto' })
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return this.productsService.update(id, updateProductDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto,
+    @Request() req: { user: { userId: string } },
+  ) {
+    return this.productsService.update(id, updateProductDto, req.user.userId);
   }
 
   @Delete(':id')

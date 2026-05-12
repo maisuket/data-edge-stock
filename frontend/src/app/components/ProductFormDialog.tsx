@@ -92,9 +92,9 @@ export function ProductFormDialog({
     if (productToEdit) {
       setFormData({
         name: productToEdit.name,
-        category: productToEdit.category,
+        category: productToEdit.category || "Outros",
         internalCode: productToEdit.internalCode,
-        unit: productToEdit.unit,
+        unit: productToEdit.unit === "UNIT" ? "UN" : productToEdit.unit || "UN",
         costPrice: String(productToEdit.costPrice),
         salePrice: productToEdit.salePrice
           ? String(productToEdit.salePrice)
@@ -129,6 +129,20 @@ export function ProductFormDialog({
       p.map((s, idx) => (idx === i ? { ...s, [field]: val } : s)),
     );
 
+  // Garante que o Select não fique em branco se o valor do banco não estiver na lista padrão
+  const displayCategories = [...PRODUCT_CATEGORIES];
+  if (
+    formData.category &&
+    !displayCategories.some((c) => c.value === formData.category)
+  ) {
+    displayCategories.push({ value: formData.category, label: formData.category });
+  }
+
+  const displayUnits = [...UNITS];
+  if (formData.unit && !displayUnits.includes(formData.unit)) {
+    displayUnits.push(formData.unit);
+  }
+
   // ── Submit ────────────────────────────────────────────────────────────────
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,13 +174,8 @@ export function ProductFormDialog({
           filePath: string;
           fileType: string;
         }[],
-        // Geração automática de campos obrigatórios no schema mas sem uso real aqui
-        internalCode:
-          formData.internalCode.trim() ||
-          (isEditing
-            ? productToEdit!.internalCode
-            : `PROD-${Date.now().toString().slice(-6)}`),
-        barcode: isEditing ? productToEdit!.barcode : "N/A",
+        internalCode: formData.internalCode.trim() || undefined,
+        barcode: isEditing ? productToEdit!.barcode : undefined,
       };
 
       if (isEditing) {
@@ -179,9 +188,25 @@ export function ProductFormDialog({
 
       onSuccess();
       onOpenChange(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Erro ao salvar produto. Verifique os dados.");
+      
+      const responseMessage = err.response?.data?.message;
+
+      // Se a mensagem for um array (padrão de erros de validação do NestJS)
+      if (Array.isArray(responseMessage)) {
+        const firstError = responseMessage[0];
+        const validationMessage = firstError?.constraints
+          ? Object.values(firstError.constraints)[0]
+          : "Erro de validação nos dados.";
+        toast.error(validationMessage as string);
+      } 
+      // Se for uma string (erros de regras de negócio como o 409 Conflict)
+      else if (typeof responseMessage === "string") {
+        toast.error(responseMessage);
+      } else {
+        toast.error("Erro ao salvar produto. Verifique os dados.");
+      }
     } finally {
       setLoading(false);
     }
@@ -192,6 +217,12 @@ export function ProductFormDialog({
   const costNum = Number(formData.costPrice) || 0;
   const saleNum = Number(formData.salePrice) || 0;
   const margin = saleNum > 0 ? ((saleNum - costNum) / saleNum) * 100 : null;
+
+  // Gera a prévia do código baseado na categoria selecionada
+  const categoryPrefix = formData.category
+    ? formData.category.substring(0, 3).toUpperCase().padEnd(3, "X")
+    : "PROD";
+  const internalCodePlaceholder = `Gerado auto (ex: ${categoryPrefix}-0001)`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -285,7 +316,7 @@ export function ProductFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {UNITS.map((u) => (
+                        {displayUnits.map((u) => (
                           <SelectItem key={u} value={u}>
                             {u}
                           </SelectItem>
@@ -300,35 +331,49 @@ export function ProductFormDialog({
                     <Select
                       value={formData.category}
                       onValueChange={(v) => set("category", v)}
+                      disabled={isEditing}
                     >
                       <SelectTrigger className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {PRODUCT_CATEGORIES.map((c) => (
+                        {displayCategories.map((c) => (
                           <SelectItem key={c.value} value={c.value}>
                             {c.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {isEditing && (
+                      <p className="text-[10px] text-muted-foreground">
+                        A categoria não pode ser alterada após a criação.
+                      </p>
+                    )}
                   </div>
 
                   {/* Código interno */}
                   <div className="col-span-12 sm:col-span-6 space-y-2">
                     <Label htmlFor="internalCode">
                       Código interno
-                      <span className="text-muted-foreground text-xs ml-1">
-                        (opcional)
-                      </span>
+                      {!isEditing && (
+                        <span className="text-muted-foreground text-xs ml-1">
+                          (opcional)
+                        </span>
+                      )}
                     </Label>
                     <Input
                       id="internalCode"
                       value={formData.internalCode}
                       onChange={(e) => set("internalCode", e.target.value)}
-                      placeholder="Gerado automaticamente"
+                      placeholder={internalCodePlaceholder}
                       className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      disabled={isEditing}
                     />
+                    {isEditing && (
+                      <p className="text-[10px] text-muted-foreground">
+                        O código interno é imutável.
+                      </p>
+                    )}
                   </div>
 
                   {/* Preços */}

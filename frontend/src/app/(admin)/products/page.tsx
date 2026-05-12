@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   useQuery,
@@ -297,7 +297,8 @@ function TableSkeleton() {
 
 export default function ProductsPage() {
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -316,9 +317,17 @@ export default function ProductsPage() {
 
   const queryClient = useQueryClient();
 
+  // Debounce da busca: atualiza a query de busca 500ms após o usuário parar de digitar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
-    queryKey: ["products", page, search],
-    queryFn: () => ProductService.getAll(page, pageSize, search),
+    queryKey: ["products", page, searchQuery],
+    queryFn: () => ProductService.getAll(page, pageSize, searchQuery),
     placeholderData: keepPreviousData,
   });
 
@@ -326,6 +335,7 @@ export default function ProductsPage() {
     mutationFn: ProductService.delete,
     onSuccess: () => {
       toast.success("Produto excluído!");
+      setDeleteTarget(undefined);
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
     onError: () => toast.error("Erro ao excluir. Verifique movimentações."),
@@ -415,9 +425,9 @@ export default function ProductsPage() {
               <Input
                 placeholder="Buscar por nome ou código..."
                 className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent rounded-xl"
-                value={search}
+                value={searchInput}
                 onChange={(e) => {
-                  setSearch(e.target.value);
+                  setSearchInput(e.target.value);
                   setPage(1);
                 }}
               />
@@ -470,7 +480,7 @@ export default function ProductsPage() {
                       className="h-32 text-center text-muted-foreground"
                     >
                       Nenhum produto encontrado
-                      {search ? ` para "${search}"` : ""}.
+                      {searchQuery ? ` para "${searchQuery}"` : ""}.
                     </TableCell>
                   </TableRow>
                 ) : (

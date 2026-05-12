@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,18 +37,47 @@ export class ProductsService {
   }
 
   async create(createProductDto: CreateProductDto) {
+    let newInternalCode = createProductDto.internalCode;
+
+    // Se o código interno não for enviado, geramos um sequencial automaticamente
+    if (!newInternalCode) {
+      // Pega as 3 primeiras letras da categoria em maiúsculo (ex: "Bolo" -> "BOL")
+      // O padEnd garante que, se a categoria tiver menos de 3 letras (ex: "Pó"), vire "PÓX"
+      const categoryPrefix = createProductDto.category
+        .substring(0, 3)
+        .toUpperCase()
+        .padEnd(3, 'X');
+
+      const lastProduct = await this.prisma.product.findFirst({
+        where: { internalCode: { startsWith: `${categoryPrefix}-` } },
+        orderBy: { createdAt: 'desc' },
+        select: { internalCode: true },
+      });
+
+      let nextSequence = 1;
+      if (
+        lastProduct &&
+        lastProduct.internalCode.startsWith(`${categoryPrefix}-`)
+      ) {
+        const lastNumber = parseInt(
+          lastProduct.internalCode.replace(`${categoryPrefix}-`, ''),
+          10,
+        );
+        if (!isNaN(lastNumber)) {
+          nextSequence = lastNumber + 1;
+        }
+      }
+      newInternalCode = `${categoryPrefix}-${nextSequence.toString().padStart(4, '0')}`;
+    }
+
     const { specifications, attachments, ...productData } = createProductDto;
 
     return this.prisma.product.create({
       data: {
         ...productData,
-        // Cria as relações automaticamente
-        specifications: {
-          create: specifications,
-        },
-        attachments: {
-          create: attachments,
-        },
+        internalCode: newInternalCode,
+        specifications: specifications ? { create: specifications } : undefined,
+        attachments: attachments ? { create: attachments } : undefined,
       },
       include: {
         specifications: true,
@@ -117,8 +151,61 @@ export class ProductsService {
     };
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
-    const { specifications, attachments, ...productData } = updateProductDto;
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    userId?: string,
+  ) {
+    // Extrai internalCode e category para garantir que nunca sejam alterados após a criação
+    const {
+      specifications,
+      attachments,
+      internalCode,
+      category,
+      ...productData
+    } = updateProductDto;
+
+    // Busca o produto atual para comparar preços
+    const currentProduct = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!currentProduct) {
+      throw new NotFoundException(`Produto ${id} não encontrado.`);
+    }
+
+    const priceHistoryCreate: Array<{
+      oldCostPrice: number;
+      newCostPrice: number;
+      oldSalePrice: number | null;
+      newSalePrice: number | null;
+      userId: string;
+    }> = [];
+    if (userId) {
+      const oldCost = currentProduct.costPrice.toNumber();
+      const newCost =
+        productData.costPrice !== undefined
+          ? Number(productData.costPrice)
+          : oldCost;
+      const oldSale = currentProduct.salePrice
+        ? currentProduct.salePrice.toNumber()
+        : null;
+      const newSale =
+        productData.salePrice !== undefined
+          ? Number(productData.salePrice)
+          : oldSale;
+
+      // Se houver alteração em qualquer um dos preços, gera o registro de histórico
+      if (oldCost !== newCost || oldSale !== newSale) {
+        priceHistoryCreate.push({
+          oldCostPrice: oldCost,
+          newCostPrice: newCost,
+          oldSalePrice: oldSale,
+          newSalePrice: newSale,
+          userId,
+        });
+      }
+    }
 
     // Remove os arquivos físicos dos anexos antigos antes de deletar do banco
     if (attachments) {
@@ -139,6 +226,10 @@ export class ProductsService {
         attachments: attachments
           ? { deleteMany: {}, create: attachments }
           : undefined,
+        priceHistories:
+          priceHistoryCreate.length > 0
+            ? { create: priceHistoryCreate }
+            : undefined,
       },
       include: {
         specifications: true,
@@ -148,13 +239,24 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const movements = await this.prisma.stockMovement.findMany({
+    // Usar findFirst é muito mais rápido do que findMany apenas para checar existência
+    const movement = await this.prisma.stockMovement.findFirst({
       where: { productId: id },
     });
 
-    if (movements.length > 0) {
+    if (movement) {
       throw new BadRequestException(
-        'Não é possível excluir um produto que possui movimentações.',
+        'Não é possível excluir um produto que possui movimentações de estoque.',
+      );
+    }
+
+    const production = await this.prisma.production.findFirst({
+      where: { productId: id },
+    });
+
+    if (production) {
+      throw new BadRequestException(
+        'Não é possível excluir um produto que possui produções registradas.',
       );
     }
 
@@ -239,11 +341,12 @@ export class ProductsService {
 
     // Prepara o array para o gráfico (últimos 7 dias agrupados)
     const pad = (n: number) => n.toString().padStart(2, '0');
-    const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    
+    const formatDate = (d: Date) =>
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
     const trendMap = new Map<string, { date: string; value: number }>();
     const daysShort = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(todayStart);
       d.setDate(d.getDate() - i);
@@ -281,5 +384,21 @@ export class ProductsService {
       })),
       productionsTrend: Array.from(trendMap.values()),
     };
+  }
+
+  // Busca o histórico de um produto para exibir no relatório
+  async getPriceHistory(productId: string) {
+    const history = await this.prisma.productPriceHistory.findMany({
+      where: { productId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { name: true } },
+      },
+    });
+
+    return history.map((h) => ({
+      ...h,
+      userName: h.user.name,
+    }));
   }
 }

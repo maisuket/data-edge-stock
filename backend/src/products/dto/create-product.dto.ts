@@ -50,12 +50,12 @@ export class CreateProductDto {
 
   @ApiProperty({ example: 'PAR-001', description: 'Código único interno' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   internalCode: string;
 
   @ApiProperty({ example: '7890000000000', description: 'EAN/GTIN' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   barcode: string;
 
   @ApiProperty({ enum: Unit, example: Unit.UN })
