@@ -20,6 +20,7 @@ model User {
   productions    Production[]
   stockMovements StockMovement[]
   priceHistories ProductPriceHistory[]
+  sales          Sale[]
 
   @@map("users")
 }
@@ -60,6 +61,7 @@ model Product {
   specifications Specification[]
   stockMovements StockMovement[]
   priceHistories ProductPriceHistory[]
+  saleItems      SaleItem[]
 
   @@map("products")
 }
@@ -229,4 +231,37 @@ model Setting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+/// Registro de uma Venda (Frente de Caixa / Pedido)
+model Sale {
+  id          String     @id @default(uuid())
+  /// Valor total final da venda (após descontos)
+  totalAmount Decimal    @map("total_amount")
+  discount    Decimal?   @default(0)
+  notes       String?
+  userId      String     @map("user_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  user        User       @relation(fields: [userId], references: [id])
+  items       SaleItem[]
+
+  @@map("sales")
+}
+
+/// Itens individuais de uma Venda
+model SaleItem {
+  id          String   @id @default(uuid())
+  saleId      String   @map("sale_id")
+  productId   String   @map("product_id")
+  quantity    Decimal
+  unitPrice   Decimal  @map("unit_price") // Snapshot do preço de venda na hora da compra
+  unitCost    Decimal  @map("unit_cost")  // Snapshot do custo na hora da compra (crucial para o lucro real)
+  totalPrice  Decimal  @map("total_price") // quantity * unitPrice
+
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
 }

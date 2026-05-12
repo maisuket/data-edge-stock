@@ -20,6 +20,7 @@ import { IngredientsModule } from './ingredients/ingredients.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ProductionsModule } from './productions/productions.module';
 import { SettingsModule } from './settings/settings.module';
+import { SalesModule } from './sales/sales.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { SettingsModule } from './settings/settings.module';
     ReportsModule,
     SystemModule,
     FilesModule,
+    SalesModule,
     // ── Módulos de produção (Pudim Gourmet) ──
     IngredientsModule,
     RecipesModule,
