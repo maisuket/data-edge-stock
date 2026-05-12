@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -49,17 +49,6 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
-
-// Dados fictícios para o gráfico até integrarmos com o backend
-const mockChartData = [
-  { date: "Seg", value: 320 },
-  { date: "Ter", value: 450 },
-  { date: "Qua", value: 210 },
-  { date: "Qui", value: 550 },
-  { date: "Sex", value: 700 },
-  { date: "Sáb", value: 400 },
-  { date: "Dom", value: 650 },
-];
 
 // ── KPI Card ────────────────────────────────────────────────────────────────
 
@@ -160,12 +149,14 @@ export default function DashboardPage() {
     queryKey: ["dashboard-stats"],
     queryFn: DashboardService.getStats,
     staleTime: 60_000,
+    refetchInterval: 60_000, // Atualiza automaticamente a cada 1 minuto
   });
 
   const { data: health, isLoading: healthLoading } = useQuery({
     queryKey: ["health"],
     queryFn: DashboardService.getHealth,
     staleTime: 30_000,
+    refetchInterval: 30_000, // Atualiza o status automaticamente a cada 30 seg
     retry: false,
   });
 
@@ -179,24 +170,27 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
-        <div className="flex justify-between items-center">
+      <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="flex justify-between items-center mb-8">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-10 w-24" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))}
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))}
-        </div>
-        <div className="grid gap-4 lg:grid-cols-7">
-          <Skeleton className="col-span-4 h-64 rounded-xl" />
-          <Skeleton className="col-span-3 h-64 rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-[140px] rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="h-[340px] rounded-xl" />
+            <Skeleton className="h-[280px] rounded-xl" />
+          </div>
+          <div className="lg:col-span-1 space-y-6">
+            {[1, 2].map((i) => (
+              <Skeleton key={i} className="h-[140px] rounded-xl" />
+            ))}
+            <Skeleton className="h-[300px] rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -263,7 +257,21 @@ export default function DashboardPage() {
         {/* Coluna Principal (Esquerda) */}
         <div className="lg:col-span-2 space-y-6">
           {/* KPIs */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <StatCard
+              title="Vendas (Mês)"
+              value={fmt.format(s.totalSales ?? 0)}
+              icon={DollarSign}
+              colorClass="bg-blue-500/20 text-blue-700 dark:text-blue-500"
+              subtitle="Receita bruta total"
+            />
+            <StatCard
+              title="Margem de Lucro"
+              value={`${(s.profitMargin ?? 0).toFixed(1)}%`}
+              icon={TrendingUp}
+              colorClass={(s.profitMargin ?? 0) >= 30 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-500" : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"}
+              subtitle="Margem média nas vendas"
+            />
             <StatCard
               title="Produtos Cadastrados"
               value={s.totalProducts}
@@ -308,10 +316,16 @@ export default function DashboardPage() {
             <CardContent>
               <div className="h-[250px] w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={s.productionsTrend || mockChartData}
+                  <AreaChart
+                    data={s.productionsTrend}
                     margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
                   >
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
@@ -336,31 +350,30 @@ export default function DashboardPage() {
                         backgroundColor: "hsl(var(--card))",
                         borderColor: "hsl(var(--border))",
                         borderRadius: "8px",
+                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                       }}
-                      itemStyle={{ color: "hsl(var(--foreground))" }}
-                      formatter={(value: number) => [
-                        fmt.format(value),
+                        itemStyle={{ color: "hsl(var(--foreground))", fontWeight: 500 }}
+                        formatter={(value: any) => [
+                          fmt.format(Number(value) || 0),
                         "Produzido",
                       ]}
+                        cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4", fill: "transparent" }}
                     />
-                    <Line
-                      type="monotone"
+                      <Area
+                        type="monotone"
+                        strokeWidth={3}
+                        activeDot={{
+                          r: 6,
+                          fill: "hsl(var(--primary))",
+                          stroke: "hsl(var(--background))",
+                          strokeWidth: 2,
+                        }}
                       dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      dot={{
-                        r: 4,
-                        fill: "hsl(var(--background))",
-                        stroke: "hsl(var(--primary))",
-                        strokeWidth: 2,
-                      }}
-                      activeDot={{
-                        r: 6,
-                        fill: "hsl(var(--primary))",
-                        stroke: "hsl(var(--background))",
-                      }}
+                        stroke="hsl(var(--primary))"
+                        fillOpacity={1}
+                        fill="url(#colorValue)"
                     />
-                  </LineChart>
+                  </AreaChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
