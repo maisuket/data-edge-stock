@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   Beaker,
+  Calculator,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,6 +72,8 @@ export default function ComprasPage() {
   const [cost, setCost] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [brand, setBrand] = useState("");
+  const [packageQty, setPackageQty] = useState("");
+  const [packageSize, setPackageSize] = useState("");
 
   // ── Queries ──────────────────────────────────────────────────────────────
   // Busca todos os insumos para popular o select (limitado a 1000 para cobrir todos)
@@ -87,7 +90,21 @@ export default function ComprasPage() {
   });
   const suppliers = suppliersData?.data ?? [];
 
+  // Variáveis derivadas úteis para a UI
+  const selectedIngredient = ingredients.find((i) => i.id === selectedIngId);
+  const selectedUnitShort = selectedIngredient
+    ? (UNIT_SHORT[selectedIngredient.unit] ?? selectedIngredient.unit)
+    : "";
+
   // ── Funções ──────────────────────────────────────────────────────────────
+  const handleCalculatePackage = () => {
+    const qty = Number(packageQty);
+    const size = Number(packageSize);
+    if (qty > 0 && size > 0) {
+      setQuantity((qty * size).toString());
+    }
+  };
+
   const handleAddItem = () => {
     if (!selectedIngId || !quantity || !cost) {
       toast.error("Preencha todos os campos do item (insumo, qtde e custo).");
@@ -116,6 +133,8 @@ export default function ComprasPage() {
     setCost("");
     setExpiresAt("");
     setBrand("");
+    setPackageQty("");
+    setPackageSize("");
   };
 
   const handleRemoveItem = (id: string) => {
@@ -252,20 +271,75 @@ export default function ComprasPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Calculadora (Exibida apenas para G e ML, ocupa a largura total) */}
+              {selectedIngredient &&
+                ["G", "ML"].includes(selectedIngredient.unit) && (
+                  <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30 space-y-3">
+                    <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase flex items-center gap-1.5">
+                      <Calculator className="w-4 h-4" />
+                      Calculadora de Embalagem
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="Qtd pacotes (ex: 2)"
+                        value={packageQty}
+                        onChange={(e) => setPackageQty(e.target.value)}
+                        className="bg-background shadow-sm"
+                      />
+                      <span className="text-muted-foreground font-medium hidden sm:block">
+                        x
+                      </span>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder={`Tamanho (${selectedUnitShort})`}
+                        value={packageSize}
+                        onChange={(e) => setPackageSize(e.target.value)}
+                        className="bg-background shadow-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full sm:w-auto bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-800 dark:text-emerald-100 shadow-sm whitespace-nowrap"
+                        onClick={handleCalculatePackage}
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-foreground">
+                  <label className="text-xs font-medium text-foreground flex items-center gap-1">
                     Quantidade
+                    {selectedUnitShort && (
+                      <span className="text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/30 px-1.5 rounded">
+                        em {selectedUnitShort}
+                      </span>
+                    )}
                   </label>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="bg-background rounded-lg"
-                  />
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      className="bg-background rounded-lg pr-12"
+                    />
+                    {selectedUnitShort && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground pointer-events-none">
+                        {selectedUnitShort}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-foreground">
@@ -337,6 +411,7 @@ export default function ComprasPage() {
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead>Insumo</TableHead>
                       <TableHead className="text-right">Quantidade</TableHead>
+                      <TableHead className="text-right">Custo Unitário</TableHead>
                       <TableHead className="text-right">Custo Total</TableHead>
                       <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
@@ -351,16 +426,25 @@ export default function ComprasPage() {
                               {item.brand}
                             </span>
                           )}
-                      {item.expiresAt && (
-                        <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
-                          Vence: {new Date(`${item.expiresAt}T12:00:00Z`).toLocaleDateString("pt-BR")}
-                        </div>
-                      )}
+                          {item.expiresAt && (
+                            <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                              Vence:{" "}
+                              {new Date(
+                                `${item.expiresAt}T12:00:00Z`,
+                              ).toLocaleDateString("pt-BR")}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           {item.quantity.toLocaleString("pt-BR")}{" "}
                           <span className="text-xs text-muted-foreground">
                             {UNIT_SHORT[item.unit] ?? item.unit}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {fmt.format(item.totalCost / item.quantity)}
+                          <span className="text-[10px] ml-1">
+                            /{UNIT_SHORT[item.unit] ?? item.unit}
                           </span>
                         </TableCell>
                         <TableCell className="text-right font-medium">
