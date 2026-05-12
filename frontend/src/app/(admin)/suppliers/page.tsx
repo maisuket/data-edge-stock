@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -60,7 +60,8 @@ import { SupplierFormDialog } from "@/app/components/SupllierFormDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function SuppliersPage() {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -71,10 +72,18 @@ export default function SuppliersPage() {
 
   const queryClient = useQueryClient();
 
+  // Debounce da busca: atualiza o searchQuery 500ms após o usuário parar de digitar
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Query: Listar Fornecedores
   const { data, isLoading, isError, isPlaceholderData } = useQuery({
-    queryKey: ["suppliers", page, search],
-    queryFn: () => SupplierService.getAll(page, pageSize, search),
+    queryKey: ["suppliers", page, searchQuery],
+    queryFn: () => SupplierService.getAll(page, pageSize, searchQuery),
     placeholderData: keepPreviousData,
   });
 
@@ -83,11 +92,12 @@ export default function SuppliersPage() {
     mutationFn: SupplierService.delete,
     onSuccess: () => {
       toast.success("Fornecedor excluído!");
+      setDeleteTarget(null);
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
     },
     onError: () =>
       toast.error(
-        "Erro ao excluir. O fornecedor pode ter produtos vinculados."
+        "Erro ao excluir. O fornecedor pode ter produtos vinculados.",
       ),
   });
 
@@ -143,9 +153,9 @@ export default function SuppliersPage() {
               <Input
                 placeholder="Buscar por nome ou CNPJ..."
                 className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent"
-                value={search}
+                value={searchInput}
                 onChange={(e) => {
-                  setSearch(e.target.value);
+                  setSearchInput(e.target.value);
                   setPage(1);
                 }}
               />
@@ -204,7 +214,7 @@ export default function SuppliersPage() {
                       colSpan={4}
                       className="h-32 text-center text-muted-foreground"
                     >
-                      Nenhum fornecedor encontrado para "{search}".
+                      Nenhum fornecedor encontrado para "{searchQuery}".
                     </TableCell>
                   </TableRow>
                 ) : (

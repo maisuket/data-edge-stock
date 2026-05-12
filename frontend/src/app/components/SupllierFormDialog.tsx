@@ -121,19 +121,42 @@ export function SupplierFormDialog({
     e.preventDefault();
     setLoading(true);
 
+    // Prepara os dados convertendo strings vazias para undefined
+    // Isso evita erros de validação no backend (ex: IsEmail validando "")
+    const payload = {
+      name: formData.name,
+      cnpj: formData.cnpj || undefined,
+      email: formData.email || undefined,
+      phone: formData.phone || undefined,
+      address: formData.address || undefined,
+    };
+
     try {
       if (supplierToEdit) {
-        await SupplierService.update(supplierToEdit.id, formData);
+        await SupplierService.update(supplierToEdit.id, payload);
         toast.success("Fornecedor atualizado com sucesso!");
       } else {
-        await SupplierService.create(formData);
+        await SupplierService.create(payload);
         toast.success("Fornecedor cadastrado com sucesso!");
       }
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Erro ao salvar fornecedor.");
+
+      const responseMessage = err.response?.data?.message;
+
+      if (Array.isArray(responseMessage)) {
+        const firstError = responseMessage[0];
+        const validationMessage = firstError?.constraints
+          ? Object.values(firstError.constraints)[0]
+          : "Erro de validação nos dados.";
+        toast.error(validationMessage as string);
+      } else if (typeof responseMessage === "string") {
+        toast.error(responseMessage);
+      } else {
+        toast.error("Erro ao salvar fornecedor.");
+      }
     } finally {
       setLoading(false);
     }
