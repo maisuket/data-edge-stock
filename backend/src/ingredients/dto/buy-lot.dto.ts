@@ -50,4 +50,11 @@ export class BuyLotDto {
   @IsOptional()
   @IsDateString()
   expiresAt?: string;
+
+  @ApiProperty({
+    example: 'uuid-do-usuario',
+    description: 'ID do usuário que realizou a compra',
+  })
+  @IsString()
+  userId: string;
 }

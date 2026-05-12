@@ -26,7 +26,10 @@ export class BuyBulkItemDto {
   @Min(0.01)
   totalCost: number;
 
-  @ApiPropertyOptional({ example: '2024-12-31', description: 'Data de validade do insumo' })
+  @ApiPropertyOptional({
+    example: '2024-12-31',
+    description: 'Data de validade do insumo',
+  })
   @IsOptional()
   @IsString()
   expiresAt?: string;

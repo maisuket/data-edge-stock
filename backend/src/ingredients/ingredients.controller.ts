@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -91,8 +92,12 @@ export class IngredientsController {
     status: 201,
     description: 'Lote registrado e estoque atualizado.',
   })
-  buyLot(@Param('id') id: string, @Body() dto: BuyLotDto) {
-    return this.ingredientsService.buyLot(id, dto);
+  buyLot(
+    @Param('id') id: string,
+    @Body() dto: BuyLotDto,
+    @Request() req: { user: { userId: string } },
+  ) {
+    return this.ingredientsService.buyLot(id, dto, req.user.userId);
   }
 
   @Post('bulk-purchase')
@@ -105,7 +110,10 @@ export class IngredientsController {
     status: 201,
     description: 'Lotes registrados e estoques atualizados.',
   })
-  buyBulk(@Body() dto: BuyBulkDto) {
-    return this.ingredientsService.buyBulk(dto);
+  buyBulk(
+    @Body() dto: BuyBulkDto,
+    @Request() req: { user: { userId: string } },
+  ) {
+    return this.ingredientsService.buyBulk(dto, req.user.userId);
   }
 }

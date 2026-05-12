@@ -128,7 +128,7 @@ export class IngredientsService {
    *  - custo médio ponderado do insumo
    *  - estoque atual do insumo
    */
-  async buyLot(ingredientId: string, dto: BuyLotDto) {
+  async buyLot(ingredientId: string, dto: BuyLotDto, userId: string) {
     const result = await this.prisma.$transaction(async (tx) => {
       const ingredient = await tx.ingredient.findUnique({
         where: { id: ingredientId },
@@ -200,6 +200,7 @@ export class IngredientsService {
           stockAfter: newTotalStock.toNumber(),
           unitValue: unitCost.toNumber(),
           supplierId: dto.supplierId ?? null,
+          userId,
           description: 'Entrada avulsa (Compra)',
         },
       });
@@ -231,7 +232,7 @@ export class IngredientsService {
    * Registra a compra em lote de múltiplos insumos em uma única transação,
    * atualizando o estoque e gerando um lote para cada item comprado.
    */
-  async buyBulk(dto: BuyBulkDto) {
+  async buyBulk(dto: BuyBulkDto, userId: string) {
     const result = await this.prisma.$transaction(async (tx) => {
       const processedItems: any[] = [];
 
@@ -298,6 +299,7 @@ export class IngredientsService {
             stockBefore: ingredient.currentStock.toNumber(),
             stockAfter: newTotalStock.toNumber(),
             description: 'Entrada em lote (Compra)',
+            userId,
           },
         });
 

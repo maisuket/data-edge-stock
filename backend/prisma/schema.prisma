@@ -64,7 +64,8 @@ model Product {
 
 model StockMovement {
   id          String    @id @default(uuid())
-  productId   String    @map("product_id")
+  productId   String?   @map("product_id")
+  ingredientId String?  @map("ingredient_id")
   type        String
   batch       String?
   quantity    Decimal
@@ -76,7 +77,8 @@ model StockMovement {
   userId      String    @map("user_id")
   supplierId  String?   @map("supplier_id")
   createdAt   DateTime  @default(now()) @map("created_at")
-  product     Product   @relation(fields: [productId], references: [id])
+  product     Product?  @relation(fields: [productId], references: [id])
+  ingredient  Ingredient? @relation(fields: [ingredientId], references: [id])
   supplier    Supplier? @relation(fields: [supplierId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
 
@@ -120,6 +122,7 @@ model Ingredient {
   lots                   IngredientLot[]
   productionConsumptions ProductionConsumption[]
   recipeItems            RecipeItem[]
+  stockMovements         StockMovement[]
 
   @@map("ingredients")
 }
