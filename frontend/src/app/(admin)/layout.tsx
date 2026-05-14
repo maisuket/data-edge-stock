@@ -27,19 +27,22 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // --- Itens do Menu ---
-const menuItems = [
+const mainMenuItems = [
   { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-  { href: "/products", label: "Produtos", icon: Package },
   { href: "/sales", label: "Saídas/Vendas", icon: Store },
   { href: "/purchases", label: "Entradas/Compras", icon: ShoppingCart },
   { href: "/stock-history", label: "Movimentações", icon: ArrowLeftRight },
-  { href: "/suppliers", label: "Fornecedores", icon: Truck },
 ];
 
 const productionMenuItems = [
-  { href: "/ingredients", label: "Insumos", icon: Beaker },
-  { href: "/recipes", label: "Receitas", icon: ChefHat },
   { href: "/productions", label: "Produção", icon: Factory },
+  { href: "/products", label: "Produtos", icon: Package },
+  { href: "/recipes", label: "Receitas", icon: ChefHat },
+  { href: "/ingredients", label: "Insumos", icon: Beaker },
+];
+
+const managementMenuItems = [
+  { href: "/suppliers", label: "Fornecedores", icon: Truck },
 ];
 
 const configMenuItems = [
@@ -61,7 +64,7 @@ function NavGroup({
       <p className="px-3 text-[11px] font-bold text-sidebar-foreground/50 uppercase tracking-widest mb-2">
         {title}
       </p>
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -85,14 +88,18 @@ function NavGroup({
               {isActive && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/20" />
               )}
-              <Icon
-                className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
-                  isActive
-                    ? "text-sidebar-primary-foreground scale-110"
-                    : "text-sidebar-foreground/50 group-hover:text-sidebar-accent-foreground group-hover:scale-110"
-                }`}
-              />
-              <span className="truncate">{item.label}</span>
+              <div
+                className={`p-1.5 rounded-lg transition-colors ${isActive ? "bg-white/10" : "bg-transparent group-hover:bg-sidebar-foreground/5"}`}
+              >
+                <Icon
+                  className={`w-4 h-4 shrink-0 transition-transform duration-300 ${
+                    isActive
+                      ? "text-sidebar-primary-foreground scale-110"
+                      : "text-sidebar-foreground/60 group-hover:text-sidebar-accent-foreground group-hover:scale-110"
+                  }`}
+                />
+              </div>
+              <span className="truncate tracking-wide">{item.label}</span>
               {isActive && (
                 <ChevronRight className="w-4 h-4 ml-auto opacity-60 shrink-0" />
               )}
@@ -171,13 +178,18 @@ export default function AdminLayout({
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-4">
           <NavGroup
-            title="Estoque & Vendas"
-            items={menuItems}
+            title="Operações"
+            items={mainMenuItems}
             pathname={pathname}
           />
           <NavGroup
-            title="Produção"
+            title="Catálogo & Produção"
             items={productionMenuItems}
+            pathname={pathname}
+          />
+          <NavGroup
+            title="Gestão"
+            items={managementMenuItems}
             pathname={pathname}
           />
           <NavGroup
