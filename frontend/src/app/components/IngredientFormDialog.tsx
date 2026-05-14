@@ -99,8 +99,21 @@ export function IngredientFormDialog({
       qc.invalidateQueries({ queryKey: ["ingredients-low-stock"] });
       onOpenChange(false);
     },
-    onError: (e: { response?: { data?: { message?: string } } }) =>
-      toast.error(e?.response?.data?.message ?? "Erro ao salvar insumo."),
+    onError: (e: any) => {
+      const msg = e?.response?.data?.message;
+      if (Array.isArray(msg)) {
+        const firstError = msg[0];
+        toast.error(
+          firstError?.constraints
+            ? (Object.values(firstError.constraints)[0] as string)
+            : "Erro de validação nos dados.",
+        );
+      } else if (typeof msg === "string") {
+        toast.error(msg);
+      } else {
+        toast.error("Erro ao salvar insumo.");
+      }
+    },
   });
 
   return (

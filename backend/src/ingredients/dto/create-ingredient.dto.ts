@@ -17,7 +17,7 @@ export class CreateIngredientDto {
 
   @ApiProperty({
     enum: IngredientUnit,
-    example: IngredientUnit.LITER,
+    example: IngredientUnit.LITRO,
     description: 'Unidade de medida',
   })
   @IsEnum(IngredientUnit)

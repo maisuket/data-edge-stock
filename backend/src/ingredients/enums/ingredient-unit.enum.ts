@@ -1,7 +1,8 @@
 export enum IngredientUnit {
-  LITER = 'LITER', // Litro
+  LITRO = 'L', // Litro
   ML = 'ML', // Mililitro
   KG = 'KG', // Quilograma
+  MILIGRAMA = 'MG', // Miligrama
   G = 'G', // Grama
-  UNIT = 'UNIT', // Unidade (ex: ovos, latas)
+  UNIDADE = 'UN', // Unidade (ex: ovos, latas)
 }

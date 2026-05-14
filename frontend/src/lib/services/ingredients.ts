@@ -4,27 +4,30 @@ import type { Page } from "./products";
 // ── Enums ──────────────────────────────────────────────────────────────────
 
 export enum IngredientUnit {
-  LITER = "LITER",
+  LITRO = "L",
   ML = "ML",
   KG = "KG",
+  MILIGRAMA = "MG",
   G = "G",
-  UNIT = "UNIT",
+  UNIT = "UN",
 }
 
 export const UNIT_LABELS: Record<IngredientUnit, string> = {
-  [IngredientUnit.LITER]: "Litro (L)",
+  [IngredientUnit.LITRO]: "Litro (l)",
   [IngredientUnit.ML]: "Mililitro (ml)",
   [IngredientUnit.KG]: "Quilograma (kg)",
+  [IngredientUnit.MILIGRAMA]: "Miligrama (mg)",
   [IngredientUnit.G]: "Grama (g)",
   [IngredientUnit.UNIT]: "Unidade (un)",
 };
 
 export const UNIT_SHORT: Record<string, string> = {
-  LITER: "L",
-  ML: "ml",
-  KG: "kg",
-  G: "g",
-  UNIT: "un",
+  LITRO: "L",
+  ML: "ML",
+  KG: "KG",
+  MILIGRAMA: "MG",
+  G: "G",
+  UN: "UN",
 };
 
 // ── Interfaces ─────────────────────────────────────────────────────────────
@@ -125,7 +128,9 @@ export const IngredientService = {
   },
 
   getLowStock: async () => {
-    const response = await api.get<LowStockIngredient[]>("/ingredients/low-stock");
+    const response = await api.get<LowStockIngredient[]>(
+      "/ingredients/low-stock",
+    );
     return response.data;
   },
 
