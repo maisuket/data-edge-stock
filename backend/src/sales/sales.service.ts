@@ -97,7 +97,7 @@ export class SalesService {
       }
 
       // Cria a venda principal amarrando tudo
-      return tx.sale.create({
+      const sale = await tx.sale.create({
         data: {
           userId,
           totalAmount: finalAmount,
@@ -108,6 +108,8 @@ export class SalesService {
           },
         },
       });
+
+      return sale;
     });
   }
 
