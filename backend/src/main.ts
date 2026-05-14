@@ -15,6 +15,7 @@ import { Logger } from 'nestjs-pino';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import { DecimalInterceptor } from './common/interceptors/decimal.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -47,7 +48,9 @@ async function bootstrap() {
   /* =============================
    * 🌍 CORS
    * ============================= */
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000')
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000'
+  )
     .split(',')
     .map((o) => o.trim());
 
@@ -85,7 +88,13 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  // A ordem aqui é vital para interceptores no NestJS:
+  // Na saída da resposta, o DecimalInterceptor roda primeiro, convertendo os Decimais,
+  // e depois o ClassSerializerInterceptor atua em cima de objetos seguros sem quebrar as propriedades.
+  app.useGlobalInterceptors(
+    new ClassSerializerInterceptor(app.get(Reflector)),
+    new DecimalInterceptor(),
+  );
 
   /* =============================
    * ❌ ERROS DO PRISMA
@@ -96,7 +105,10 @@ async function bootstrap() {
   /* =============================
    * 📄 SWAGGER (CONDICIONAL)
    * ============================= */
-  if (process.env.ENABLE_SWAGGER === 'true' || process.env.NODE_ENV === 'development') {
+  if (
+    process.env.ENABLE_SWAGGER === 'true' ||
+    process.env.NODE_ENV === 'development'
+  ) {
     const config = new DocumentBuilder()
       .setTitle('ERP API')
       .setDescription('API do Sistema ERP')
