@@ -65,7 +65,9 @@ export class StockMovementsService {
           }
           // Na saída, o custo médio NÃO muda (princípio contábil)
           if (newStock.lt(qtyDecimal)) {
-            throw new BadRequestException('Estoque insuficiente.');
+            throw new BadRequestException(
+              `Estoque insuficiente para o produto "${product.name}". Tentativa de saída: ${quantity}. Atual: ${product.currentStock}.`,
+            );
           }
           newStock = newStock.sub(qtyDecimal);
           break;
@@ -112,13 +114,7 @@ export class StockMovementsService {
         },
       });
 
-      return {
-        ...movement,
-        quantity: movement.quantity.toNumber(),
-        unitValue: movement.unitValue ? movement.unitValue.toNumber() : null,
-        stockBefore: movement.stockBefore.toNumber(),
-        stockAfter: movement.stockAfter.toNumber(),
-      };
+      return movement;
     });
   }
 
@@ -148,15 +144,6 @@ export class StockMovementsService {
     ]);
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
-    return new PageDto(
-      movements.map((m) => ({
-        ...m,
-        quantity: m.quantity.toNumber(),
-        unitValue: m.unitValue ? m.unitValue.toNumber() : null,
-        stockBefore: m.stockBefore.toNumber(),
-        stockAfter: m.stockAfter.toNumber(),
-      })),
-      pageMetaDto,
-    );
+    return new PageDto(movements, pageMetaDto);
   }
 }

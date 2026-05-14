@@ -135,7 +135,10 @@ export function ProductFormDialog({
     formData.category &&
     !displayCategories.some((c) => c.value === formData.category)
   ) {
-    displayCategories.push({ value: formData.category, label: formData.category });
+    displayCategories.push({
+      value: formData.category,
+      label: formData.category,
+    });
   }
 
   const displayUnits = [...UNITS];
@@ -190,7 +193,7 @@ export function ProductFormDialog({
       onOpenChange(false);
     } catch (err: any) {
       console.error(err);
-      
+
       const responseMessage = err.response?.data?.message;
 
       // Se a mensagem for um array (padrão de erros de validação do NestJS)
@@ -200,7 +203,7 @@ export function ProductFormDialog({
           ? Object.values(firstError.constraints)[0]
           : "Erro de validação nos dados.";
         toast.error(validationMessage as string);
-      } 
+      }
       // Se for uma string (erros de regras de negócio como o 409 Conflict)
       else if (typeof responseMessage === "string") {
         toast.error(responseMessage);

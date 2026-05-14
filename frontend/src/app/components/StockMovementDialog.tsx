@@ -162,9 +162,19 @@ export function StockMovementDialog({
       onOpenChange(false);
     } catch (err: any) {
       console.error(err);
-      toast.error(
-        err.response?.data?.message || "Erro ao registrar movimentação."
-      );
+      const msg = err.response?.data?.message;
+      if (Array.isArray(msg)) {
+        const firstError = msg[0];
+        toast.error(
+          firstError?.constraints
+            ? (Object.values(firstError.constraints)[0] as string)
+            : "Erro de validação nos dados.",
+        );
+      } else if (typeof msg === "string") {
+        toast.error(msg);
+      } else {
+        toast.error("Erro ao registrar movimentação.");
+      }
     } finally {
       setLoading(false);
     }
