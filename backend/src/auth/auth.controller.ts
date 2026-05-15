@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @ApiTags('auth')
 @Controller('auth')
