@@ -16,7 +16,6 @@ import { toast } from "sonner";
 
 import {
   IngredientService,
-  type Ingredient,
   UNIT_SHORT,
 } from "../../../lib/services/ingredients";
 import { SupplierService } from "../../../lib/services/suppliers";
@@ -166,7 +165,7 @@ export default function ComprasPage() {
   });
 
   return (
-    <div className="p-6 md:p-8 max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
+    <div className="p-6 md:p-8 max-w-300 mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
       {/* Cabeçalho */}
       <div className="flex items-center gap-4">
         <Button
@@ -384,7 +383,7 @@ export default function ComprasPage() {
 
         {/* Coluna Direita: Tabela de Itens */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border-border shadow-sm rounded-xl overflow-hidden min-h-[400px] flex flex-col">
+          <Card className="border-border shadow-sm rounded-xl overflow-hidden min-h-100 flex flex-col">
             <CardHeader className="bg-muted/30 border-b border-border pb-4">
               <CardTitle className="text-base">Resumo da Compra</CardTitle>
               <CardDescription>
@@ -418,11 +417,15 @@ export default function ComprasPage() {
                         {item.expiresAt && (
                           <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
                             Vence:{" "}
-                            {new Date(`${item.expiresAt}T12:00:00Z`).toLocaleDateString("pt-BR")}
+                            {new Date(
+                              `${item.expiresAt}T12:00:00Z`,
+                            ).toLocaleDateString("pt-BR")}
                           </div>
                         )}
                         <span className="text-xs text-muted-foreground mt-1">
-                          {item.quantity.toLocaleString("pt-BR")} {UNIT_SHORT[item.unit] ?? item.unit} x {fmt.format(item.totalCost / item.quantity)}
+                          {item.quantity.toLocaleString("pt-BR")}{" "}
+                          {UNIT_SHORT[item.unit] ?? item.unit} x{" "}
+                          {fmt.format(item.totalCost / item.quantity)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-border sm:border-t-0 pt-2 sm:pt-0 mt-1 sm:mt-0">

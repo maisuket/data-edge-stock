@@ -112,7 +112,7 @@ export default function MovementsPage() {
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto pb-20 animate-in fade-in duration-500">
+    <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -143,7 +143,7 @@ export default function MovementsPage() {
                     setStartDate(e.target.value);
                     setPage(1);
                   }}
-                  className="flex-1 sm:w-[140px]"
+                  className="flex-1 sm:w-35"
                 />
                 <span className="text-muted-foreground text-sm">até</span>
                 <Input
@@ -153,7 +153,7 @@ export default function MovementsPage() {
                     setEndDate(e.target.value);
                     setPage(1);
                   }}
-                  className="flex-1 sm:w-[140px]"
+                  className="flex-1 sm:w-35"
                 />
               </div>
               <Select
@@ -163,7 +163,7 @@ export default function MovementsPage() {
                   setPage(1); // Volta para a página 1 ao filtrar
                 }}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-45">
                   <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Filtrar por tipo" />
                 </SelectTrigger>
@@ -184,13 +184,13 @@ export default function MovementsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                  <TableHead className="pl-6 w-[180px]">Data/Hora</TableHead>
+                  <TableHead className="pl-6 w-45">Data/Hora</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Item Movimentado</TableHead>
                   <TableHead>Qtd. Movimentada</TableHead>
                   <TableHead>Estoque Atualizado</TableHead>
                   <TableHead>Usuário</TableHead>
-                  <TableHead className="w-[300px]">Observação</TableHead>
+                  <TableHead className="w-75">Observação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -283,7 +283,7 @@ export default function MovementsPage() {
                       </TableCell>
 
                       <TableCell
-                        className="text-sm text-muted-foreground max-w-[300px] truncate"
+                        className="text-sm text-muted-foreground max-w-75 truncate"
                         title={row.description}
                       >
                         {row.description || "-"}

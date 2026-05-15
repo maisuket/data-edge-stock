@@ -334,7 +334,7 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-[1000px] mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 max-w-250 mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -346,7 +346,7 @@ export default function SalesPage() {
           </p>
         </div>
 
-        <div className="bg-primary/10 border border-primary/20 px-5 py-3 rounded-lg flex flex-col shrink-0 min-w-[160px] text-right">
+        <div className="bg-primary/10 border border-primary/20 px-5 py-3 rounded-lg flex flex-col shrink-0 min-w-40 text-right">
           <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-0.5">
             Vendas de Hoje
           </span>
@@ -468,7 +468,7 @@ export default function SalesPage() {
                       <TableHead className="text-right">Qtd.</TableHead>
                       <TableHead className="text-right">Valor Un.</TableHead>
                       <TableHead className="text-right">Subtotal</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-12.5"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -659,7 +659,7 @@ export default function SalesPage() {
                   <TableHead>Itens</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Observações</TableHead>
-                  <TableHead className="text-right w-[100px]">Ações</TableHead>
+                  <TableHead className="text-right w-25">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -702,7 +702,7 @@ export default function SalesPage() {
                       <TableCell className="text-right tabular-nums font-semibold text-foreground">
                         {fmt.format(Number(sale.totalAmount))}
                       </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[200px] truncate text-xs">
+                      <TableCell className="text-muted-foreground max-w-50 truncate text-xs">
                         {sale.notes || "-"}
                       </TableCell>
                       <TableCell className="text-right">
@@ -738,7 +738,7 @@ export default function SalesPage() {
 
       {/* Dialog de Detalhes da Venda */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl">
+        <DialogContent className="sm:max-w-125 w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl">
           <DialogHeader>
             <DialogTitle>Detalhes da Venda</DialogTitle>
           </DialogHeader>
@@ -750,7 +750,8 @@ export default function SalesPage() {
                   {new Date(selectedSale.createdAt).toLocaleString("pt-BR")}
                 </p>
                 <p className="mt-1">
-                  <strong className="text-foreground">Observações:</strong> {selectedSale.notes || "-"}
+                  <strong className="text-foreground">Observações:</strong>{" "}
+                  {selectedSale.notes || "-"}
                 </p>
               </div>
               <div className="max-h-[45vh] overflow-y-auto pr-2 space-y-2">
@@ -764,11 +765,14 @@ export default function SalesPage() {
                         {item.product?.name || "Produto Excluído"}
                       </span>
                       <span className="text-xs text-muted-foreground mt-0.5">
-                        {Number(item.quantity)}x de {fmt.format(Number(item.unitPrice))}
+                        {Number(item.quantity)}x de{" "}
+                        {fmt.format(Number(item.unitPrice))}
                       </span>
                     </div>
                     <span className="font-semibold text-sm text-foreground tabular-nums">
-                      {fmt.format(Number(item.quantity) * Number(item.unitPrice))}
+                      {fmt.format(
+                        Number(item.quantity) * Number(item.unitPrice),
+                      )}
                     </span>
                   </div>
                 ))}
