@@ -18,9 +18,16 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         const status = HttpStatus.CONFLICT;
         const target = exception.meta?.target;
 
+        let targetName = 'desconhecido';
+        if (Array.isArray(target)) {
+          targetName = target.join(', ');
+        } else if (typeof target === 'string') {
+          targetName = target;
+        }
+
         response.status(status).send({
           statusCode: status,
-          message: `Dados duplicados: O campo ${target} já está em uso.`,
+          message: `Dados duplicados: O campo ${targetName} já está em uso.`,
           error: 'Conflict',
         });
         break;

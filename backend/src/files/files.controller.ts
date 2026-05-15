@@ -97,8 +97,10 @@ export class FilesController {
       };
     } catch (error) {
       console.error('Erro no upload:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       throw new InternalServerErrorException(
-        'Falha ao processar upload: ' + error.message,
+        'Falha ao processar upload: ' + errorMessage,
       );
     }
   }
@@ -128,10 +130,15 @@ export class FilesController {
         throw new NotFoundException('Arquivo não encontrado no disco');
       }
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
-      throw new InternalServerErrorException('Não foi possível apagar o arquivo');
+      throw new InternalServerErrorException(
+        'Não foi possível apagar o arquivo',
+      );
     }
   }
 }

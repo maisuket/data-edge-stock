@@ -18,6 +18,9 @@ export class UserEntity {
   @Exclude() // <--- A Mágica: Isso instrui o Nest a NUNCA enviar este campo no JSON
   password: string;
 
+  @ApiProperty({ example: 'ADMIN' })
+  role: string;
+
   @ApiProperty()
   createdAt: Date;
 

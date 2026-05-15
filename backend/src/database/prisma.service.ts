@@ -6,12 +6,10 @@ import {
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-
-import { UserEntity } from 'src/users/entities/user.entity';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
-// IMPORTANTE: Ajuste o caminho abaixo se o seu PrismaService estiver em outro local
-import { PrismaService } from 'src/prisma/prisma.service';
-import { LoginDto } from 'src/auth/dto/login.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { LoginDto } from '../auth/dto/login.dto';
+import { UserEntity } from '../users/entities/user.entity';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +20,10 @@ export class AuthService {
   ) {}
 
   // 1. Valida o usuário (verifica usuario e senha)
-  async validateUser(username: string, pass: string): Promise<any> {
+  async validateUser(
+    username: string,
+    pass: string,
+  ): Promise<Omit<UserEntity, 'password'> | null> {
     const user = await this.usersService.findByUsername(username);
 
     if (user && (await bcrypt.compare(pass, user.password))) {
@@ -74,7 +75,7 @@ export class AuthService {
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    const data: any = { ...updateDto };
+    const data: Partial<UpdateUserDto> = { ...updateDto };
 
     // Remove campos sensíveis ou proibidos de alteração via perfil
     delete data.role;

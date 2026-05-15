@@ -10,11 +10,11 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class DecimalInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(map((data) => this.transform(data)));
   }
 
-  private transform(data: any, seen = new WeakSet()): any {
+  private transform(data: unknown, seen = new WeakSet<object>()): unknown {
     // Retorna rapidamente se for primitivo ou nulo
     if (data === null || typeof data !== 'object') return data;
 
@@ -33,10 +33,11 @@ export class DecimalInterceptor implements NestInterceptor {
     }
 
     // Percorre as propriedades do objeto mantendo a instância original (vital para o ClassSerializer agir depois)
-    for (const key of Object.keys(data)) {
-      data[key] = this.transform(data[key], seen);
+    const obj = data as Record<string, unknown>;
+    for (const key of Object.keys(obj)) {
+      obj[key] = this.transform(obj[key], seen);
     }
 
-    return data;
+    return obj;
   }
 }
