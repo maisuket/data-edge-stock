@@ -24,14 +24,6 @@ import { SupplierService } from "../../../lib/services/suppliers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Card,
   CardContent,
   CardHeader,
@@ -406,64 +398,49 @@ export default function ComprasPage() {
                   <p className="text-sm">Nenhum item adicionado ainda.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                      <TableHead>Insumo</TableHead>
-                      <TableHead className="text-right">Quantidade</TableHead>
-                      <TableHead className="text-right">Custo Unitário</TableHead>
-                      <TableHead className="text-right">Custo Total</TableHead>
-                      <TableHead className="w-[80px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-foreground">
-                          {item.ingredientName}
+                <div className="p-4 space-y-3 max-h-[50vh] sm:max-h-full overflow-y-auto">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex flex-col sm:flex-row justify-between sm:items-center bg-muted/30 p-3 rounded-lg border border-border gap-3 sm:gap-0"
+                    >
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-foreground">
+                            {item.ingredientName}
+                          </span>
                           {item.brand && (
-                            <span className="ml-1.5 text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
                               {item.brand}
                             </span>
                           )}
-                          {item.expiresAt && (
-                            <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
-                              Vence:{" "}
-                              {new Date(
-                                `${item.expiresAt}T12:00:00Z`,
-                              ).toLocaleDateString("pt-BR")}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.quantity.toLocaleString("pt-BR")}{" "}
-                          <span className="text-xs text-muted-foreground">
-                            {UNIT_SHORT[item.unit] ?? item.unit}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {fmt.format(item.totalCost / item.quantity)}
-                          <span className="text-[10px] ml-1">
-                            /{UNIT_SHORT[item.unit] ?? item.unit}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
+                        </div>
+                        {item.expiresAt && (
+                          <div className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                            Vence:{" "}
+                            {new Date(`${item.expiresAt}T12:00:00Z`).toLocaleDateString("pt-BR")}
+                          </div>
+                        )}
+                        <span className="text-xs text-muted-foreground mt-1">
+                          {item.quantity.toLocaleString("pt-BR")} {UNIT_SHORT[item.unit] ?? item.unit} x {fmt.format(item.totalCost / item.quantity)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-border sm:border-t-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
+                        <span className="font-semibold text-sm text-foreground tabular-nums">
                           {fmt.format(item.totalCost)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleRemoveItem(item.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                          onClick={() => handleRemoveItem(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
             {/* Rodapé do Carrinho com o Total */}

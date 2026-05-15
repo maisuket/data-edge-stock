@@ -18,10 +18,12 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import {
   StockMovementService,
   MovementType,
-} from "../../../lib/services/stock-movements";
+  StockMovement,
+} from "@/lib/services/stock-movements";
 
 // Componentes UI
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -46,19 +48,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const formatQty = (val: number | string | null | undefined) => {
+  const num = Number(val);
+  return isNaN(num)
+    ? "0"
+    : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 }).format(num);
+};
+
 export default function MovementsPage() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [filterType, setFilterType] = useState<string>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
 
   // Query de Movimentações
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["movements", page, pageSize, filterType],
+    queryKey: ["movements", page, pageSize, filterType, startDate, endDate],
     queryFn: () =>
       StockMovementService.getAll(
         page,
         pageSize,
         filterType === "ALL" ? undefined : filterType,
+        startDate || undefined,
+        endDate || undefined,
       ),
     placeholderData: keepPreviousData,
   });
@@ -121,7 +134,28 @@ export default function MovementsPage() {
               </CardDescription>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="flex-1 sm:w-[140px]"
+                />
+                <span className="text-muted-foreground text-sm">até</span>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="flex-1 sm:w-[140px]"
+                />
+              </div>
               <Select
                 value={filterType}
                 onValueChange={(val) => {
@@ -145,14 +179,16 @@ export default function MovementsPage() {
         </CardHeader>
 
         <CardContent className="pt-0 px-0">
-          <div className="overflow-x-auto">
+          {/* Tabela para Desktop */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
                   <TableHead className="pl-6 w-[180px]">Data/Hora</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Item Movimentado</TableHead>
-                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Qtd. Movimentada</TableHead>
+                  <TableHead>Estoque Atualizado</TableHead>
                   <TableHead>Usuário</TableHead>
                   <TableHead className="w-[300px]">Observação</TableHead>
                 </TableRow>
@@ -161,7 +197,7 @@ export default function MovementsPage() {
                 {isLoading ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-32 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col justify-center items-center gap-2">
@@ -173,7 +209,7 @@ export default function MovementsPage() {
                 ) : isError ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-32 text-center text-destructive"
                     >
                       Erro ao carregar dados.
@@ -182,14 +218,14 @@ export default function MovementsPage() {
                 ) : data?.data?.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={7}
                       className="h-32 text-center text-muted-foreground"
                     >
                       Nenhuma movimentação registrada.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  data?.data?.map((row) => (
+                  data?.data?.map((row: StockMovement) => (
                     <TableRow
                       key={row.id}
                       className="group hover:bg-muted/30 transition-colors border-b border-border"
@@ -212,22 +248,30 @@ export default function MovementsPage() {
                       <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium text-foreground text-sm">
-                            {row.product?.name || row.ingredient?.name || "Item excluído"}
+                            {row.product?.name ||
+                              row.ingredient?.name ||
+                              "Item Excluído"}
                           </span>
                           <span className="text-xs text-muted-foreground font-mono">
-                            {row.product?.internalCode || (row.ingredient && `Insumo (${row.ingredient.unit})`)}
+                            {row.product?.internalCode ||
+                              (row.ingredient &&
+                                `Insumo (${row.ingredient.unit})`)}
                           </span>
                         </div>
                       </TableCell>
 
                       <TableCell>
                         <div className="font-semibold text-sm">
-                          {row.quantity}
+                          {formatQty(row.quantity)}
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <div className="font-semibold text-sm">
+                          {formatQty(row.stockAfter)}
                         </div>
                         <div className="text-[10px] text-muted-foreground flex gap-1 items-center mt-0.5">
-                          {row.stockBefore}{" "}
-                          <span className="text-muted-foreground/50">→</span>{" "}
-                          {row.stockAfter}
+                          Anterior: {formatQty(row.stockBefore)}
                         </div>
                       </TableCell>
 
@@ -238,7 +282,10 @@ export default function MovementsPage() {
                         </div>
                       </TableCell>
 
-                      <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                      <TableCell
+                        className="text-sm text-muted-foreground max-w-[300px] truncate"
+                        title={row.description}
+                      >
                         {row.description || "-"}
                       </TableCell>
                     </TableRow>
@@ -248,9 +295,98 @@ export default function MovementsPage() {
             </Table>
           </div>
 
+          {/* Lista de Cards para Mobile */}
+          <div className="block md:hidden p-4 space-y-4">
+            {isLoading ? (
+              <div className="flex flex-col justify-center items-center gap-2 h-32 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-sm">Carregando histórico...</span>
+              </div>
+            ) : isError ? (
+              <div className="flex justify-center items-center h-32 text-destructive">
+                Erro ao carregar dados.
+              </div>
+            ) : data?.data?.length === 0 ? (
+              <div className="flex justify-center items-center h-32 text-muted-foreground">
+                Nenhuma movimentação registrada.
+              </div>
+            ) : (
+              data?.data?.map((row: StockMovement) => (
+                <div
+                  key={row.id}
+                  className="flex flex-col bg-muted/30 p-4 rounded-xl border border-border gap-3"
+                >
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground text-sm leading-tight">
+                        {row.product?.name ||
+                          row.ingredient?.name ||
+                          "Item Excluído"}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono mt-0.5">
+                        {row.product?.internalCode ||
+                          (row.ingredient && `Insumo (${row.ingredient.unit})`)}
+                      </span>
+                    </div>
+                    <div className="shrink-0">{renderTypeBadge(row.type)}</div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-sm border-t border-border pt-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1">
+                        Data/Hora
+                      </span>
+                      <div className="flex items-center gap-1.5 text-foreground text-xs">
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        {row.createdAt
+                          ? format(
+                              new Date(row.createdAt),
+                              "dd/MM/yyyy HH:mm",
+                              { locale: ptBR },
+                            )
+                          : "-"}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1">
+                        Qtd.
+                      </span>
+                      <div className="font-semibold text-foreground leading-none">
+                        {formatQty(row.quantity)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block mb-1">
+                        Estoque Atual
+                      </span>
+                      <div className="font-semibold text-foreground leading-none">
+                        {formatQty(row.stockAfter)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-background/50 p-2 rounded-lg mt-1 border border-border/50">
+                    <User className="w-3.5 h-3.5 shrink-0" />
+                    <span className="font-medium truncate">
+                      {row.user?.name || "Sistema"}
+                    </span>
+                    {row.description && (
+                      <>
+                        <span className="mx-1 shrink-0">•</span>
+                        <span className="truncate" title={row.description}>
+                          {row.description}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
           {/* Paginação */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-            <div className="text-xs text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-border gap-4 sm:gap-0">
+            <div className="text-xs text-muted-foreground w-full sm:w-auto text-center sm:text-left">
               {data?.meta?.itemCount
                 ? `Total de ${data.meta.itemCount} registros`
                 : ""}

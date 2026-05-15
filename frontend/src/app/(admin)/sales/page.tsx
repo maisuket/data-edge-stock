@@ -738,52 +738,40 @@ export default function SalesPage() {
 
       {/* Dialog de Detalhes da Venda */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl">
           <DialogHeader>
             <DialogTitle>Detalhes da Venda</DialogTitle>
           </DialogHeader>
           {selectedSale && (
             <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground bg-muted/10 p-3 rounded-lg border border-border">
                 <p>
-                  <strong>Data:</strong>{" "}
+                  <strong className="text-foreground">Data:</strong>{" "}
                   {new Date(selectedSale.createdAt).toLocaleString("pt-BR")}
                 </p>
-                <p>
-                  <strong>Observações:</strong> {selectedSale.notes || "-"}
+                <p className="mt-1">
+                  <strong className="text-foreground">Observações:</strong> {selectedSale.notes || "-"}
                 </p>
               </div>
-              <div className="rounded-md border border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Qtd.</TableHead>
-                      <TableHead className="text-right">Valor Un.</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedSale.items?.map((item: any) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium text-sm">
-                          {item.product?.name || "Produto Excluído"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-sm">
-                          {Number(item.quantity)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
-                          {fmt.format(Number(item.unitPrice))}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums font-semibold text-foreground">
-                          {fmt.format(
-                            Number(item.quantity) * Number(item.unitPrice),
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="max-h-[45vh] overflow-y-auto pr-2 space-y-2">
+                {selectedSale.items?.map((item: any) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-center bg-muted/30 p-3 rounded-lg border border-border"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm text-foreground">
+                        {item.product?.name || "Produto Excluído"}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-0.5">
+                        {Number(item.quantity)}x de {fmt.format(Number(item.unitPrice))}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-sm text-foreground tabular-nums">
+                      {fmt.format(Number(item.quantity) * Number(item.unitPrice))}
+                    </span>
+                  </div>
+                ))}
               </div>
               <div className="flex justify-between items-center pt-4 border-t">
                 <span className="font-semibold text-muted-foreground">
