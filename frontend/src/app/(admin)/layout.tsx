@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Package,
@@ -12,7 +13,6 @@ import {
   Menu,
   X,
   ChevronRight,
-  Boxes,
   Truck,
   Beaker,
   ChefHat,
@@ -36,8 +36,8 @@ const mainMenuItems = [
 
 const productionMenuItems = [
   { href: "/productions", label: "Produção", icon: Factory },
-  { href: "/products", label: "Produtos", icon: Package },
   { href: "/recipes", label: "Receitas", icon: ChefHat },
+  { href: "/products", label: "Produtos", icon: Package },
   { href: "/ingredients", label: "Insumos", icon: Beaker },
 ];
 
@@ -54,10 +54,12 @@ function NavGroup({
   title,
   items,
   pathname,
+  onItemClick,
 }: {
   title: string;
   items: any[];
   pathname: string;
+  onItemClick?: () => void;
 }) {
   return (
     <div className="mb-6 last:mb-0">
@@ -76,6 +78,7 @@ function NavGroup({
             <Link
               key={item.href}
               href={item.href}
+              onClick={onItemClick}
               className={`
                 relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group text-sm font-medium overflow-hidden
                 ${
@@ -120,11 +123,6 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Fecha a sidebar ao navegar no mobile
-  useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [pathname]);
-
   const handleLogout = () => {
     // Remove cookies e localStorage
     document.cookie =
@@ -136,7 +134,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-[100dvh] w-full bg-background flex overflow-hidden">
       {/* --- Overlay para Mobile --- */}
       {isSidebarOpen && (
         <div
@@ -161,14 +159,17 @@ export default function AdminLayout({
         `}
       >
         {/* Logo Area */}
-        <div className="h-36 flex items-center justify-center px-6 border-b border-sidebar-border shrink-0 relative">
-          <img
+        <div className="h-24 lg:h-36 flex items-center justify-center px-6 border-b border-sidebar-border shrink-0 relative">
+          <Image
             src="/logo.png"
             alt="Logo"
-            className="h-32 w-auto object-contain"
+            width={112}
+            height={112}
+            priority
+            className="h-16 lg:h-28 w-auto object-contain transition-all duration-300"
           />
           <button
-            className="absolute right-6 lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            className="absolute top-4 right-4 lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground bg-sidebar-accent/50 p-1.5 rounded-lg transition-colors"
             onClick={() => setIsSidebarOpen(false)}
           >
             <X className="w-6 h-6" />
@@ -181,21 +182,25 @@ export default function AdminLayout({
             title="Operações"
             items={mainMenuItems}
             pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
           />
           <NavGroup
             title="Catálogo & Produção"
             items={productionMenuItems}
             pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
           />
           <NavGroup
             title="Gestão"
             items={managementMenuItems}
             pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
           />
           <NavGroup
             title="Sistema"
             items={configMenuItems}
             pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
           />
         </nav>
 
@@ -229,7 +234,7 @@ export default function AdminLayout({
       {/* --- Main Content Wrapper --- */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
         {/* Mobile Header */}
-        <header className="lg:hidden h-16 flex items-center px-4 justify-between border-b border-border bg-background">
+        <header className="lg:hidden h-16 shrink-0 flex items-center px-4 justify-between border-b border-border bg-background z-10 relative shadow-sm">
           <Button
             variant="ghost"
             size="icon"
