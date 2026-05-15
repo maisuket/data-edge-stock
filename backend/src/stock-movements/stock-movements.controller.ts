@@ -19,6 +19,25 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
+import { IsOptional, IsString } from 'class-validator';
+
+export class StockMovementQueryDto extends PageOptionsDto {
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+}
 
 @ApiTags('stock-movements')
 @UseGuards(JwtAuthGuard)
@@ -50,12 +69,24 @@ export class StockMovementsController {
     required: false,
     description: 'Filtrar por tipo de movimentação (ENTRY, EXIT, ADJUSTMENT)',
   })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Data de início do filtro (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Data final do filtro (YYYY-MM-DD)',
+  })
   @ApiResponse({ status: 200, type: PageDto })
-  findAll(
-    @Query() pageOptionsDto: PageOptionsDto,
-    @Query('productId') productId?: string,
-    @Query('type') type?: string,
-  ) {
-    return this.stockService.findAll(pageOptionsDto, productId, type);
+  findAll(@Query() queryDto: StockMovementQueryDto) {
+    return this.stockService.findAll(
+      queryDto,
+      queryDto.productId,
+      queryDto.type,
+      queryDto.startDate,
+      queryDto.endDate,
+    );
   }
 }

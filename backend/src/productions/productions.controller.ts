@@ -20,6 +20,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { CreateProductionDto } from './dto/create-production.dto';
 import { ProductionsService } from './productions.service';
+import { IsOptional, IsString } from 'class-validator';
+
+export class ProductionQueryDto extends PageOptionsDto {
+  @IsOptional()
+  @IsString()
+  productId?: string;
+}
 
 @ApiTags('productions')
 @UseGuards(JwtAuthGuard)
@@ -53,11 +60,8 @@ export class ProductionsController {
     required: false,
     description: 'Filtrar por produto',
   })
-  findAll(
-    @Query() pageOptionsDto: PageOptionsDto,
-    @Query('productId') productId?: string,
-  ) {
-    return this.productionsService.findAll(pageOptionsDto, productId);
+  findAll(@Query() queryDto: ProductionQueryDto) {
+    return this.productionsService.findAll(queryDto, queryDto.productId);
   }
 
   @Get(':id')
