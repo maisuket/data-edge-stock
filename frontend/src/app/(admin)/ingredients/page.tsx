@@ -172,7 +172,7 @@ export default function IngredientsPage() {
             setEditTarget(null);
             setFormOpen(true);
           }}
-          className="gap-2 bg-primary text-primary-foreground hover:bg-[#A65E2E] shadow-sm"
+          className="w-full sm:w-auto gap-2 bg-primary text-primary-foreground hover:bg-[#A65E2E] shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Novo Insumo
@@ -259,135 +259,138 @@ export default function IngredientsPage() {
         </CardHeader>
 
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="pl-6">Nome</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead className="text-right">Estoque</TableHead>
-                <TableHead className="text-right">Custo Médio</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="pr-6 text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-5 w-full rounded-md" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : ingredients.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-40 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <Beaker className="w-8 h-8 opacity-30" />
-                      <p>Nenhum insumo encontrado.</p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setFormOpen(true)}
-                        className="mt-1"
-                      >
-                        Cadastrar primeiro insumo
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="pl-6">Nome</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead className="text-right">Estoque</TableHead>
+                  <TableHead className="text-right">Custo Médio</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="pr-6 text-right">Ações</TableHead>
                 </TableRow>
-              ) : (
-                ingredients.map((ingredient) => (
-                  <TableRow
-                    key={ingredient.id}
-                    className="border-border hover:bg-muted/40 cursor-pointer transition-colors"
-                    onClick={() => setDetailTarget(ingredient)}
-                  >
-                    <TableCell className="pl-6 font-medium text-foreground">
-                      {ingredient.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-mono">
-                        {UNIT_SHORT[ingredient.unit] ?? ingredient.unit}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
-                      {ingredient.currentStock.toLocaleString("pt-BR", {
-                        maximumFractionDigits: 3,
-                      })}
-                      <span className="text-xs text-muted-foreground ml-1">
-                        {UNIT_SHORT[ingredient.unit]}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-foreground">
-                      {fmt.format(ingredient.averageCost)}
-                      <span className="text-xs text-muted-foreground">
-                        /{UNIT_SHORT[ingredient.unit]}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <StockBadge
-                        current={ingredient.currentStock}
-                        min={ingredient.minStock}
-                      />
-                    </TableCell>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-5 w-full rounded-md" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : ingredients.length === 0 ? (
+                  <TableRow>
                     <TableCell
-                      className="pr-6 text-right"
-                      onClick={(e) => e.stopPropagation()}
+                      colSpan={6}
+                      className="h-40 text-center text-muted-foreground"
                     >
-                      <div className="flex items-center justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setDetailTarget(ingredient)}
-                            >
-                              <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(ingredient)}
-                            >
-                              <Pencil className="w-4 h-4 mr-2" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => setDeleteTarget(ingredient)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" /> Remover
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <div className="flex flex-col items-center gap-2">
+                        <Beaker className="w-8 h-8 opacity-30" />
+                        <p>Nenhum insumo encontrado.</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setFormOpen(true)}
+                          className="mt-1"
+                        >
+                          Cadastrar primeiro insumo
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  ingredients.map((ingredient) => (
+                    <TableRow
+                      key={ingredient.id}
+                      className="border-border hover:bg-muted/40 cursor-pointer transition-colors"
+                      onClick={() => setDetailTarget(ingredient)}
+                    >
+                      <TableCell className="pl-6 font-medium text-foreground">
+                        {ingredient.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs font-mono">
+                          {UNIT_SHORT[ingredient.unit] ?? ingredient.unit}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">
+                        {ingredient.currentStock.toLocaleString("pt-BR", {
+                          maximumFractionDigits: 3,
+                        })}
+                        <span className="text-xs text-muted-foreground ml-1">
+                          {UNIT_SHORT[ingredient.unit]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-foreground">
+                        {fmt.format(ingredient.averageCost)}
+                        <span className="text-xs text-muted-foreground">
+                          /{UNIT_SHORT[ingredient.unit]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <StockBadge
+                          current={ingredient.currentStock}
+                          min={ingredient.minStock}
+                        />
+                      </TableCell>
+                      <TableCell
+                        className="pr-6 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDetailTarget(ingredient)}
+                              >
+                                <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(ingredient)}
+                              >
+                                <Pencil className="w-4 h-4 mr-2" /> Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => setDeleteTarget(ingredient)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" /> Remover
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
 
         {/* Paginação */}
         {meta && meta.pageCount > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-border">
             <p className="text-sm text-muted-foreground">
               Página {meta.page} de {meta.pageCount}
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
               <Button
                 variant="outline"
                 size="sm"
+                className="w-1/2 sm:w-auto"
                 disabled={!meta.hasPreviousPage}
                 onClick={() => setPage((p) => p - 1)}
               >
@@ -396,6 +399,7 @@ export default function IngredientsPage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="w-1/2 sm:w-auto"
                 disabled={!meta.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
               >
