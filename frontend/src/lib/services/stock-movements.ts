@@ -3,10 +3,10 @@ import type { Page } from "./products"; // Reutiliza a interface Page
 // Reutiliza a interface Page
 
 export enum MovementType {
-  ENTRY = "ENTRADA",
-  EXIT = "SAIDA",
-  ADJUSTMENT = "AJUSTE",
-  TRANSFER = "TRANSFERENCIA",
+  ENTRY = "ENTRY",
+  EXIT = "EXIT",
+  ADJUSTMENT = "ADJUSTMENT",
+  TRANSFER = "TRANSFER",
 }
 
 export interface StockMovement {
@@ -20,12 +20,16 @@ export interface StockMovement {
   expiryDate: string;
   description?: string;
   createdAt: string;
-  product: {
+  product?: {
     name: string;
     internalCode: string;
   };
   user: {
     name: string;
+  };
+  ingredient?: {
+    name: string;
+    unit: string;
   };
 }
 
@@ -40,9 +44,23 @@ export const StockMovementService = {
     return api.post("/stock-movements", data);
   },
 
-  getAll: async (page = 1, pageSize = 10, productId?: string) => {
+  getAll: async (
+    page = 1,
+    pageSize = 10,
+    type?: string,
+    startDate?: string,
+    endDate?: string,
+    productId?: string
+  ) => {
     const response = await api.get<Page<StockMovement>>("/stock-movements", {
-      params: { page, take: pageSize, productId: productId || undefined },
+      params: {
+        page,
+        take: pageSize,
+        type: type || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        productId: productId || undefined,
+      },
     });
     return response.data;
   },

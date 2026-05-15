@@ -122,10 +122,23 @@ export class StockMovementsService {
     pageOptionsDto: PageOptionsDto,
     productId?: string,
     type?: string,
+    startDate?: string,
+    endDate?: string,
   ) {
-    const where: any = {};
+    const where: Prisma.StockMovementWhereInput = {};
     if (productId) where.productId = productId;
-    if (type) where.type = type;
+    if (type) where.type = type as MovementType;
+
+    if (startDate || endDate) {
+      const createdAtFilter: Prisma.DateTimeFilter = {};
+      if (startDate) {
+        createdAtFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
+      }
+      if (endDate) {
+        createdAtFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
+      }
+      where.createdAt = createdAtFilter;
+    }
 
     const [movements, itemCount] = await this.prisma.$transaction([
       this.prisma.stockMovement.findMany({
