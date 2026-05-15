@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -134,7 +134,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="h-[100dvh] w-full bg-background flex overflow-hidden">
+    <div className="h-dvh w-full bg-background flex overflow-hidden">
       {/* --- Overlay para Mobile --- */}
       {isSidebarOpen && (
         <div
@@ -177,7 +177,7 @@ export default function AdminLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-6 px-4">
+        <nav className="flex-1 overflow-y-auto py-6 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <NavGroup
             title="Operações"
             items={mainMenuItems}
