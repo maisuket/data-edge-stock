@@ -66,7 +66,7 @@ export class StockMovementsService {
           // Na saída, o custo médio NÃO muda (princípio contábil)
           if (newStock.lt(qtyDecimal)) {
             throw new BadRequestException(
-              `Estoque insuficiente para o produto "${product.name}". Tentativa de saída: ${quantity}. Atual: ${product.currentStock}.`,
+              `Estoque insuficiente para o produto "${product.name}". Tentativa de saída: ${quantity}. Atual: ${product.currentStock.toNumber()}.`,
             );
           }
           newStock = newStock.sub(qtyDecimal);
