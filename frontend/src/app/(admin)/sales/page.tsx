@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -89,13 +89,15 @@ export default function SalesPage() {
     : 0;
 
   // Auto-preenche o preço de venda quando seleciona o produto
-  useEffect(() => {
+  const [prevSelectedProduct, setPrevSelectedProduct] = useState<any>(null);
+  if (selectedProduct !== prevSelectedProduct) {
+    setPrevSelectedProduct(selectedProduct);
     if (selectedProduct && selectedProduct.salePrice) {
       setUnitPrice(String(selectedProduct.salePrice));
     } else {
       setUnitPrice("");
     }
-  }, [selectedProduct]);
+  }
 
   // Busca as vendas recentes em vez das movimentações brutas
   const { data: salesData, isLoading: isLoadingSales } = useQuery({
@@ -188,7 +190,7 @@ export default function SalesPage() {
     } else {
       // Se não, adiciona como item novo
       const newItem = {
-        id: Math.random().toString(36).substring(2, 9),
+        id: crypto.randomUUID(),
         productId,
         productName: prod.name,
         quantity: requestedQty,

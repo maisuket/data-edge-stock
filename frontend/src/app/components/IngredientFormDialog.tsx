@@ -45,7 +45,7 @@ import {
 const schema = z.object({
   name: z.string().min(2, "Nome deve ter ao menos 2 caracteres"),
   unit: z.nativeEnum(IngredientUnit),
-  minStock: z.coerce.number().min(0, "Deve ser ≥ 0"),
+  minStock: z.number({ message: "Valor inválido" }).min(0, "Deve ser ≥ 0"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -197,6 +197,10 @@ export function IngredientFormDialog({
                       step="0.1"
                       min={0}
                       {...field}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        field.onChange(isNaN(val) ? "" : val);
+                      }}
                       className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                     />
                   </FormControl>
