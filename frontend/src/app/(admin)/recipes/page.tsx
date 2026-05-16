@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -15,10 +15,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { ProductService, type Product } from "../../../lib/services/products";
+import { ProductService } from "../../../lib/services/products";
 import {
   IngredientService,
-  type Ingredient,
   UNIT_SHORT,
 } from "../../../lib/services/ingredients";
 import { RecipeService } from "../../../lib/services/recipes";
@@ -90,7 +89,19 @@ export default function RecipesPage() {
 
   // ── Sync recipe into rows when product changes ─────────────────────────
 
-  useEffect(() => {
+  const [prevRecipe, setPrevRecipe] = useState<any>(null);
+  const [prevProductId, setPrevProductId] = useState<string>("");
+  const [prevProductsData, setPrevProductsData] = useState<any>(null);
+
+  if (
+    recipe !== prevRecipe ||
+    selectedProductId !== prevProductId ||
+    productsData !== prevProductsData
+  ) {
+    setPrevRecipe(recipe);
+    setPrevProductId(selectedProductId);
+    setPrevProductsData(productsData);
+
     if (recipe?.items) {
       setRows(
         recipe.items.map((i) => ({
@@ -105,7 +116,7 @@ export default function RecipesPage() {
     } else {
       setRows([]);
     }
-  }, [recipe, selectedProductId, productsData]);
+  }
 
   // ── Live cost calculation ─────────────────────────────────────────────
 
@@ -135,7 +146,7 @@ export default function RecipesPage() {
           ingredientId: r.ingredientId,
           quantity: r.quantity,
         })),
-      }),
+      } as any),
     onSuccess: () => {
       toast.success(
         "Receita salva! Custo do produto atualizado automaticamente.",
