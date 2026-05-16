@@ -164,7 +164,7 @@ function StockMovementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Movimentar Estoque</DialogTitle>
         </DialogHeader>
@@ -373,8 +373,9 @@ export default function ProductsPage() {
     setIsMoveOpen(true);
   };
 
+  const newLocal = "relative w-[300px]";
   return (
-    <div className="p-8 max-w-[1600px] mx-auto pb-20 animate-in fade-in duration-500">
+    <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
@@ -420,7 +421,7 @@ export default function ProductsPage() {
         <CardContent>
           {/* Search */}
           <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
-            <div className="relative w-[300px]">
+            <div className={newLocal}>
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome ou código..."
@@ -451,7 +452,7 @@ export default function ProductsPage() {
                   <TableHead className="font-semibold text-foreground">
                     Custo / Venda
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-foreground w-[80px]">
+                  <TableHead className="text-right font-semibold text-foreground w-20">
                     Ações
                   </TableHead>
                 </TableRow>
@@ -536,7 +537,7 @@ export default function ProductsPage() {
                                 </span>
                                 {specsText && (
                                   <span
-                                    className="truncate max-w-[250px]"
+                                    className="truncate max-w-62.5"
                                     title={specsText}
                                   >
                                     • {specsText}

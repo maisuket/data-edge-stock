@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter } from "next/navigation"; // Importante: use navigation, não router
 import { Loader2, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
@@ -70,10 +71,13 @@ export default function LoginPage() {
         {/* Overlay para dar um tom de caramelo mais aconchegante sobre a imagem */}
         <div className="absolute inset-0 bg-primary/20 z-10 mix-blend-multiply" />
         {/* Imagem do Unsplash (Sem Direitos Autorais) de um Pudim / Flan */}
-        <img
+        <Image
           src={bgImage}
           alt="Fábrica de Pudins"
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          className="object-cover"
+          priority
+          unoptimized
         />
         {/* Gradiente e texto integrado à imagem */}
         <div className="relative z-20 flex flex-col justify-end w-full h-full p-12 bg-linear-to-t from-black/90 via-black/40 to-transparent">
@@ -91,15 +95,18 @@ export default function LoginPage() {
 
       {/* Lado Direito - Formulário de Login */}
       <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative bg-background">
-        <div className="w-full max-w-[380px] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="w-full max-w-95 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
           {/* Cabeçalho */}
           <div className="text-center space-y-3">
             <div className="inline-flex items-center justify-center mb-2">
               {/* Substitua o src pelo caminho real da sua logo na pasta 'public' (ex: '/minha-logo.svg') */}
-              <img
+              <Image
                 src="/logo.png"
                 alt="Logo StockFlow"
+                width={400}
+                height={240}
                 className="h-60 w-auto object-contain"
+                priority
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">

@@ -12,30 +12,23 @@ import {
   Factory,
   Loader2,
   AlertTriangle,
-  TrendingUp,
-  MoreHorizontal,
-  Eye,
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import {
-  ProductionService,
-  type ProductionDetail,
-} from "../../../lib/services/productions";
+import { ProductionService } from "../../../lib/services/productions";
 import { ProductService } from "../../../lib/services/products";
 import { RecipeService } from "../../../lib/services/recipes";
 import { UNIT_SHORT } from "../../../lib/services/ingredients";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -87,7 +80,11 @@ const fmt = new Intl.NumberFormat("pt-BR", {
 
 const schema = z.object({
   productId: z.string().min(1, "Selecione um produto"),
-  quantity: z.coerce.number().min(0.001, "Quantidade deve ser > 0"),
+  quantity: z
+    .number({
+      message: "Quantidade é obrigatória ou inválida",
+    })
+    .min(0.001, "Quantidade deve ser > 0"),
   notes: z.string().optional(),
 });
 
@@ -109,8 +106,8 @@ function ProductionFormDialog({
     defaultValues: { productId: "", quantity: 0, notes: "" },
   });
 
-  const productId = form.watch("productId");
-  const quantity = form.watch("quantity");
+  const productId = useWatch({ control: form.control, name: "productId" });
+  const quantity = useWatch({ control: form.control, name: "quantity" }) || 0;
 
   // Load manufactured products
   const { data: productsData } = useQuery({
@@ -214,7 +211,16 @@ function ProductionFormDialog({
                 <FormItem>
                   <FormLabel>Quantidade a produzir (unidades)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.1" min={0} {...field} />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      min={0}
+                      {...field}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        field.onChange(isNaN(val) ? "" : val);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -382,7 +388,7 @@ export default function ProductionsPage() {
   const meta = data?.meta;
 
   return (
-    <div className="p-6 md:p-8 max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 max-w-350 mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
