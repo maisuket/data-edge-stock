@@ -17,6 +17,9 @@ export interface RecentProduction {
 }
 
 export interface DashboardStats {
+  // Vendas
+  totalSales?: number;
+  profitMargin?: number;
   // Produtos
   totalProducts: number;
   lowStockCount: number;

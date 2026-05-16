@@ -170,7 +170,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="p-6 md:p-8 max-w-400 mx-auto space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-between items-center mb-8">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-10 w-24" />
@@ -179,17 +179,17 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-[140px] rounded-xl" />
+                <Skeleton key={i} className="h-35 rounded-xl" />
               ))}
             </div>
-            <Skeleton className="h-[340px] rounded-xl" />
-            <Skeleton className="h-[280px] rounded-xl" />
+            <Skeleton className="h-85 rounded-xl" />
+            <Skeleton className="h-70 rounded-xl" />
           </div>
           <div className="lg:col-span-1 space-y-6">
             {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-[140px] rounded-xl" />
+              <Skeleton key={i} className="h-35 rounded-xl" />
             ))}
-            <Skeleton className="h-[300px] rounded-xl" />
+            <Skeleton className="h-75 rounded-xl" />
           </div>
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
   const apiStatus = health ? "ok" : healthLoading ? "loading" : "error";
 
   return (
-    <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 max-w-400 mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -269,7 +269,11 @@ export default function DashboardPage() {
               title="Margem de Lucro"
               value={`${(s.profitMargin ?? 0).toFixed(1)}%`}
               icon={TrendingUp}
-              colorClass={(s.profitMargin ?? 0) >= 30 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-500" : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"}
+              colorClass={
+                (s.profitMargin ?? 0) >= 30
+                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-500"
+                  : "bg-yellow-500/20 text-yellow-700 dark:text-yellow-500"
+              }
               subtitle="Margem média nas vendas"
             />
             <StatCard
@@ -314,16 +318,30 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] w-full mt-2">
+              <div className="h-62.5 w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={s.productionsTrend}
                     margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
                   >
                     <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      <linearGradient
+                        id="colorValue"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(var(--primary))"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
@@ -350,28 +368,36 @@ export default function DashboardPage() {
                         backgroundColor: "hsl(var(--card))",
                         borderColor: "hsl(var(--border))",
                         borderRadius: "8px",
-                          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                       }}
-                        itemStyle={{ color: "hsl(var(--foreground))", fontWeight: 500 }}
-                        formatter={(value: any) => [
-                          fmt.format(Number(value) || 0),
+                      itemStyle={{
+                        color: "hsl(var(--foreground))",
+                        fontWeight: 500,
+                      }}
+                      formatter={(value: any) => [
+                        fmt.format(Number(value) || 0),
                         "Produzido",
                       ]}
-                        cursor={{ stroke: "hsl(var(--primary))", strokeWidth: 1, strokeDasharray: "4 4", fill: "transparent" }}
+                      cursor={{
+                        stroke: "hsl(var(--primary))",
+                        strokeWidth: 1,
+                        strokeDasharray: "4 4",
+                        fill: "transparent",
+                      }}
                     />
-                      <Area
-                        type="monotone"
-                        strokeWidth={3}
-                        activeDot={{
-                          r: 6,
-                          fill: "hsl(var(--primary))",
-                          stroke: "hsl(var(--background))",
-                          strokeWidth: 2,
-                        }}
+                    <Area
+                      type="monotone"
+                      strokeWidth={3}
+                      activeDot={{
+                        r: 6,
+                        fill: "hsl(var(--primary))",
+                        stroke: "hsl(var(--background))",
+                        strokeWidth: 2,
+                      }}
                       dataKey="value"
-                        stroke="hsl(var(--primary))"
-                        fillOpacity={1}
-                        fill="url(#colorValue)"
+                      stroke="hsl(var(--primary))"
+                      fillOpacity={1}
+                      fill="url(#colorValue)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>

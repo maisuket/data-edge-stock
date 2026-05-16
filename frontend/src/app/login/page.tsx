@@ -76,7 +76,7 @@ export default function LoginPage() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Gradiente e texto integrado à imagem */}
-        <div className="relative z-20 flex flex-col justify-end w-full h-full p-12 bg-gradient-to-t from-black/90 via-black/40 to-transparent">
+        <div className="relative z-20 flex flex-col justify-end w-full h-full p-12 bg-linear-to-t from-black/90 via-black/40 to-transparent">
           <div className="max-w-lg animate-in fade-in slide-in-from-bottom-8 duration-700">
             <h2 className="text-5xl font-extrabold text-white mb-4 tracking-tight">
               StockFlow
