@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "../backend/src/settings/settings.controller.ts", "../backend/src/settings/settings.module.ts", "../backend/src/settings/settings.service.ts", "../backend/src/settings/dto/update-setting.dto.ts"  ],
-  "exclude": ["node_modules"]
+  ],
+  "exclude": ["node_modules", "../backend"]
 }
