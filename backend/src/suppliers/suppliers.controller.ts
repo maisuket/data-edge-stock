@@ -56,7 +56,7 @@ export class SuppliersController {
   }
 
   @Delete(':id')
-  @Roles(Role.Admin)
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.suppliersService.remove(id);
   }

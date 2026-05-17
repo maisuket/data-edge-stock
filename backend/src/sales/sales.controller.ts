@@ -30,6 +30,12 @@ export class SalesController {
     return this.salesService.create(createSaleDto, req.user.userId);
   }
 
+  @Get('stats/today')
+  @ApiOperation({ summary: 'Estatísticas de vendas do dia atual' })
+  getTodayStats() {
+    return this.salesService.getTodayStats();
+  }
+
   @Get()
   @ApiOperation({ summary: 'Listar vendas realizadas (Paginado)' })
   findAll(@Query() pageOptionsDto: PageOptionsDto) {

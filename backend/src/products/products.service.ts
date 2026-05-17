@@ -50,7 +50,7 @@ export class ProductsService {
 
       const lastProduct = await this.prisma.product.findFirst({
         where: { internalCode: { startsWith: `${categoryPrefix}-` } },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { internalCode: 'desc' }, // ordena pelo número para pegar o maior
         select: { internalCode: true },
       });
 
@@ -140,7 +140,7 @@ export class ProductsService {
       },
     });
 
-    if (!product) return null;
+    if (!product) throw new NotFoundException(`Produto ${id} não encontrado.`);
 
     return {
       ...product,
@@ -333,10 +333,13 @@ export class ProductsService {
           product: { select: { name: true } },
         },
       }),
-      this.prisma.production.findMany({
-        where: { producedAt: { gte: sevenDaysAgo } },
-        select: { producedAt: true, totalCost: true },
-      }),
+      this.prisma.$queryRaw<{ day: string; total_cost: number }[]>`
+        SELECT DATE(produced_at)::text AS day,
+               COALESCE(SUM(total_cost), 0)::FLOAT AS total_cost
+        FROM productions
+        WHERE produced_at >= ${sevenDaysAgo}
+        GROUP BY DATE(produced_at)
+      `,
     ]);
 
     // Prepara o array para o gráfico (últimos 7 dias agrupados)
@@ -352,10 +355,9 @@ export class ProductsService {
       d.setDate(d.getDate() - i);
       trendMap.set(formatDate(d), { date: daysShort[d.getDay()], value: 0 });
     }
-    for (const p of trendProductions) {
-      const key = formatDate(p.producedAt);
-      if (trendMap.has(key)) {
-        trendMap.get(key)!.value += p.totalCost.toNumber();
+    for (const row of trendProductions) {
+      if (trendMap.has(row.day)) {
+        trendMap.get(row.day)!.value = row.total_cost;
       }
     }
 

@@ -29,6 +29,14 @@ import { SavedMultipartFile } from '@fastify/multipart';
 
 const pump = util.promisify(pipeline);
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+]);
+
 // Interface auxiliar para tipar os métodos do @fastify/multipart
 interface FastifyMultipartRequest extends FastifyRequest {
   file: () => Promise<SavedMultipartFile | undefined>;
@@ -66,9 +74,24 @@ export class FilesController {
         throw new BadRequestException('Nenhum arquivo enviado');
       }
 
-      // Gera nome único
+      // Valida o tipo MIME contra a lista de permitidos
+      if (!ALLOWED_MIME_TYPES.has(data.mimetype)) {
+        throw new BadRequestException(
+          `Tipo de arquivo não permitido: ${data.mimetype}. ` +
+            `Permitidos: ${[...ALLOWED_MIME_TYPES].join(', ')}`,
+        );
+      }
+
+      // Gera nome único com extensão derivada do MIME (não do nome do cliente)
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+        'image/gif': 'gif',
+        'application/pdf': 'pdf',
+      };
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = data.filename.split('.').pop();
+      const ext = mimeToExt[data.mimetype] ?? 'bin';
       const fileName = `upload-${uniqueSuffix}.${ext}`;
 
       // Garante que a pasta existe
@@ -96,7 +119,6 @@ export class FilesController {
         fileType: data.mimetype,
       };
     } catch (error) {
-      console.error('Erro no upload:', error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       throw new InternalServerErrorException(

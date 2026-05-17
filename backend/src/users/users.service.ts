@@ -85,7 +85,7 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     currentUser: { id: string; role: string },
   ) {
-    if (id !== currentUser.id && currentUser.role !== Role.Admin) {
+    if (id !== currentUser.id && currentUser.role !== Role.ADMIN) {
       throw new ForbiddenException(
         'Você não tem permissão para alterar dados de outro usuário.',
       );
@@ -107,7 +107,7 @@ export class UsersService {
     }
 
     // Apenas admins podem alterar role
-    if (role && currentUser.role === Role.Admin) {
+    if (role && currentUser.role === Role.ADMIN) {
       updateData.role = role;
     }
 

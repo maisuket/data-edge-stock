@@ -7,13 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
   username       String          @unique
   name           String
   cargo          String?         @default("EMPLOYEE")
-  role           String          @default("USER")
+  role           Role            @default(USER)
   password       String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -86,6 +91,8 @@ model StockMovement {
   supplier    Supplier? @relation(fields: [supplierId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
 
+  @@index([productId, createdAt])
+  @@index([ingredientId, createdAt])
   @@map("stock_movements")
 }
 
@@ -168,6 +175,7 @@ model IngredientLot {
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   supplier     Supplier?  @relation(fields: [supplierId], references: [id])
 
+  @@index([expiresAt])
   @@map("ingredient_lots")
 }
 
@@ -203,6 +211,7 @@ model Production {
   product      Product                 @relation(fields: [productId], references: [id])
   user         User                    @relation(fields: [userId], references: [id])
 
+  @@index([producedAt])
   @@map("productions")
 }
 
@@ -247,6 +256,7 @@ model Sale {
   user        User       @relation(fields: [userId], references: [id])
   items       SaleItem[]
 
+  @@index([createdAt])
   @@map("sales")
 }
 

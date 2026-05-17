@@ -173,7 +173,7 @@ export class IngredientsService {
           purchasedAt: new Date(),
           expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
           supplierId: dto.supplierId ?? null,
-          brand: (dto as any).brand ?? null,
+          brand: dto.brand ?? null,
         },
         include: {
           ingredient: { select: { name: true, unit: true } },
@@ -278,6 +278,7 @@ export class IngredientsService {
             purchasedAt: new Date(),
             expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
             brand: item.brand ?? null,
+            supplierId: item.supplierId ?? null,
           },
         });
 

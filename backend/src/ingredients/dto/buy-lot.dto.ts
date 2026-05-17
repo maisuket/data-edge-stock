@@ -51,6 +51,14 @@ export class BuyLotDto {
   @IsDateString()
   expiresAt?: string;
 
+  @ApiPropertyOptional({
+    example: 'Nestlé',
+    description: 'Marca do produto/insumo',
+  })
+  @IsOptional()
+  @IsString()
+  brand?: string;
+
   @ApiProperty({
     example: 'uuid-do-usuario',
     description: 'ID do usuário que realizou a compra',

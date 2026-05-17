@@ -18,15 +18,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly prisma: PrismaService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        // 1. Lê o token do cookie HttpOnly (autenticação segura via browser)
+        (req: any) => (req?.cookies?.access_token as string | undefined) ?? null,
+        // 2. Fallback para Bearer header (compatibilidade com ferramentas como Postman/curl)
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
-      // CORREÇÃO: Adicionado '?? ""' para garantir que seja string e satisfazer o TypeScript
       secretOrKey: configService.get<string>('JWT_SECRET') ?? '',
     });
   }
 
   async validate(payload: JwtPayload) {
-    // Verifica no banco de dados se o usuário do token ainda existe
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
@@ -37,7 +40,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
-    // O que retornarmos aqui será injetado na requisição como `req.user`
     return {
       userId: payload.sub,
       email: payload.email,

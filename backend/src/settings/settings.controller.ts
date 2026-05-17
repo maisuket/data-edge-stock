@@ -28,7 +28,7 @@ export class SettingsController {
   // PUT é protegido e restrito para Admins
   @Put(':key')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.Admin)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar ou criar uma configuração (Upsert)' })
   update(

@@ -14,6 +14,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
 import { Logger } from 'nestjs-pino';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
 import { DecimalInterceptor } from './common/interceptors/decimal.interceptor';
 
@@ -34,6 +35,8 @@ async function bootstrap() {
   /* =============================
    * 📦 UPLOAD DE ARQUIVOS
    * ============================= */
+  await app.register(cookie);
+
   await app.register(multipart, {
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB
@@ -82,7 +85,6 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
       exceptionFactory: (errors) => {
-        console.error(JSON.stringify(errors, null, 2));
         return new BadRequestException(errors);
       },
     }),
