@@ -36,9 +36,15 @@ export class SalesService {
           );
         }
 
-        if (!product.salePrice) {
+        // Seguindo o princípio "Nunca confie no frontend", forçamos o uso do
+        // preço cadastrado no banco de dados.
+        const unitPrice = product.salePrice;
+
+        // No JavaScript, um Decimal com valor 0 (Prisma.Decimal(0)) é um objeto "truthy".
+        // Precisamos validar com .lte(0) para garantir que o preço seja maior que zero.
+        if (!unitPrice || unitPrice.lte(0)) {
           throw new BadRequestException(
-            `Produto "${product.name}" não possui preço de venda definido.`,
+            `O produto "${product.name}" está sem preço de venda definido (ou o valor é zero) no banco de dados. Atualize o cadastro antes de vender.`,
           );
         }
 
@@ -65,7 +71,6 @@ export class SalesService {
         const newStockNum = updated[0].current_stock;
         const stockBeforeNum = product.currentStock.toNumber();
 
-        const unitPrice = product.salePrice;
         const unitCost = product.costPrice;
         const totalPrice = unitPrice.mul(quantity);
 
@@ -125,7 +130,7 @@ export class SalesService {
       this.prisma.sale.findMany({
         skip,
         take,
-        orderBy: { createdAt: order === 'asc' ? 'asc' : 'desc' },
+        orderBy: { createdAt: order ?? 'desc' },
         include: {
           user: { select: { name: true } },
           items: {

@@ -98,15 +98,6 @@ export default function SalesPage() {
         .reduce((sum, item) => sum + item.quantity, 0)
     : 0;
 
-  // Auto-preenche o preço de venda quando seleciona o produto
-  useEffect(() => {
-    if (selectedProduct?.salePrice) {
-      setUnitPrice(String(selectedProduct.salePrice));
-    } else {
-      setUnitPrice("");
-    }
-  }, [selectedProduct]);
-
   // Busca as vendas recentes
   const { data: salesData, isLoading: isLoadingSales } = useQuery({
     queryKey: ["sales"],
@@ -142,6 +133,8 @@ export default function SalesPage() {
       setDescription("");
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["sales"] });
+      qc.invalidateQueries({ queryKey: ["sales", "today"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
     onError: (error: any) => {
       let errMsg =
@@ -377,7 +370,15 @@ export default function SalesPage() {
                   <Label htmlFor="product">Produto *</Label>
                   <Select
                     value={productId}
-                    onValueChange={setProductId}
+                    onValueChange={(newProductId) => {
+                      setProductId(newProductId);
+                      const product = products.find(
+                        (p: any) => p.id === newProductId,
+                      );
+                      setUnitPrice(
+                        product?.salePrice ? String(product.salePrice) : "",
+                      );
+                    }}
                     disabled={isLoadingProducts || saleMutation.isPending}
                   >
                     <SelectTrigger id="product">
