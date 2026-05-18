@@ -1,48 +1,28 @@
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-jwt';
 
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  username: string;
-  role: string;
-}
+// Custom function to extract JWT from the 'access_token' cookie
+const fromCookie = (req: {
+  cookies?: Record<string, string | undefined>;
+}): string | null => {
+  return req.cookies?.access_token ?? null;
+};
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    configService: ConfigService,
-    private readonly prisma: PrismaService,
-  ) {
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        // 1. Lê o token do cookie HttpOnly (autenticação segura via browser)
-        (req: any) => (req?.cookies?.access_token as string | undefined) ?? null,
-        // 2. Fallback para Bearer header (compatibilidade com ferramentas como Postman/curl)
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ]),
+      jwtFromRequest: fromCookie,
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') ?? '',
+      secretOrKey: configService.get<string>('JWT_SECRET')!,
     });
   }
 
-  async validate(payload: JwtPayload) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException(
-        'Token inválido: Usuário não encontrado ou foi removido do sistema.',
-      );
-    }
-
+  validate(payload: { sub: string; username: string; role: string }) {
     return {
       userId: payload.sub,
-      email: payload.email,
       username: payload.username,
       role: payload.role,
     };

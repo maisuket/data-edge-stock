@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -123,6 +123,21 @@ export default function AdminLayout({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const userData = sessionStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      }
+    } catch (error) {
+      console.error("Failed to parse user data from sessionStorage", error);
+    }
+  }, []);
 
   const handleLogout = async () => {
     toast.info("Você saiu do sistema.");
@@ -206,13 +221,17 @@ export default function AdminLayout({
           <div className="flex items-center gap-3 mb-4 px-1">
             <Avatar className="h-9 w-9 border border-sidebar-border">
               <AvatarFallback className="bg-sidebar-primary/10 text-sidebar-primary text-xs font-bold">
-                AD
+                {user?.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join("") || "..."}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">Administrador</p>
+              <p className="text-sm font-medium truncate">{user?.name}</p>
               <p className="text-xs text-sidebar-foreground/60 truncate">
-                admin@stock.com
+                {user?.email}
               </p>
             </div>
           </div>

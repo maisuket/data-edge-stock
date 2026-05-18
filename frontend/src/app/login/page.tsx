@@ -49,7 +49,12 @@ export default function LoginPage() {
 
     try {
       // Chama o serviço real que salva o Cookie
-      await authService.login(data);
+      const response = await authService.login(data);
+
+      // Salva os dados do usuário no sessionStorage para uso no layout
+      if (response.user) {
+        sessionStorage.setItem("user", JSON.stringify(response.user));
+      }
 
       setSuccess(true);
       toast.success("Login realizado! Redirecionando...");
