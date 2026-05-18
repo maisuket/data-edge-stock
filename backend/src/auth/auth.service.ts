@@ -46,10 +46,11 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
       user: {
-        sub: user.id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
+        username: user.username,
       },
     };
   }
@@ -68,23 +69,22 @@ export class AuthService {
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    // role e username não são alteráveis pelo próprio usuário via profile
-    const { role: _role, password, ...rest } = updateDto;
-
-    const updateData: {
-      name?: string;
-      email?: string;
-      cargo?: string;
-      password?: string;
-    } = { ...rest };
+    // role e username não podem ser alterados pelo próprio usuário via perfil.
+    const { role, username, password, ...rest } = updateDto;
+    const updateData: Omit<Partial<UpdateUserDto>, 'role' | 'username'> = {
+      ...rest,
+    };
 
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
+    } else {
+      // Garante que uma senha vazia ou indefinida não apague a senha existente.
+      delete updateData.password;
     }
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: updateData,
+      data: updateData, // `role` e `username` foram omitidos e não serão atualizados
     });
 
     return new UserEntity(updatedUser);
