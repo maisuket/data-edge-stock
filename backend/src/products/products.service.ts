@@ -284,7 +284,11 @@ export class ProductsService {
     const sevenDaysAgo = new Date(todayStart);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-    const firstDayOfMonth = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+    const firstDayOfMonth = new Date(
+      todayStart.getFullYear(),
+      todayStart.getMonth(),
+      1,
+    );
 
     const [
       totalProducts,
@@ -379,7 +383,8 @@ export class ProductsService {
       }
     }
 
-    const profitMargin = totalSales > 0 ? ((totalSales - totalSalesCost) / totalSales) * 100 : 0;
+    const profitMargin =
+      totalSales > 0 ? ((totalSales - totalSalesCost) / totalSales) * 100 : 0;
 
     return {
       // Vendas

@@ -239,7 +239,7 @@ export default function AdminLayout({
           >
             <Menu className="w-6 h-6" />
           </Button>
-          <span className="font-semibold">StockFlow</span>
+          <span className="font-semibold">Dr. Pudim</span>
           <div className="w-8" /> {/* Spacer */}
         </header>
 

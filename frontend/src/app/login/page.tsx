@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [bgImage, setBgImage] = useState(
-    "https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?auto=format&fit=crop&w=1200&q=80",
+    "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmEwODY0OTBjZjQ0ODE5MWE0MTMxNWMxZmVkMTVkNmI6ZmlsZV8wMDAwMDAwMDk4ZGM3MWZiYmJkYjFmZmNhZDE5MzFkNSIsInRzIjoiMjA1ODkiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjdjMjU3MmYyNWM0YTcxNjM4Y2FiNzkwZGZmMzk4YTlmY2Q0N2IxMGQ2OWRmYjEzZTZlYzA5ZDAxMWE0MTA2OWUiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY2RuIjpudWxsLCJmbiI6bnVsbCwiY2QiOm51bGwsImNwIjpudWxsLCJtYSI6bnVsbH0=",
   );
 
   // Carrega a imagem dinâmica salva nas configurações
@@ -82,9 +82,6 @@ export default function LoginPage() {
         {/* Gradiente e texto integrado à imagem */}
         <div className="relative z-20 flex flex-col justify-end w-full h-full p-12 bg-linear-to-t from-black/90 via-black/40 to-transparent">
           <div className="max-w-lg animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <h2 className="text-5xl font-extrabold text-white mb-4 tracking-tight">
-              StockFlow
-            </h2>
             <p className="text-white/80 text-lg leading-relaxed">
               A doçura de uma gestão eficiente. O controle perfeito para a sua
               fábrica.
@@ -102,7 +99,7 @@ export default function LoginPage() {
               {/* Substitua o src pelo caminho real da sua logo na pasta 'public' (ex: '/minha-logo.svg') */}
               <Image
                 src="/logo.png"
-                alt="Logo StockFlow"
+                alt="Logo Dr.Pudim"
                 width={400}
                 height={240}
                 className="h-60 w-auto object-contain"

@@ -56,14 +56,14 @@ async function main() {
     create: {
       key: 'LOGIN_IMAGE_URL',
       value:
-        'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?auto=format&fit=crop&w=1200&q=80',
+        'https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmEwODY0OTBjZjQ0ODE5MWE0MTMxNWMxZmVkMTVkNmI6ZmlsZV8wMDAwMDAwMDk4ZGM3MWZiYmJkYjFmZmNhZDE5MzFkNSIsInRzIjoiMjA1ODkiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjdjMjU3MmYyNWM0YTcxNjM4Y2FiNzkwZGZmMzk4YTlmY2Q0N2IxMGQ2OWRmYjEzZTZlYzA5ZDAxMWE0MTA2OWUiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY2RuIjpudWxsLCJmbiI6bnVsbCwiY2QiOm51bGwsImNwIjpudWxsLCJtYSI6bnVsbH0=',
     },
   });
 
   await prisma.setting.upsert({
     where: { key: 'STORE_NAME' },
     update: {},
-    create: { key: 'STORE_NAME', value: 'StockFlow' },
+    create: { key: 'STORE_NAME', value: 'Dr. Pudim' },
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ async function main() {
       data: {
         name: 'Ovo Branco',
         unit: 'UN',
-        currentStock: 120,
+        currentStock: 30,
         averageCost: 0.5,
         minStock: 30,
       },
@@ -122,7 +122,7 @@ async function main() {
       data: {
         name: 'Gema',
         unit: 'UN',
-        currentStock: 120,
+        currentStock: 30,
         averageCost: 0.5,
         minStock: 30,
       },
