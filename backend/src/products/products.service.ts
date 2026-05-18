@@ -284,6 +284,8 @@ export class ProductsService {
     const sevenDaysAgo = new Date(todayStart);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
+    const firstDayOfMonth = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+
     const [
       totalProducts,
       lowStockCount,
@@ -296,6 +298,7 @@ export class ProductsService {
       productionsTodayCostResult,
       recentProductions,
       trendProductions,
+      salesThisMonth,
     ] = await Promise.all([
       this.prisma.product.count(),
       this.prisma.product.count({ where: productLowStockWhere }),
@@ -340,6 +343,10 @@ export class ProductsService {
         WHERE produced_at >= ${sevenDaysAgo}
         GROUP BY DATE(produced_at)
       `,
+      this.prisma.sale.findMany({
+        where: { createdAt: { gte: firstDayOfMonth } },
+        include: { items: true },
+      }),
     ]);
 
     // Prepara o array para o gráfico (últimos 7 dias agrupados)
@@ -361,7 +368,23 @@ export class ProductsService {
       }
     }
 
+    // Calcula Faturamento do Mês e Margem de Lucro
+    let totalSales = 0;
+    let totalSalesCost = 0;
+
+    for (const sale of salesThisMonth) {
+      totalSales += sale.totalAmount.toNumber();
+      for (const item of sale.items) {
+        totalSalesCost += item.unitCost.toNumber() * item.quantity.toNumber();
+      }
+    }
+
+    const profitMargin = totalSales > 0 ? ((totalSales - totalSalesCost) / totalSales) * 100 : 0;
+
     return {
+      // Vendas
+      totalSales,
+      profitMargin,
       // Produtos
       totalProducts,
       lowStockCount,
