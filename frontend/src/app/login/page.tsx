@@ -56,8 +56,9 @@ export default function LoginPage() {
 
       // Aguarda um momento visual e redireciona
       setTimeout(() => {
-        router.push("/dashboard"); // Redireciona para a home
-        router.refresh(); // Força atualização para o middleware reconhecer o novo cookie
+        // Força um full-reload para garantir que o servidor e o browser
+        // estejam sincronizados com o novo estado de autenticação (cookie).
+        window.location.href = "/dashboard";
       }, 1000);
     } catch (err: any) {
       toast.error(err.message || "Ocorreu um erro ao tentar entrar.");

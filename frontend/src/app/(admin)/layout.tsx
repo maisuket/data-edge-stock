@@ -127,6 +127,7 @@ export default function AdminLayout({
   const handleLogout = async () => {
     toast.info("Você saiu do sistema.");
     await authService.logout(); // Limpa o cookie HttpOnly via servidor
+    router.push("/login");
   };
 
   return (
