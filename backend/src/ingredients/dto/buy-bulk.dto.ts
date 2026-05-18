@@ -38,6 +38,14 @@ export class BuyBulkItemDto {
   @IsOptional()
   @IsString()
   brand?: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-do-fornecedor',
+    description: 'ID do fornecedor deste insumo',
+  })
+  @IsOptional()
+  @IsString()
+  supplierId?: string;
 }
 
 export class BuyBulkDto {

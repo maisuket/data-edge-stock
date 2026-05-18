@@ -21,6 +21,7 @@ import {
   Store,
 } from "lucide-react";
 import { toast } from "sonner";
+import { authService } from "@/lib/services/auth";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
@@ -123,14 +124,9 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
-  const handleLogout = () => {
-    // Remove cookies e localStorage
-    document.cookie =
-      "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-    localStorage.removeItem("access_token");
-
+  const handleLogout = async () => {
     toast.info("Você saiu do sistema.");
-    router.push("/login");
+    await authService.logout(); // Limpa o cookie HttpOnly via servidor
   };
 
   return (

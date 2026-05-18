@@ -119,21 +119,27 @@ export class ProductionsService {
         : new Prisma.Decimal(0);
 
       // ── 5. Deduz estoque dos insumos ───────
+      // Usamos o valor retornado pelo UPDATE para calcular stockBefore/stockAfter
+      // com precisão, mesmo em cenários de produções concorrentes.
       for (const item of recipeItems) {
         const consumed = item.quantity.mul(qtyDecimal);
-        await tx.ingredient.update({
+
+        const updatedIngredient = await tx.ingredient.update({
           where: { id: item.ingredientId },
           data: { currentStock: { decrement: consumed } },
+          select: { currentStock: true },
         });
 
-        // Registra a Saída (EXIT) do insumo no histórico
+        const stockAfterNum = updatedIngredient.currentStock.toNumber();
+        const stockBeforeNum = stockAfterNum + consumed.toNumber();
+
         await tx.stockMovement.create({
           data: {
             ingredientId: item.ingredientId,
             type: 'EXIT',
             quantity: consumed.toNumber(),
-            stockBefore: item.ingredient.currentStock.toNumber(),
-            stockAfter: item.ingredient.currentStock.sub(consumed).toNumber(),
+            stockBefore: stockBeforeNum,
+            stockAfter: stockAfterNum,
             userId,
             description: `Consumo na produção do item: ${product.name}`,
           },
@@ -141,10 +147,14 @@ export class ProductionsService {
       }
 
       // ── 6. Incrementa estoque do produto ───
-      await tx.product.update({
+      const updatedProduct = await tx.product.update({
         where: { id: dto.productId },
         data: { currentStock: { increment: dto.quantity } },
+        select: { currentStock: true },
       });
+
+      const productStockAfterNum = updatedProduct.currentStock.toNumber();
+      const productStockBeforeNum = productStockAfterNum - dto.quantity;
 
       // ── 6.5. Registra o histórico da movimentação (ENTRY) ──
       await tx.stockMovement.create({
@@ -152,8 +162,8 @@ export class ProductionsService {
           productId: dto.productId,
           type: 'ENTRY',
           quantity: dto.quantity,
-          stockBefore: product.currentStock.toNumber(),
-          stockAfter: product.currentStock.add(qtyDecimal).toNumber(),
+          stockBefore: productStockBeforeNum,
+          stockAfter: productStockAfterNum,
           userId,
           description: 'Produção Interna',
         },

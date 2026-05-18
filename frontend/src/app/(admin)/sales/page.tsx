@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -56,6 +56,16 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+/** Escapa caracteres HTML para evitar XSS em document.write */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export default function SalesPage() {
   const qc = useQueryClient();
 
@@ -89,37 +99,30 @@ export default function SalesPage() {
     : 0;
 
   // Auto-preenche o preço de venda quando seleciona o produto
-  const [prevSelectedProduct, setPrevSelectedProduct] = useState<any>(null);
-  if (selectedProduct !== prevSelectedProduct) {
-    setPrevSelectedProduct(selectedProduct);
-    if (selectedProduct && selectedProduct.salePrice) {
+  useEffect(() => {
+    if (selectedProduct?.salePrice) {
       setUnitPrice(String(selectedProduct.salePrice));
     } else {
       setUnitPrice("");
     }
-  }
+  }, [selectedProduct]);
 
-  // Busca as vendas recentes em vez das movimentações brutas
+  // Busca as vendas recentes
   const { data: salesData, isLoading: isLoadingSales } = useQuery({
     queryKey: ["sales"],
-    queryFn: () => SalesService.getAll(1, 100),
+    queryFn: () => SalesService.getAll(1, 10),
   });
 
-  const allSales = salesData?.data || [];
-  const recentSales = allSales.slice(0, 10);
+  const recentSales = salesData?.data || [];
 
-  // Filtra apenas as vendas com a data de "hoje" e soma os totais
-  const todaySalesTotal = allSales
-    .filter((s: any) => {
-      const date = new Date(s.createdAt);
-      const today = new Date();
-      return (
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear()
-      );
-    })
-    .reduce((acc: number, curr: any) => acc + Number(curr.totalAmount || 0), 0);
+  // Total de vendas do dia via endpoint dedicado (sem limitação de paginação)
+  const { data: todayStats } = useQuery({
+    queryKey: ["sales", "today"],
+    queryFn: () => SalesService.getTodayStats(),
+    refetchInterval: 30_000,
+  });
+
+  const todaySalesTotal = todayStats?.total ?? 0;
 
   const saleMutation = useMutation({
     mutationFn: async (items: any[]) => {
@@ -270,7 +273,7 @@ export default function SalesPage() {
             ${itemsHtml}
           </div>
           <div class="total">TOTAL: ${fmt.format(total)}</div>
-          <p style="margin-top: 10px; font-size: 12px;">Obs: ${obs || "-"}</p>
+          <p style="margin-top: 10px; font-size: 12px;">Obs: ${escapeHtml(obs || "-")}</p>
           <div class="footer">Obrigado!</div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 200); }</script>
         </body>
@@ -326,7 +329,7 @@ export default function SalesPage() {
             ${itemsHtml}
           </div>
           <div class="total">TOTAL: ${fmt.format(Number(sale.totalAmount))}</div>
-          <p style="margin-top: 10px; font-size: 12px;">Obs: ${sale.notes || "-"}</p>
+          <p style="margin-top: 10px; font-size: 12px;">Obs: ${escapeHtml(sale.notes || "-")}</p>
           <div class="footer">Obrigado!</div>
           <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 200); }</script>
         </body>

@@ -129,6 +129,12 @@ export class IngredientsService {
    *  - estoque atual do insumo
    */
   async buyLot(ingredientId: string, dto: BuyLotDto, userId: string) {
+    if (dto.expiresAt && new Date(dto.expiresAt) <= new Date()) {
+      throw new BadRequestException(
+        'A data de vencimento deve ser uma data futura.',
+      );
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const ingredient = await tx.ingredient.findUnique({
         where: { id: ingredientId },
@@ -173,7 +179,7 @@ export class IngredientsService {
           purchasedAt: new Date(),
           expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : null,
           supplierId: dto.supplierId ?? null,
-          brand: (dto as any).brand ?? null,
+          brand: dto.brand ?? null,
         },
         include: {
           ingredient: { select: { name: true, unit: true } },
@@ -233,6 +239,16 @@ export class IngredientsService {
    * atualizando o estoque e gerando um lote para cada item comprado.
    */
   async buyBulk(dto: BuyBulkDto, userId: string) {
+    const now = new Date();
+    const invalidExpiry = dto.items.find(
+      (item) => item.expiresAt && new Date(item.expiresAt) <= now,
+    );
+    if (invalidExpiry) {
+      throw new BadRequestException(
+        `A data de vencimento do insumo ${invalidExpiry.ingredientId} deve ser uma data futura.`,
+      );
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       const processedItems: any[] = [];
 
@@ -278,6 +294,7 @@ export class IngredientsService {
             purchasedAt: new Date(),
             expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
             brand: item.brand ?? null,
+            supplierId: item.supplierId ?? null,
           },
         });
 

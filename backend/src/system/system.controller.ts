@@ -15,7 +15,7 @@ export class SystemController {
   constructor(private readonly systemService: SystemService) {}
 
   @Get('backup')
-  @Roles(Role.Admin)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Baixar backup do banco de dados (ZIP)' })
   downloadBackup(@Res() res: FastifyReply) {
     const stream = this.systemService.createBackupStream();

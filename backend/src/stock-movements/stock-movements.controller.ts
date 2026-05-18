@@ -28,6 +28,10 @@ export class StockMovementQueryDto extends PageOptionsDto {
 
   @IsOptional()
   @IsString()
+  ingredientId?: string;
+
+  @IsOptional()
+  @IsString()
   type?: string;
 
   @IsOptional()
@@ -65,6 +69,11 @@ export class StockMovementsController {
     description: 'Filtrar por produto',
   })
   @ApiQuery({
+    name: 'ingredientId',
+    required: false,
+    description: 'Filtrar por insumo',
+  })
+  @ApiQuery({
     name: 'type',
     required: false,
     description: 'Filtrar por tipo de movimentação (ENTRY, EXIT, ADJUSTMENT)',
@@ -84,6 +93,7 @@ export class StockMovementsController {
     return this.stockService.findAll(
       queryDto,
       queryDto.productId,
+      queryDto.ingredientId,
       queryDto.type,
       queryDto.startDate,
       queryDto.endDate,

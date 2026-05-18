@@ -21,4 +21,9 @@ export const SalesService = {
     const response = await api.get(`/sales/${id}`);
     return response.data;
   },
+
+  getTodayStats: async (): Promise<{ count: number; total: number }> => {
+    const response = await api.get("/sales/stats/today");
+    return response.data;
+  },
 };

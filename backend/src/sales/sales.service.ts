@@ -44,15 +44,29 @@ export class SalesService {
 
         const quantity = new Prisma.Decimal(item.quantity);
 
-        // Trava de estoque: Impede vender mais do que tem (Remova se quiser permitir estoque negativo)
-        if (product.currentStock.lessThan(quantity)) {
+        // UPDATE atômico: decrementa apenas se o estoque for suficiente.
+        // Previne race condition onde duas vendas simultâneas poderiam levar ao estoque negativo.
+        const updated = await tx.$queryRaw<{ current_stock: number }[]>(
+          Prisma.sql`
+            UPDATE products
+            SET current_stock = current_stock - ${quantity}
+            WHERE id = ${product.id} AND current_stock >= ${quantity}
+            RETURNING current_stock::float AS current_stock
+          `,
+        );
+
+        if (updated.length === 0) {
           throw new BadRequestException(
-            `Estoque insuficiente para o produto "${product.name}". Atual: ${product.currentStock}.`,
+            `Estoque insuficiente para o produto "${product.name}". ` +
+              `Atual: ${product.currentStock.toNumber()}.`,
           );
         }
 
+        const newStockNum = updated[0].current_stock;
+        const stockBeforeNum = product.currentStock.toNumber();
+
         const unitPrice = product.salePrice;
-        const unitCost = product.costPrice; // Snapshot crucial para CMVs antigos
+        const unitCost = product.costPrice;
         const totalPrice = unitPrice.mul(quantity);
 
         totalAmount = totalAmount.add(totalPrice);
@@ -65,21 +79,13 @@ export class SalesService {
           totalPrice,
         });
 
-        // Atualiza saldo do estoque
-        const newStock = product.currentStock.sub(quantity);
-        await tx.product.update({
-          where: { id: product.id },
-          data: { currentStock: newStock },
-        });
-
-        // Registra Histórico (Movimentação)
         await tx.stockMovement.create({
           data: {
             productId: product.id,
             type: 'EXIT',
             quantity: quantity,
-            stockBefore: product.currentStock,
-            stockAfter: newStock,
+            stockBefore: stockBeforeNum,
+            stockAfter: newStockNum,
             unitValue: unitPrice,
             userId,
             description: 'Venda',
@@ -96,7 +102,6 @@ export class SalesService {
         );
       }
 
-      // Cria a venda principal amarrando tudo
       const sale = await tx.sale.create({
         data: {
           userId,
@@ -153,5 +158,25 @@ export class SalesService {
     }
 
     return sale;
+  }
+
+  /** Retorna a soma total e a quantidade de vendas realizadas no dia atual. */
+  async getTodayStats() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [count, totalResult] = await this.prisma.$transaction([
+      this.prisma.sale.count({ where: { createdAt: { gte: todayStart } } }),
+      this.prisma.$queryRaw<{ total: number }[]>`
+        SELECT COALESCE(SUM(total_amount), 0)::FLOAT AS total
+        FROM sales
+        WHERE created_at >= ${todayStart}
+      `,
+    ]);
+
+    return {
+      count,
+      total: totalResult[0]?.total ?? 0,
+    };
   }
 }

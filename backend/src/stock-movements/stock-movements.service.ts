@@ -121,12 +121,14 @@ export class StockMovementsService {
   async findAll(
     pageOptionsDto: PageOptionsDto,
     productId?: string,
+    ingredientId?: string,
     type?: string,
     startDate?: string,
     endDate?: string,
   ) {
     const where: Prisma.StockMovementWhereInput = {};
     if (productId) where.productId = productId;
+    if (ingredientId) where.ingredientId = ingredientId;
     if (type) where.type = type as MovementType;
 
     if (startDate || endDate) {
