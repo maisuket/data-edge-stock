@@ -54,7 +54,7 @@ export class AuthController {
     res.setCookie(COOKIE_NAME, result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: COOKIE_MAX_AGE,
       path: '/',
     });
