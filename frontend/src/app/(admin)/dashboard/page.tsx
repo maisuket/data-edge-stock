@@ -81,7 +81,7 @@ function StatCard({
           )}
         </div>
         <div className="mt-4">
-          <div className="text-2xl font-bold tracking-tight text-card-foreground">
+          <div className="text-2xl font-bold tracking-tight text-card-foreground truncate">
             {value}
           </div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mt-1">
@@ -136,6 +136,108 @@ function HealthItem({
   );
 }
 
+// ── Productions Chart ───────────────────────────────────────────────────────
+
+interface ProductionsChartProps {
+  data: { date: string; value: number }[];
+}
+
+function ProductionsChart({ data }: ProductionsChartProps) {
+  return (
+    <Card className="border-border shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-bold flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-accent" />
+          Evolução de Produções (Últimos 7 dias)
+        </CardTitle>
+        <CardDescription>
+          Valor total em R$ das produções realizadas na última semana.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="h-62.5 w-full mt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(var(--primary))"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(var(--primary))"
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="hsl(var(--muted-foreground)/0.2)"
+              />
+              <XAxis
+                dataKey="date"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `R$ ${value}`}
+              />
+              <RechartsTooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                }}
+                itemStyle={{
+                  color: "hsl(var(--foreground))",
+                  fontWeight: 500,
+                }}
+                formatter={(value) => [
+                  fmt.format(Number(value) || 0),
+                  "Produzido",
+                ]}
+                cursor={{
+                  stroke: "hsl(var(--primary))",
+                  strokeWidth: 1,
+                  strokeDasharray: "4 4",
+                  fill: "transparent",
+                }}
+              />
+              <Area
+                type="monotone"
+                strokeWidth={3}
+                activeDot={{
+                  r: 6,
+                  fill: "hsl(var(--primary))",
+                  stroke: "hsl(var(--background))",
+                  strokeWidth: 2,
+                }}
+                dataKey="value"
+                stroke="hsl(var(--primary))"
+                fillOpacity={1}
+                fill="url(#colorValue)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -161,7 +263,12 @@ export default function DashboardPage() {
   });
 
   const handleRefresh = () => {
-    toast.promise(refetch(), {
+    const refreshPromise = refetch().then((res) => {
+      if (res.isError) throw res.error;
+      return res.data;
+    });
+
+    toast.promise(refreshPromise, {
       loading: "Atualizando...",
       success: "Dados atualizados!",
       error: "Erro ao atualizar",
@@ -217,7 +324,9 @@ export default function DashboardPage() {
     );
   }
 
-  const s = stats!;
+  if (!stats) return null; // Evita falhas caso a data seja undefined mesmo após o loading
+
+  const s = stats;
   const dbStatus =
     health?.status === "ok" ? "ok" : healthLoading ? "loading" : "error";
   const memStatus =
@@ -307,103 +416,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Gráfico de Produções (Últimos 7 dias) */}
-          <Card className="border-border shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-accent" />
-                Evolução de Produções (Últimos 7 dias)
-              </CardTitle>
-              <CardDescription>
-                Valor total em R$ das produções realizadas na última semana.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-62.5 w-full mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={s.productionsTrend}
-                    margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="colorValue"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="hsl(var(--primary))"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="hsl(var(--primary))"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="hsl(var(--muted-foreground)/0.2)"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `R$ ${value}`}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        borderColor: "hsl(var(--border))",
-                        borderRadius: "8px",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                      }}
-                      itemStyle={{
-                        color: "hsl(var(--foreground))",
-                        fontWeight: 500,
-                      }}
-                      formatter={(value: any) => [
-                        fmt.format(Number(value) || 0),
-                        "Produzido",
-                      ]}
-                      cursor={{
-                        stroke: "hsl(var(--primary))",
-                        strokeWidth: 1,
-                        strokeDasharray: "4 4",
-                        fill: "transparent",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      strokeWidth={3}
-                      activeDot={{
-                        r: 6,
-                        fill: "hsl(var(--primary))",
-                        stroke: "hsl(var(--background))",
-                        strokeWidth: 2,
-                      }}
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      fillOpacity={1}
-                      fill="url(#colorValue)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <ProductionsChart data={s.productionsTrend ?? []} />
 
           {/* Produções recentes */}
           <Card className="border-border shadow-sm">
