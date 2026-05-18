@@ -75,14 +75,14 @@ export class AuthService {
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    const data: Partial<UpdateUserDto> = { ...updateDto };
-
-    // Remove campos sensíveis ou proibidos de alteração via perfil
-    delete data.role;
+    // Extrai o role para não enviá-lo ao Prisma, evitando erros de tipagem
+    // e também impedindo atualizações não permitidas via perfil.
+    const { role, ...rest } = updateDto;
+    const data: Omit<Partial<UpdateUserDto>, 'role'> = { ...rest };
 
     // Se a senha foi enviada, criptografa antes de salvar
-    if (updateDto.password) {
-      data.password = await bcrypt.hash(updateDto.password, 10);
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
     } else {
       // Se a senha vier vazia ou undefined, remove do objeto para não apagar a senha atual
       delete data.password;

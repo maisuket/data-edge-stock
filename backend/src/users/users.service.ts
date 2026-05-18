@@ -39,9 +39,12 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
+    const { role, ...rest } = createUserDto;
+
     const user = await this.prisma.user.create({
       data: {
-        ...createUserDto,
+        ...rest,
+        role: role as Role,
         password: hashedPassword,
       },
     });
@@ -83,7 +86,7 @@ export class UsersService {
   async update(
     id: string,
     updateUserDto: UpdateUserDto,
-    currentUser: { id: string; role: string },
+    currentUser: { id: string; role: Role },
   ) {
     if (id !== currentUser.id && currentUser.role !== Role.ADMIN) {
       throw new ForbiddenException(
@@ -98,7 +101,7 @@ export class UsersService {
       email?: string;
       username?: string;
       cargo?: string;
-      role?: string;
+      role?: Role;
       password?: string;
     } = { ...rest };
 
@@ -108,7 +111,7 @@ export class UsersService {
 
     // Apenas admins podem alterar role
     if (role && currentUser.role === Role.ADMIN) {
-      updateData.role = role;
+      updateData.role = role as Role;
     }
 
     const user = await this.prisma.user.update({
