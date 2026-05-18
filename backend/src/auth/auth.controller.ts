@@ -48,18 +48,22 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: CookieReply,
   ) {
-    const result = await this.authService.login(loginDto);
+    const { access_token, user } = await this.authService.login(loginDto);
 
     // Define o cookie HttpOnly — não acessível via JavaScript no browser
-    res.setCookie(COOKIE_NAME, result.access_token, {
+    res.setCookie(COOKIE_NAME, access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: COOKIE_MAX_AGE,
+      domain:
+        process.env.NODE_ENV === 'production'
+          ? process.env.COOKIE_DOMAIN
+          : undefined,
       path: '/',
     });
 
-    return result;
+    return { user };
   }
 
   @Post('logout')
