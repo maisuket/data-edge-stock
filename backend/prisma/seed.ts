@@ -94,7 +94,7 @@ async function main() {
         unit: 'G',
         currentStock: 395,
         averageCost: 6.5,
-        minStock: 15,
+        minStock: 395,
       },
     });
 
@@ -104,7 +104,7 @@ async function main() {
         unit: 'G',
         currentStock: 1000,
         averageCost: 3.2,
-        minStock: 10,
+        minStock: 1000,
       },
     });
 

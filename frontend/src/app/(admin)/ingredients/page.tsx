@@ -66,6 +66,13 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+const fmtAvgCost = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+});
+
 function StockBadge({ current, min }: { current: number; min: number }) {
   if (current <= 0)
     return (
@@ -326,7 +333,7 @@ export default function IngredientsPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-foreground">
-                        {fmt.format(ingredient.averageCost)}
+                        {fmtAvgCost.format(ingredient.averageCost)}
                         <span className="text-xs text-muted-foreground">
                           /{UNIT_SHORT[ingredient.unit]}
                         </span>
