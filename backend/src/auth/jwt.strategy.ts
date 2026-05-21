@@ -13,10 +13,17 @@ const fromCookie = (req: {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error(
+        'CRÍTICO: Variável de ambiente JWT_SECRET não está definida na estratégia JWT.',
+      );
+    }
+
     super({
       jwtFromRequest: fromCookie,
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET')!,
+      secretOrKey: secret,
     });
   }
 

@@ -66,7 +66,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Realizar logout e invalidar cookie de sessão' })
   logout(@Res({ passthrough: true }) res: CookieReply) {
-    res.clearCookie(COOKIE_NAME, { path: '/' });
+    // Para apagar um cookie de terceiros, o navegador exige que as regras de segurança coincidam
+    res.clearCookie(COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+    });
     return { message: 'Logout realizado com sucesso.' };
   }
 

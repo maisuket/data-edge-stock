@@ -9,13 +9,12 @@ import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { UserEntity } from '../users/entities/user.entity';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { Role } from './enums/role.enum';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
-    private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
 
@@ -56,37 +55,34 @@ export class AuthService {
   }
 
   async getProfile(userId: string): Promise<UserEntity> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+    // Delega ao UsersService a responsabilidade de buscar no banco de dados.
+    const user = await this.usersService.findOne(userId);
 
     if (!user) throw new NotFoundException('Usuário não encontrado.');
 
-    return new UserEntity(user);
+    return user instanceof UserEntity ? user : new UserEntity(user);
   }
 
   async updateProfile(
     userId: string,
     updateDto: UpdateUserDto,
   ): Promise<UserEntity> {
-    // role e username não podem ser alterados pelo próprio usuário via perfil.
-    const { role, username, password, ...rest } = updateDto;
-    const updateData: Omit<Partial<UpdateUserDto>, 'role' | 'username'> = {
-      ...rest,
-    };
+    // Remove campos sensíveis para evitar elevação de privilégios.
+    const { role, username, ...safeUpdateDto } = updateDto;
 
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    } else {
-      // Garante que uma senha vazia ou indefinida não apague a senha existente.
-      delete updateData.password;
-    }
+    // Delega ao UsersService a responsabilidade de aplicar hash e salvar no banco.
+    // Passamos um ator simulando que o próprio usuário está efetuando a ação.
+    const updatedUser = await this.usersService.update(
+      userId,
+      safeUpdateDto as UpdateUserDto,
+      {
+        id: userId,
+        role: Role.USER,
+      },
+    );
 
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: updateData, // `role` e `username` foram omitidos e não serão atualizados
-    });
-
-    return new UserEntity(updatedUser);
+    return updatedUser instanceof UserEntity
+      ? updatedUser
+      : new UserEntity(updatedUser);
   }
 }
