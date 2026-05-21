@@ -6,7 +6,15 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useRouter } from "next/navigation"; // Importante: use navigation, não router
-import { Loader2, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import {
+  Loader2,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  Info,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/lib/services/auth";
 import { SettingsService } from "@/lib/services/settings";
@@ -26,14 +34,34 @@ export default function LoginPage() {
   const [bgImage, setBgImage] = useState(
     "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmEwODY0OTBjZjQ0ODE5MWE0MTMxNWMxZmVkMTVkNmI6ZmlsZV8wMDAwMDAwMDk4ZGM3MWZiYmJkYjFmZmNhZDE5MzFkNSIsInRzIjoiMjA1ODkiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjdjMjU3MmYyNWM0YTcxNjM4Y2FiNzkwZGZmMzk4YTlmY2Q0N2IxMGQ2OWRmYjEzZTZlYzA5ZDAxMWE0MTA2OWUiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY2RuIjpudWxsLCJmbiI6bnVsbCwiY2QiOm51bGwsImNwIjpudWxsLCJtYSI6bnVsbH0=",
   );
+  const [cookiesBlocked, setCookiesBlocked] = useState(false);
 
   // Carrega a imagem dinâmica salva nas configurações
   useEffect(() => {
+    // Verifica proativamente se os cookies estão bloqueados no navegador
+    // setTimeout evita a chamada síncrona do setState dentro do efeito (resolve o aviso do linter)
+    const cookieCheckTimer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        let isCookieWorking = navigator.cookieEnabled;
+
+        // Faz o teste real de gravação/leitura para pegar bloqueios de extensões
+        if (isCookieWorking) {
+          document.cookie = "testcookie=1; max-age=10";
+          isCookieWorking = document.cookie.indexOf("testcookie=1") !== -1;
+          document.cookie = "testcookie=1; max-age=0"; // Limpa o cookie de teste
+        }
+
+        if (!isCookieWorking) setCookiesBlocked(true);
+      }
+    }, 0);
+
     SettingsService.getByKey("LOGIN_IMAGE_URL")
       .then((res) => {
         if (res?.value) setBgImage(res.value);
       })
       .catch(console.error); // Ignora erro silenciosamente no login para não impedir o usuário de logar
+
+    return () => clearTimeout(cookieCheckTimer);
   }, []);
 
   const {
@@ -51,6 +79,15 @@ export default function LoginPage() {
       // Chama o serviço real que salva o Cookie
       const response = await authService.login(data);
 
+      // --- VERIFICAÇÃO DE BLOQUEIO DE TERCEIROS ---
+      // Como o cookie é HttpOnly, fazemos um ping na rota de profile.
+      // Se retornar 401, sabemos que o browser descartou o cookie.
+      try {
+        await authService.getProfile();
+      } catch (verifyErr) {
+        throw new Error("ThirdPartyCookieBlocked");
+      }
+
       // Salva os dados do usuário no sessionStorage para uso no layout
       if (response.user) {
         sessionStorage.setItem("user", JSON.stringify(response.user));
@@ -66,7 +103,22 @@ export default function LoginPage() {
         window.location.href = "/dashboard";
       }, 1000);
     } catch (err: any) {
-      toast.error(err.message || "Ocorreu um erro ao tentar entrar.");
+      if (err.message === "ThirdPartyCookieBlocked") {
+        toast.error(
+          "O login foi concluído, mas o navegador bloqueou o salvamento do cookie (bloqueio de terceiros). Por favor, adicione este site às exceções ou desative a prevenção de rastreamento cruzado.",
+        );
+      }
+      // Identifica bloqueios de requisição causados por extensões (AdBlock, Privacy Badger, etc)
+      else if (
+        err.message === "Failed to fetch" ||
+        err.message === "Network Error"
+      ) {
+        toast.error(
+          "Erro de conexão. Verifique se alguma extensão de privacidade ou AdBlocker está bloqueando a requisição.",
+        );
+      } else {
+        toast.error(err.message || "Ocorreu um erro ao tentar entrar.");
+      }
     }
   };
 
@@ -197,7 +249,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting || success}
+              disabled={isSubmitting || success || cookiesBlocked}
               className="w-full bg-primary text-primary-foreground font-medium py-3 rounded-xl hover:bg-[#A65E2E] hover:scale-[1.02] hover:shadow-lg active:scale-95 transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2 mt-4"
             >
               {isSubmitting ? (
@@ -206,6 +258,27 @@ export default function LoginPage() {
                 "Entrar"
               )}
             </button>
+
+            {cookiesBlocked ? (
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/50 rounded-lg text-xs text-destructive mt-4">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Erro Crítico:</strong> Os cookies estão bloqueados no
+                  seu navegador. O login foi desativado, pois o sistema não
+                  funcionará sem eles. Por favor, habilite-os nas configurações
+                  ou saia do modo anônimo estrito.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 p-3 bg-muted/50 border border-border/50 rounded-lg text-xs text-muted-foreground mt-4">
+                <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <p>
+                  <strong>Aviso sobre Cookies:</strong> Este sistema necessita
+                  de cookies para autenticação. Caso seu navegador os bloqueie
+                  (ex: modo anônimo restrito), o login poderá falhar.
+                </p>
+              </div>
+            )}
           </form>
         </div>
       </div>

@@ -20,7 +20,7 @@ export const authService = {
     try {
       const { data } = await api.post<LoginResponse>(
         "/auth/login",
-        credentials
+        credentials,
       );
       // O servidor define o cookie HttpOnly automaticamente via Set-Cookie.
       // Não armazenamos o token no localStorage (vetor de XSS).
@@ -41,6 +41,18 @@ export const authService = {
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
+    }
+  },
+
+  getProfile: async (): Promise<LoginResponse["user"]> => {
+    try {
+      const { data } = await api.get<LoginResponse["user"]>("/me");
+      return data;
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        throw new Error("Usuário não autenticado.");
+      }
+      throw new Error("Erro ao conectar com o servidor.");
     }
   },
 };
