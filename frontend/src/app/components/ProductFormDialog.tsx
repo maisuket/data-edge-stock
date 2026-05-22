@@ -65,6 +65,7 @@ const emptyForm = {
   currentStock: "",
   minStock: "",
   location: "",
+  imageUrl: "",
   isManufactured: false,
 };
 
@@ -102,6 +103,7 @@ export function ProductFormDialog({
         currentStock: String(productToEdit.currentStock),
         minStock: String(productToEdit.minStock),
         location: productToEdit.location ?? "",
+        imageUrl: productToEdit.imageUrl ?? "",
         isManufactured: productToEdit.isManufactured ?? false,
       });
       setSpecs(
@@ -170,6 +172,7 @@ export function ProductFormDialog({
         currentStock: Number(formData.currentStock) || 0,
         minStock: Number(formData.minStock) || 0,
         location: formData.location.trim() || undefined,
+        imageUrl: formData.imageUrl.trim() || undefined,
         isManufactured: formData.isManufactured,
         specifications: specs.filter((s) => s.name.trim() && s.value.trim()),
         attachments: [] as {
@@ -473,6 +476,22 @@ export function ProductFormDialog({
                       placeholder="Ex: Câmara fria"
                       value={formData.location}
                       onChange={(e) => set("location", e.target.value)}
+                      className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="col-span-12 space-y-2">
+                    <Label htmlFor="imageUrl">
+                      URL da foto
+                      <span className="text-muted-foreground text-xs ml-1">
+                        (opcional, aparece no cardápio público)
+                      </span>
+                    </Label>
+                    <Input
+                      id="imageUrl"
+                      placeholder="https://exemplo.com/foto-produto.jpg"
+                      value={formData.imageUrl}
+                      onChange={(e) => set("imageUrl", e.target.value)}
                       className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                     />
                   </div>

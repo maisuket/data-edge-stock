@@ -416,6 +416,30 @@ export class ProductsService {
     };
   }
 
+  async findPublic() {
+    const products = await this.prisma.product.findMany({
+      where: {
+        salePrice: { gt: 0 },
+        currentStock: { gt: 0 },
+      },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        unit: true,
+        salePrice: true,
+        imageUrl: true,
+        specifications: { select: { name: true, value: true } },
+      },
+    });
+
+    return products.map((p) => ({
+      ...p,
+      salePrice: p.salePrice ? p.salePrice.toNumber() : null,
+    }));
+  }
+
   // Busca o histórico de um produto para exibir no relatório
   async getPriceHistory(productId: string) {
     const history = await this.prisma.productPriceHistory.findMany({
