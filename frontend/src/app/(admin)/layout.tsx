@@ -131,14 +131,17 @@ export default function AdminLayout({
   const [logoUrl, setLogoUrl] = useState("/logo.png");
 
   useEffect(() => {
-    try {
-      const userData = sessionStorage.getItem("user");
-      if (userData) {
-        setUser(JSON.parse(userData));
+    const loadUserFromStorage = () => {
+      try {
+        const userData = sessionStorage.getItem("user");
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("Failed to parse user data from sessionStorage", error);
       }
-    } catch (error) {
-      console.error("Failed to parse user data from sessionStorage", error);
-    }
+    };
+    loadUserFromStorage();
   }, []);
 
   useEffect(() => {

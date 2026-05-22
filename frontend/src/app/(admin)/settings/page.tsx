@@ -11,7 +11,6 @@ import {
   Sun,
   UserCircle,
   Shield,
-  Mail,
   Lock,
   Check,
   Users,
@@ -20,7 +19,6 @@ import {
   Trash2,
   Loader2,
   Search,
-  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,7 +43,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -367,7 +365,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
-                  <div className="relative w-[300px]">
+                  <div className="relative w-75">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar usuários..."
@@ -493,7 +491,7 @@ export default function SettingsPage() {
                     <div className="space-y-2 rounded-lg bg-[#ecedef] p-2">
                       <div className="space-y-2 rounded-xl bg-white p-2 shadow-sm border border-black/5">
                         <div className="h-2 w-20 rounded-full bg-[#ecedef]" />
-                        <div className="h-2 w-[80px] rounded-full bg-[#ecedef]" />
+                        <div className="h-2 w-20 rounded-full bg-[#ecedef]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
@@ -513,7 +511,7 @@ export default function SettingsPage() {
                     <div className="space-y-2 rounded-lg bg-[#09090b] p-2 border border-white/10">
                       <div className="space-y-2 rounded-xl bg-[#18181b] p-2 shadow-sm border border-white/5">
                         <div className="h-2 w-20 rounded-full bg-[#27272a]" />
-                        <div className="h-2 w-[80px] rounded-full bg-[#27272a]" />
+                        <div className="h-2 w-20 rounded-full bg-[#27272a]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
