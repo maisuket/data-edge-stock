@@ -84,6 +84,7 @@ export default function SettingsPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [loginImageUrl, setLoginImageUrl] = useState("");
+  const [sidebarLogoUrl, setSidebarLogoUrl] = useState("");
 
   // Usuários
   const [userSearch, setUserSearch] = useState("");
@@ -118,6 +119,12 @@ export default function SettingsPage() {
     SettingsService.getByKey("LOGIN_IMAGE_URL")
       .then((res) => {
         if (res?.value) setLoginImageUrl(res.value);
+      })
+      .catch(console.error);
+
+    SettingsService.getByKey("SIDEBAR_LOGO_URL")
+      .then((res) => {
+        if (res?.value) setSidebarLogoUrl(res.value);
       })
       .catch(console.error);
   }, []);
@@ -553,6 +560,51 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">
                       Insira o link direto para a imagem que aparecerá na tela
                       de login. Recomendamos imagens em alta resolução.
+                    </p>
+                  </div>
+                </div>
+
+                <Separator className="my-8" />
+
+                <div className="space-y-4 max-w-2xl">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    Barra Lateral (Sidebar)
+                  </h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="sidebarLogo">URL da Logo</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="sidebarLogo"
+                        placeholder="https://sua-empresa.com/logo.png"
+                        value={sidebarLogoUrl}
+                        onChange={(e) => setSidebarLogoUrl(e.target.value)}
+                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      />
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await SettingsService.update(
+                              "SIDEBAR_LOGO_URL",
+                              sidebarLogoUrl,
+                            );
+                            toast.success(
+                              "Logo da barra lateral atualizada! Recarregue a página para ver a mudança.",
+                            );
+                          } catch (err) {
+                            toast.error(
+                              "Erro ao salvar logo da barra lateral.",
+                            );
+                          }
+                        }}
+                        className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
+                      >
+                        Salvar Logo
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Insira o link direto para a imagem que aparecerá no topo
+                      da barra lateral. Recomendamos imagens com fundo
+                      transparente (PNG).
                     </p>
                   </div>
                 </div>

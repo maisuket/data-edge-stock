@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/lib/services/auth";
+import { SettingsService } from "@/lib/services/settings";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export default function AdminLayout({
     name: string;
     email: string;
   } | null>(null);
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
 
   useEffect(() => {
     try {
@@ -137,6 +139,14 @@ export default function AdminLayout({
     } catch (error) {
       console.error("Failed to parse user data from sessionStorage", error);
     }
+  }, []);
+
+  useEffect(() => {
+    SettingsService.getByKey("SIDEBAR_LOGO_URL")
+      .then((res) => {
+        if (res?.value) setLogoUrl(res.value);
+      })
+      .catch(console.error);
   }, []);
 
   const handleLogout = async () => {
@@ -171,14 +181,15 @@ export default function AdminLayout({
         `}
       >
         {/* Logo Area */}
-        <div className="h-24 lg:h-36 flex items-center justify-center px-6 border-b border-sidebar-border shrink-0 relative">
+        <div className="h-24 lg:h-36 flex items-center justify-center border-b border-sidebar-border shrink-0 relative">
           <Image
-            src="/logo.png"
+            src={logoUrl}
             alt="Logo"
-            width={112}
-            height={112}
+            width={160}
+            height={160}
             priority
-            className="h-16 lg:h-28 w-auto object-contain transition-all duration-300"
+            unoptimized={logoUrl.startsWith("http")}
+            className="max-h-20 lg:max-h-32 w-auto max-w-full object-contain transition-all duration-300"
           />
           <button
             className="absolute top-4 right-4 lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground bg-sidebar-accent/50 p-1.5 rounded-lg transition-colors"
