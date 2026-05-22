@@ -12,7 +12,6 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 import { Logger } from 'nestjs-pino';
-import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
 import multipart from '@fastify/multipart';
@@ -33,10 +32,13 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   /* =============================
-   * 📦 UPLOAD DE ARQUIVOS
+   * 🍪 COOKIES
    * ============================= */
   await app.register(cookie);
 
+  /* =============================
+   * 📦 UPLOAD DE ARQUIVOS
+   * ============================= */
   await app.register(multipart, {
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB
@@ -57,17 +59,20 @@ async function bootstrap() {
     .split(',')
     .map((o) => o.trim());
 
-  await app.register(cors, {
+  // Usar o método nativo do NestJS garante que o CORS respeite o ciclo de vida da aplicação
+  app.enableCors({
     origin: (origin, cb) => {
       // Permite requisições sem origin (ex: curl, Postman, apps mobile)
       if (!origin || allowedOrigins.includes(origin)) {
         cb(null, true);
       } else {
-        cb(new Error(`Origin não permitida: ${origin}`), false);
+        cb(
+          new BadRequestException(`Origin não permitida pelo CORS: ${origin}`),
+          false,
+        );
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Authorization', 'Content-Type', 'Cookie'],
     credentials: true,
   });
 

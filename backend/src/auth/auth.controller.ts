@@ -33,6 +33,17 @@ interface CookieReply {
 const COOKIE_NAME = 'access_token';
 const COOKIE_MAX_AGE = 86400; // 1 dia em segundos
 
+// Centraliza as opções de cookie para garantir consistência entre login e logout
+function getCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : ('lax' as const),
+    path: '/',
+  };
+}
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -52,11 +63,8 @@ export class AuthController {
 
     // Define o cookie HttpOnly — não acessível via JavaScript no browser
     res.setCookie(COOKIE_NAME, access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      ...getCookieOptions(),
       maxAge: COOKIE_MAX_AGE,
-      path: '/',
     });
 
     return { user };
@@ -67,12 +75,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Realizar logout e invalidar cookie de sessão' })
   logout(@Res({ passthrough: true }) res: CookieReply) {
     // Para apagar um cookie de terceiros, o navegador exige que as regras de segurança coincidam
-    res.clearCookie(COOKIE_NAME, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      path: '/',
-    });
+    res.clearCookie(COOKIE_NAME, getCookieOptions());
     return { message: 'Logout realizado com sucesso.' };
   }
 

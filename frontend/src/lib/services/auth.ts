@@ -46,7 +46,7 @@ export const authService = {
 
   getProfile: async (): Promise<LoginResponse["user"]> => {
     try {
-      const { data } = await api.get<LoginResponse["user"]>("/me");
+      const { data } = await api.get<LoginResponse["user"]>("/auth/profile");
       return data;
     } catch (error: any) {
       if (error.response?.status === 401) {
