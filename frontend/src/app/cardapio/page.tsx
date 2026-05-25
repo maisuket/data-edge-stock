@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Package,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
@@ -66,7 +67,7 @@ function ProductCard({
   const emoji = getCategoryEmoji(product.category);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+    <div className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
       {/* Image / Placeholder */}
       <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {product.imageUrl ? (
@@ -74,10 +75,10 @@ function ProductCard({
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl select-none">
+          <div className="w-full h-full flex items-center justify-center text-5xl select-none group-hover:scale-110 transition-transform duration-500">
             {emoji}
           </div>
         )}
@@ -107,6 +108,7 @@ function ProductCard({
 
           {quantity === 0 ? (
             <Button
+              aria-label={`Adicionar ${product.name} ao carrinho`}
               size="sm"
               onClick={onAdd}
               className="h-8 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs gap-1"
@@ -116,6 +118,7 @@ function ProductCard({
           ) : (
             <div className="flex items-center gap-2">
               <button
+                aria-label={`Diminuir quantidade de ${product.name}`}
                 onClick={onRemove}
                 className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
@@ -125,6 +128,7 @@ function ProductCard({
                 {quantity}
               </span>
               <button
+                aria-label={`Aumentar quantidade de ${product.name}`}
                 onClick={onAdd}
                 className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
               >
@@ -170,11 +174,11 @@ function CartDrawer({
     const orderLines = items
       .map(
         (item) =>
-          `• ${item.quantity}x ${item.product.name} — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
+          `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
       )
       .join("\n");
 
-    const message = `${intro}${orderLines}\n\n*Total: ${formatCurrency(total)}*`;
+    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*`;
 
     const phone = whatsappNumber.replace(/\D/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -184,10 +188,7 @@ function CartDrawer({
   return (
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
-      <div
-        className="flex-1 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Drawer */}
       <div className="w-full max-w-sm bg-white dark:bg-zinc-950 flex flex-col shadow-2xl">
@@ -202,6 +203,7 @@ function CartDrawer({
             </Badge>
           </div>
           <button
+            aria-label="Fechar carrinho"
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
@@ -209,62 +211,79 @@ function CartDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.product.id}
-              className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 rounded-xl p-3"
-            >
-              <div className="text-2xl w-8 text-center shrink-0">
-                {item.product.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.product.imageUrl}
-                    alt={item.product.name}
-                    className="w-8 h-8 rounded-lg object-cover"
-                  />
-                ) : (
-                  getCategoryEmoji(item.product.category)
-                )}
+        {items.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-500">
+            <ShoppingCart className="w-12 h-12 mb-4 text-zinc-300 dark:text-zinc-800" />
+            <p className="font-medium text-zinc-900 dark:text-zinc-100">
+              Seu carrinho está vazio
+            </p>
+            <p className="text-sm mt-1">
+              Adicione alguns produtos para fazer seu pedido.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {items.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3"
+              >
+                <div className="text-2xl w-8 text-center shrink-0">
+                  {item.product.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.product.imageUrl}
+                      alt={item.product.name}
+                      className="w-8 h-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    getCategoryEmoji(item.product.category)
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    {item.product.name}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {formatCurrency(
+                      (item.product.salePrice ?? 0) * item.quantity,
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    aria-label={`Diminuir quantidade de ${item.product.name}`}
+                    onClick={() => onRemove(item.product.id)}
+                    className="w-6 h-6 rounded-full border border-zinc-300 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="w-4 text-center text-sm font-semibold">
+                    {item.quantity}
+                  </span>
+                  <button
+                    aria-label={`Aumentar quantidade de ${item.product.name}`}
+                    onClick={() => onAdd(item.product)}
+                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                  <button
+                    aria-label={`Remover ${item.product.name} do carrinho`}
+                    onClick={() => {
+                      for (let i = 0; i < item.quantity; i++) {
+                        onRemove(item.product.id);
+                      }
+                    }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-1"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-400" />
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                  {item.product.name}
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {formatCurrency((item.product.salePrice ?? 0) * item.quantity)}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => onRemove(item.product.id)}
-                  className="w-6 h-6 rounded-full border border-zinc-300 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <span className="w-4 text-center text-sm font-semibold">
-                  {item.quantity}
-                </span>
-                <button
-                  onClick={() => onAdd(item.product)}
-                  className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => {
-                    for (let i = 0; i < item.quantity; i++) {
-                      onRemove(item.product.id);
-                    }
-                  }}
-                  className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-1"
-                >
-                  <Trash2 className="w-3 h-3 text-red-400" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
           <div className="flex justify-between text-sm font-medium text-zinc-900 dark:text-zinc-100">
@@ -295,6 +314,26 @@ function CartDrawer({
               WhatsApp não configurado pelo estabelecimento.
             </p>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Skeletons ─────────────────────────────────────────────────────────────────
+
+function ProductSkeleton() {
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col animate-pulse">
+      <div className="relative aspect-[4/3] bg-zinc-200 dark:bg-zinc-800" />
+      <div className="p-4 flex flex-col flex-1 gap-3">
+        <div>
+          <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4 mb-2" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-full" />
+        </div>
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3" />
+          <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
         </div>
       </div>
     </div>
@@ -356,20 +395,26 @@ export default function CardapioPage() {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
         return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i,
+          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [...prev, { product, quantity: 1 }];
     });
+
+    // Exibe a notificação rápida apenas se o carrinho estiver fechado
+    if (!isCartOpen) {
+      toast.success(`1x ${product.name} adicionado!`, {
+        duration: 1500, // Duração curta de 1.5s para sumir rápido
+      });
+    }
   };
 
   const removeFromCart = (productId: string) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === productId);
       if (!existing) return prev;
-      if (existing.quantity === 1) return prev.filter((i) => i.product.id !== productId);
+      if (existing.quantity === 1)
+        return prev.filter((i) => i.product.id !== productId);
       return prev.map((i) =>
         i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i,
       );
@@ -404,6 +449,7 @@ export default function CardapioPage() {
           </div>
 
           <button
+            aria-label="Abrir carrinho"
             onClick={() => setIsCartOpen(true)}
             className="relative p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
@@ -452,10 +498,13 @@ export default function CardapioPage() {
       {/* Content */}
       <main className="max-w-5xl mx-auto px-4 py-6">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-400">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-            <p className="text-sm">Carregando cardápio...</p>
-          </div>
+          <section>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          </section>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-400">
             <Package className="w-10 h-10" />
@@ -502,7 +551,7 @@ export default function CardapioPage() {
 
       {/* Floating cart button (mobile) */}
       {totalItems > 0 && !isCartOpen && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 sm:hidden">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 sm:hidden animate-in slide-in-from-bottom-4 duration-300">
           <button
             onClick={() => setIsCartOpen(true)}
             className="flex items-center gap-3 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-lg hover:bg-emerald-600 transition-all duration-200 hover:scale-105"
