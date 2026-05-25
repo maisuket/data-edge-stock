@@ -12,6 +12,7 @@ import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
@@ -91,7 +92,7 @@ export class ProductsService {
     const { q } = pageOptionsDto;
 
     // Monta a condição de busca (WHERE)
-    const where: any = q
+    const where: Prisma.ProductWhereInput = q
       ? {
           OR: [
             { name: { contains: q } }, // Busca no Nome
