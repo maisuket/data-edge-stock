@@ -60,6 +60,15 @@ export interface CreateOrderDto {
   deliveryNeighborhood?: string;
 }
 
+export interface UpdateOrderDto {
+  customerName?: string;
+  customerPhone?: string;
+  notes?: string;
+  deliveryType?: DeliveryType;
+  deliveryNeighborhood?: string;
+  items?: CreateOrderItemDto[];
+}
+
 // ── Service ────────────────────────────────────────────────────────────────
 
 export const OrderService = {
@@ -77,6 +86,11 @@ export const OrderService = {
 
   create: async (dto: CreateOrderDto) => {
     const response = await api.post<OrderDetail>("/orders", dto);
+    return response.data;
+  },
+
+  update: async (id: string, dto: UpdateOrderDto) => {
+    const response = await api.patch<OrderDetail>(`/orders/${id}`, dto);
     return response.data;
   },
 

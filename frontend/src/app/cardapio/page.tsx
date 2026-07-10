@@ -22,6 +22,7 @@ import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
 import { OrderService, type DeliveryType } from "@/lib/services/orders";
 import { DeliveryZoneService } from "@/lib/services/delivery-zones";
+import { normalizeBrazilPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -52,17 +53,6 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "BRL",
   }).format(value);
-
-// Normaliza telefone BR pra formato com DDI (ex: "(92) 99143-3005" -> "5592991433005").
-// Retorna null se não parecer um telefone válido (DDD + 8 ou 9 dígitos, com ou sem "55").
-function normalizeBrazilPhone(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
-  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
-    return digits;
-  }
-  return null;
-}
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Pudim: "🍮",

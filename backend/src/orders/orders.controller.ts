@@ -10,6 +10,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrdersService } from './orders.service';
 
 @ApiTags('orders')
@@ -47,6 +48,19 @@ export class OrdersController {
   @ApiParam({ name: 'id', description: 'UUID do pedido' })
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Editar contato, entrega e/ou itens de um pedido (admin)',
+    description:
+      'Editar itens estorna o estoque antigo e debita o novo. Editar itens ou entrega invalida um link de pagamento já gerado. Não é permitido em pedidos cancelados ou concluídos.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do pedido' })
+  update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {
+    return this.ordersService.update(id, dto);
   }
 
   @Patch(':id/status')
