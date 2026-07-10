@@ -1,0 +1,580 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  MessageCircle,
+  X,
+  Search,
+  Loader2,
+  ChevronRight,
+  Package,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { ProductService, type PublicProduct } from "@/lib/services/products";
+import { SettingsService } from "@/lib/services/settings";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface CartItem {
+  product: PublicProduct;
+  quantity: number;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  Pudim: "🍮",
+  Picolé: "🍦",
+  Dindin: "🧊",
+  Sorvete: "🍨",
+  Bolo: "🎂",
+  Torta: "🥧",
+  Outros: "📦",
+};
+
+function getCategoryEmoji(category: string) {
+  return CATEGORY_EMOJI[category] ?? "🍽️";
+}
+
+// ── Product Card ─────────────────────────────────────────────────────────────
+
+function ProductCard({
+  product,
+  quantity,
+  onAdd,
+  onRemove,
+}: {
+  product: PublicProduct;
+  quantity: number;
+  onAdd: () => void;
+  onRemove: () => void;
+}) {
+  const emoji = getCategoryEmoji(product.category);
+
+  return (
+    <div className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+      {/* Image / Placeholder */}
+      <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+        {product.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-5xl select-none group-hover:scale-110 transition-transform duration-500">
+            {emoji}
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col flex-1 gap-2">
+        <div>
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm leading-tight">
+            {product.name}
+          </h3>
+          {product.specifications && product.specifications.length > 0 && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2">
+              {product.specifications
+                .map((s) => `${s.name}: ${s.value}`)
+                .join(" · ")}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <span className="font-bold text-emerald-600 dark:text-emerald-400 text-base">
+            {product.salePrice !== null
+              ? formatCurrency(product.salePrice)
+              : "Consultar"}
+          </span>
+
+          {quantity === 0 ? (
+            <Button
+              aria-label={`Adicionar ${product.name} ao carrinho`}
+              size="sm"
+              onClick={onAdd}
+              className="h-8 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs gap-1"
+            >
+              <Plus className="w-3 h-3" /> Adicionar
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                aria-label={`Diminuir quantidade de ${product.name}`}
+                onClick={onRemove}
+                className="w-7 h-7 rounded-full border border-zinc-300 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-5 text-center text-sm font-semibold">
+                {quantity}
+              </span>
+              <button
+                aria-label={`Aumentar quantidade de ${product.name}`}
+                onClick={onAdd}
+                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Cart Drawer ───────────────────────────────────────────────────────────────
+
+function CartDrawer({
+  items,
+  whatsappNumber,
+  onClose,
+  onAdd,
+  onRemove,
+  onClear,
+}: {
+  items: CartItem[];
+  whatsappNumber: string;
+  onClose: () => void;
+  onAdd: (product: PublicProduct) => void;
+  onRemove: (productId: string) => void;
+  onClear: () => void;
+}) {
+  const [customerName, setCustomerName] = useState("");
+
+  const total = items.reduce(
+    (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
+    0,
+  );
+
+  const handleOrder = () => {
+    const intro = customerName.trim()
+      ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
+      : `Olá! Gostaria de fazer um pedido:\n\n`;
+
+    const orderLines = items
+      .map(
+        (item) =>
+          `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
+      )
+      .join("\n");
+
+    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*`;
+
+    const phone = whatsappNumber.replace(/\D/g, "");
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Overlay */}
+      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Drawer */}
+      <div className="w-full max-w-sm bg-white dark:bg-zinc-950 flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-emerald-500" />
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+              Meu Pedido
+            </span>
+            <Badge className="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+              {items.reduce((s, i) => s + i.quantity, 0)}
+            </Badge>
+          </div>
+          <button
+            aria-label="Fechar carrinho"
+            onClick={onClose}
+            className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <X className="w-5 h-5 text-zinc-500" />
+          </button>
+        </div>
+
+        {items.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-zinc-500">
+            <ShoppingCart className="w-12 h-12 mb-4 text-zinc-300 dark:text-zinc-800" />
+            <p className="font-medium text-zinc-900 dark:text-zinc-100">
+              Seu carrinho está vazio
+            </p>
+            <p className="text-sm mt-1">
+              Adicione alguns produtos para fazer seu pedido.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {items.map((item) => (
+              <div
+                key={item.product.id}
+                className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3"
+              >
+                <div className="text-2xl w-8 text-center shrink-0">
+                  {item.product.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.product.imageUrl}
+                      alt={item.product.name}
+                      className="w-8 h-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    getCategoryEmoji(item.product.category)
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    {item.product.name}
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {formatCurrency(
+                      (item.product.salePrice ?? 0) * item.quantity,
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    aria-label={`Diminuir quantidade de ${item.product.name}`}
+                    onClick={() => onRemove(item.product.id)}
+                    className="w-6 h-6 rounded-full border border-zinc-300 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="w-4 text-center text-sm font-semibold">
+                    {item.quantity}
+                  </span>
+                  <button
+                    aria-label={`Aumentar quantidade de ${item.product.name}`}
+                    onClick={() => onAdd(item.product)}
+                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                  <button
+                    aria-label={`Remover ${item.product.name} do carrinho`}
+                    onClick={() => {
+                      for (let i = 0; i < item.quantity; i++) {
+                        onRemove(item.product.id);
+                      }
+                    }}
+                    className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-1"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-400" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+          <div className="flex justify-between text-sm font-medium text-zinc-900 dark:text-zinc-100">
+            <span>Total estimado</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-base">
+              {formatCurrency(total)}
+            </span>
+          </div>
+
+          <Input
+            placeholder="Seu nome (opcional)"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="rounded-xl text-sm"
+          />
+
+          <Button
+            onClick={handleOrder}
+            disabled={!whatsappNumber || items.length === 0}
+            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white gap-2 h-11"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Pedir via WhatsApp
+          </Button>
+
+          {!whatsappNumber && (
+            <p className="text-xs text-center text-zinc-400">
+              WhatsApp não configurado pelo estabelecimento.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Skeletons ─────────────────────────────────────────────────────────────────
+
+function ProductSkeleton() {
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col animate-pulse">
+      <div className="relative aspect-[4/3] bg-zinc-200 dark:bg-zinc-800" />
+      <div className="p-4 flex flex-col flex-1 gap-3">
+        <div>
+          <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4 mb-2" />
+          <div className="h-3 bg-zinc-200 dark:bg-zinc-800 rounded w-full" />
+        </div>
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3" />
+          <div className="h-8 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+export default function CardapioPage() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("Todos");
+
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["menu-products"],
+    queryFn: () => ProductService.getPublic(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: whatsappSetting } = useQuery({
+    queryKey: ["setting-whatsapp"],
+    queryFn: () => SettingsService.getByKey("WHATSAPP_NUMBER"),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const whatsappNumber = whatsappSetting?.value ?? "";
+
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(products.map((p) => p.category)));
+    return ["Todos", ...cats];
+  }, [products]);
+
+  const filtered = useMemo(() => {
+    return products.filter((p) => {
+      const matchesSearch =
+        !search ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        p.category.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory =
+        activeCategory === "Todos" || p.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, search, activeCategory]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, PublicProduct[]>();
+    for (const p of filtered) {
+      if (!map.has(p.category)) map.set(p.category, []);
+      map.get(p.category)!.push(p);
+    }
+    return map;
+  }, [filtered]);
+
+  const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
+
+  const addToCart = (product: PublicProduct) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === product.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i,
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+
+    // Exibe a notificação rápida apenas se o carrinho estiver fechado
+    if (!isCartOpen) {
+      toast.success(`1x ${product.name} adicionado!`, {
+        duration: 1500, // Duração curta de 1.5s para sumir rápido
+      });
+    }
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.product.id === productId);
+      if (!existing) return prev;
+      if (existing.quantity === 1)
+        return prev.filter((i) => i.product.id !== productId);
+      return prev.map((i) =>
+        i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i,
+      );
+    });
+  };
+
+  const getQuantity = (productId: string) =>
+    cart.find((i) => i.product.id === productId)?.quantity ?? 0;
+
+  return (
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 leading-none">
+              🍮 Dr. Pudim
+            </h1>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Cardápio online
+            </p>
+          </div>
+
+          <div className="relative hidden sm:block w-56">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Input
+              placeholder="Buscar produto..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 rounded-xl text-sm"
+            />
+          </div>
+
+          <button
+            aria-label="Abrir carrinho"
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <ShoppingCart className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {totalItems > 9 ? "9+" : totalItems}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile search */}
+        <div className="sm:hidden px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Input
+              placeholder="Buscar produto..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 rounded-xl text-sm w-full"
+            />
+          </div>
+        </div>
+
+        {/* Category tabs */}
+        <div className="overflow-x-auto scrollbar-hide border-t border-zinc-100 dark:border-zinc-900">
+          <div className="flex gap-1 px-4 py-2 w-max">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
+                  activeCategory === cat
+                    ? "bg-emerald-500 text-white shadow-sm"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {cat === "Todos" ? cat : `${getCategoryEmoji(cat)} ${cat}`}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="max-w-5xl mx-auto px-4 py-6">
+        {isLoading ? (
+          <section>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          </section>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-400">
+            <Package className="w-10 h-10" />
+            <p className="text-sm">Nenhum produto encontrado.</p>
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="text-xs text-emerald-500 hover:underline"
+              >
+                Limpar busca
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Array.from(grouped.entries()).map(([category, items]) => (
+              <section key={category}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                  <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
+                    {category}
+                  </h2>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  <span className="text-xs text-zinc-400">
+                    {items.length} {items.length === 1 ? "item" : "itens"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {items.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      quantity={getQuantity(product.id)}
+                      onAdd={() => addToCart(product)}
+                      onRemove={() => removeFromCart(product.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Floating cart button (mobile) */}
+      {totalItems > 0 && !isCartOpen && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 sm:hidden animate-in slide-in-from-bottom-4 duration-300">
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="flex items-center gap-3 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-lg hover:bg-emerald-600 transition-all duration-200 hover:scale-105"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            <span className="font-semibold text-sm">
+              Ver pedido · {totalItems} {totalItems === 1 ? "item" : "itens"}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Cart Drawer */}
+      {isCartOpen && (
+        <CartDrawer
+          items={cart}
+          whatsappNumber={whatsappNumber}
+          onClose={() => setIsCartOpen(false)}
+          onAdd={addToCart}
+          onRemove={removeFromCart}
+          onClear={() => setCart([])}
+        />
+      )}
+    </div>
+  );
+}

@@ -19,6 +19,8 @@ import {
   Trash2,
   Loader2,
   Search,
+  AlertTriangle,
+  Link2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,7 +84,7 @@ export default function SettingsPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [loginImageUrl, setLoginImageUrl] = useState("");
-  const [sidebarLogoUrl, setSidebarLogoUrl] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   // Usuários
   const [userSearch, setUserSearch] = useState("");
@@ -112,7 +114,7 @@ export default function SettingsPage() {
       .catch(() => toast.error("Erro ao carregar perfil."));
   }, [setValue]);
 
-  // Load Settings (Imagem de Login)
+  // Load Settings (Imagem de Login e WhatsApp)
   useEffect(() => {
     SettingsService.getByKey("LOGIN_IMAGE_URL")
       .then((res) => {
@@ -120,9 +122,9 @@ export default function SettingsPage() {
       })
       .catch(console.error);
 
-    SettingsService.getByKey("SIDEBAR_LOGO_URL")
+    SettingsService.getByKey("WHATSAPP_NUMBER")
       .then((res) => {
-        if (res?.value) setSidebarLogoUrl(res.value);
+        if (res?.value) setWhatsappNumber(res.value);
       })
       .catch(console.error);
   }, []);
@@ -522,43 +524,116 @@ export default function SettingsPage() {
 
                 <Separator className="my-8" />
 
-                <div className="space-y-4 max-w-2xl">
-                  <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
-                    Tela de Login
-                  </h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="loginImage">URL da Imagem de Fundo</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="loginImage"
-                        placeholder="https://images.unsplash.com/photo-..."
-                        value={loginImageUrl}
-                        onChange={(e) => setLoginImageUrl(e.target.value)}
-                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
-                      />
-                      <Button
-                        onClick={async () => {
-                          try {
-                            await SettingsService.update(
-                              "LOGIN_IMAGE_URL",
-                              loginImageUrl,
-                            );
-                            toast.success(
-                              "Imagem do login atualizada com sucesso!",
-                            );
-                          } catch (err) {
-                            toast.error("Erro ao salvar imagem do login.");
-                          }
-                        }}
-                        className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
-                      >
-                        Salvar Imagem
-                      </Button>
+                <div className="space-y-6 max-w-2xl">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                      Cardápio Público — WhatsApp
+                    </h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsappNumber">Número do WhatsApp</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="whatsappNumber"
+                          placeholder="5511999999999 (DDI + DDD + número)"
+                          value={whatsappNumber}
+                          onChange={(e) => setWhatsappNumber(e.target.value)}
+                          className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                        />
+                        <Button
+                          onClick={async () => {
+                            try {
+                              await SettingsService.update(
+                                "WHATSAPP_NUMBER",
+                                whatsappNumber,
+                              );
+                              toast.success("Número do WhatsApp salvo!");
+                            } catch {
+                              toast.error("Erro ao salvar número.");
+                            }
+                          }}
+                          className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
+                        >
+                          Salvar
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Número que receberá os pedidos do cardápio público.
+                        Formato: DDI + DDD + número (ex: 5511999999999).
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Insira o link direto para a imagem que aparecerá na tela
-                      de login. Recomendamos imagens em alta resolução.
-                    </p>
+
+                    <div className="space-y-2">
+                      <Label>Link do Cardápio</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          readOnly
+                          value={
+                            typeof window !== "undefined"
+                              ? `${window.location.origin}/cardapio`
+                              : "/cardapio"
+                          }
+                          className="rounded-xl bg-muted text-muted-foreground text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            const url = `${window.location.origin}/cardapio`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Link copiado!");
+                          }}
+                          className="rounded-xl shrink-0 gap-2"
+                        >
+                          <Link2 className="w-4 h-4" />
+                          Copiar
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Compartilhe este link com seus clientes para que eles
+                        vejam o cardápio e façam pedidos via WhatsApp.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                      Tela de Login
+                    </h3>
+                    <div className="space-y-2">
+                      <Label htmlFor="loginImage">URL da Imagem de Fundo</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="loginImage"
+                          placeholder="https://images.unsplash.com/photo-..."
+                          value={loginImageUrl}
+                          onChange={(e) => setLoginImageUrl(e.target.value)}
+                          className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                        />
+                        <Button
+                          onClick={async () => {
+                            try {
+                              await SettingsService.update(
+                                "LOGIN_IMAGE_URL",
+                                loginImageUrl,
+                              );
+                              toast.success(
+                                "Imagem do login atualizada com sucesso!",
+                              );
+                            } catch {
+                              toast.error("Erro ao salvar imagem do login.");
+                            }
+                          }}
+                          className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
+                        >
+                          Salvar Imagem
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Insira o link direto para a imagem que aparecerá na tela
+                        de login. Recomendamos imagens em alta resolução.
+                      </p>
+                    </div>
                   </div>
                 </div>
 

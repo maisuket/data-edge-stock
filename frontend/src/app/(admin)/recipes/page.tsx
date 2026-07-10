@@ -64,6 +64,7 @@ export default function RecipesPage() {
   // Selected product
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [salePrice, setSalePrice] = useState<string>("");
+  const [yieldQuantity, setYieldQuantity] = useState<string>("1");
 
   // Recipe rows being edited
   const [rows, setRows] = useState<RecipeRow[]>([]);
@@ -109,12 +110,14 @@ export default function RecipesPage() {
           quantity: i.quantity,
         })),
       );
+      setYieldQuantity(String(recipe.yieldQuantity ?? 1));
       const product = productsData?.data.find(
         (p) => p.id === selectedProductId,
       );
       if (product?.salePrice) setSalePrice(String(product.salePrice));
     } else {
       setRows([]);
+      setYieldQuantity("1");
     }
   }
 
@@ -123,18 +126,21 @@ export default function RecipesPage() {
   const ingredients = ingredientsData?.data ?? [];
   const ingredientMap = new Map(ingredients.map((i) => [i.id, i]));
 
-  const totalCostPerUnit = rows.reduce((sum, row) => {
+  const totalCostPerBatch = rows.reduce((sum, row) => {
     const ing = ingredientMap.get(row.ingredientId);
     if (!ing) return sum;
     return sum + ing.averageCost * row.quantity;
   }, 0);
 
+  const yieldQuantityNum = parseFloat(yieldQuantity) || 1;
+  const costPerUnit = totalCostPerBatch / yieldQuantityNum;
+
   const salePriceNum = parseFloat(salePrice) || 0;
   const profitMargin =
     salePriceNum > 0
-      ? ((salePriceNum - totalCostPerUnit) / salePriceNum) * 100
+      ? ((salePriceNum - costPerUnit) / salePriceNum) * 100
       : null;
-  const profitValue = salePriceNum > 0 ? salePriceNum - totalCostPerUnit : null;
+  const profitValue = salePriceNum > 0 ? salePriceNum - costPerUnit : null;
 
   // ── Mutations ─────────────────────────────────────────────────────────
 
@@ -142,11 +148,12 @@ export default function RecipesPage() {
     mutationFn: () =>
       RecipeService.setRecipe(selectedProductId, {
         salePrice: salePriceNum > 0 ? salePriceNum : null,
+        yieldQuantity: yieldQuantityNum,
         items: rows.map((r) => ({
           ingredientId: r.ingredientId,
           quantity: r.quantity,
         })),
-      } as any),
+      }),
     onSuccess: () => {
       toast.success(
         "Receita salva! Custo do produto atualizado automaticamente.",
@@ -268,7 +275,7 @@ export default function RecipesPage() {
                   <CardTitle className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                     2. Ingredientes da Receita
                   </CardTitle>
-                  <CardDescription>Por unidade produzida</CardDescription>
+                  <CardDescription>Por lote (rendimento)</CardDescription>
                 </div>
                 {recipe && (
                   <Button
@@ -286,6 +293,25 @@ export default function RecipesPage() {
                 )}
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Rendimento da receita
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Quantas unidades esses ingredientes produzem de uma vez
+                    </p>
+                  </div>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min={0.001}
+                    value={yieldQuantity}
+                    onChange={(e) => setYieldQuantity(e.target.value)}
+                    className="w-24 text-right tabular-nums shrink-0"
+                  />
+                </div>
+
                 {loadingIngredients ? (
                   <Skeleton className="h-32 w-full rounded-lg" />
                 ) : (
@@ -424,10 +450,19 @@ export default function RecipesPage() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-baseline">
                   <span className="text-sm text-muted-foreground">
-                    Custo de produção
+                    Custo por lote ({yieldQuantityNum.toLocaleString("pt-BR")}{" "}
+                    un)
+                  </span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {fmt.format(totalCostPerBatch)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-sm text-muted-foreground">
+                    Custo por unidade
                   </span>
                   <span className="font-bold text-lg tabular-nums text-foreground">
-                    {fmt.format(totalCostPerUnit)}
+                    {fmt.format(costPerUnit)}
                   </span>
                 </div>
 

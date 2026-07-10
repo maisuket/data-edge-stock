@@ -12,11 +12,22 @@ export interface Product {
   salePrice?: number;
   currentStock: number;
   minStock: number;
+  imageUrl?: string;
   /** true = produto fabricado internamente (custo calculado pela receita) */
   isManufactured: boolean;
 
   specifications?: { name: string; value: string }[];
   attachments?: { fileName: string; filePath: string; fileType: string }[];
+}
+
+export interface PublicProduct {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  salePrice: number | null;
+  imageUrl?: string | null;
+  specifications?: { name: string; value: string }[];
 }
 
 export interface DashboardStats {
@@ -76,6 +87,11 @@ export const ProductService = {
 
   getStats: async () => {
     const response = await api.get<DashboardStats>("/products/dashboard-stats");
+    return response.data;
+  },
+
+  getPublic: async () => {
+    const response = await api.get<PublicProduct[]>("/menu/products");
     return response.data;
   },
 };

@@ -12,6 +12,7 @@ import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
@@ -91,7 +92,7 @@ export class ProductsService {
     const { q } = pageOptionsDto;
 
     // Monta a condição de busca (WHERE)
-    const where: any = q
+    const where: Prisma.ProductWhereInput = q
       ? {
           OR: [
             { name: { contains: q } }, // Busca no Nome
@@ -414,6 +415,30 @@ export class ProductsService {
       })),
       productionsTrend: Array.from(trendMap.values()),
     };
+  }
+
+  async findPublic() {
+    const products = await this.prisma.product.findMany({
+      where: {
+        salePrice: { gt: 0 },
+        currentStock: { gt: 0 },
+      },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        unit: true,
+        salePrice: true,
+        imageUrl: true,
+        specifications: { select: { name: true, value: true } },
+      },
+    });
+
+    return products.map((p) => ({
+      ...p,
+      salePrice: p.salePrice ? p.salePrice.toNumber() : null,
+    }));
   }
 
   // Busca o histórico de um produto para exibir no relatório

@@ -57,7 +57,10 @@ model Product {
   currentStock   Decimal         @map("current_stock")
   minStock       Decimal         @map("min_stock")
   location       String?
+  imageUrl       String?         @map("image_url")
   isManufactured Boolean         @default(false) @map("is_manufactured")
+  /// Quantas unidades do produto uma execução da receita produz
+  yieldQuantity  Decimal         @default(1) @map("yield_quantity")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   attachments    Attachment[]
@@ -179,12 +182,12 @@ model IngredientLot {
   @@map("ingredient_lots")
 }
 
-/// Item da receita: qual insumo e quanto é usado por unidade produzida
+/// Item da receita: qual insumo e quanto é usado por lote (rendimento) da receita
 model RecipeItem {
   id           String     @id @default(uuid())
   productId    String     @map("product_id")
   ingredientId String     @map("ingredient_id")
-  /// Quantidade do insumo para produzir 1 unidade do produto
+  /// Quantidade do insumo para produzir 1 lote (Product.yieldQuantity unidades) do produto
   quantity     Decimal
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -197,7 +200,9 @@ model RecipeItem {
 model Production {
   id           String                  @id @default(uuid())
   productId    String                  @map("product_id")
-  /// Quantidade de unidades produzidas
+  /// Quantas vezes a receita foi executada nesse registro
+  batches      Decimal                 @default(1)
+  /// Quantidade de unidades produzidas = batches * yieldQuantity (no momento da produção)
   quantity     Decimal
   /// Custo por unidade produzida (calculado)
   unitCost     Decimal                 @map("unit_cost")

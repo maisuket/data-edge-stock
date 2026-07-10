@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Central de Ajuda — Dr. Pudim</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:       #8B4513;
+      --primary-light: #A65E2E;
+      --primary-bg:    #FDF6EE;
+      --accent:        #D4A76A;
+      --accent-light:  #F5E6D3;
+      --success:       #22c55e;
+      --success-bg:    #f0fdf4;
+      --warning:       #f59e0b;
+      --warning-bg:    #fffbeb;
+      --danger:        #ef4444;
+      --danger-bg:     #fef2f2;
+      --info:          #3b82f6;
+      --info-bg:       #eff6ff;
+      --text:          #1a1a1a;
+      --text-muted:    #6b7280;
+      --border:        #e5e7eb;
+      --bg:            #f9fafb;
+      --card:          #ffffff;
+      --sidebar-w:     280px;
+      --radius:        12px;
+      --shadow:        0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --shadow-lg:     0 8px 32px rgba(0,0,0,.12);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+    }
+
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ───────────────────────────────────────────────── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary);
+      color: #fff;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform .3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-track { background: transparent; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.3); border-radius: 2px; }
+
+    .sidebar-logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+      text-align: center;
+    }
+    .sidebar-logo .brand { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    .sidebar-logo .tagline { font-size: 11px; opacity: .7; margin-top: 4px; }
+
+    .sidebar-section { padding: 18px 16px 8px; }
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      opacity: .55;
+      padding: 0 8px 8px;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      color: rgba(255,255,255,.85);
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: background .2s, color .2s;
+      margin-bottom: 2px;
+    }
+    .sidebar-link:hover { background: rgba(255,255,255,.15); color: #fff; text-decoration: none; }
+    .sidebar-link.active { background: rgba(255,255,255,.22); color: #fff; }
+    .sidebar-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* ── Mobile toggle ─────────────────────────────────────────── */
+    #menu-toggle {
+      display: none;
+      position: fixed;
+      top: 14px; left: 14px;
+      z-index: 200;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      width: 40px; height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Main ──────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Top bar ───────────────────────────────────────────────── */
+    .topbar {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 40px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .topbar-title { font-size: 18px; font-weight: 700; color: var(--text); }
+    .topbar-badge {
+      background: var(--accent-light);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--accent);
+    }
+
+    /* ── Content area ──────────────────────────────────────────── */
+    .content { padding: 40px; max-width: 900px; }
+
+    /* ── Sections ──────────────────────────────────────────────── */
+    section { margin-bottom: 72px; scroll-margin-top: 80px; }
+    section h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    section h2 .section-icon {
+      width: 44px; height: 44px;
+      background: var(--primary-bg);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      margin-bottom: 28px;
+      padding-left: 56px;
+    }
+
+    section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 36px 0 14px;
+    }
+
+    section p { margin-bottom: 14px; color: var(--text); }
+
+    /* ── Cards ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: transform .2s, box-shadow .2s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feature-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .feature-card .fc-icon {
+      font-size: 28px;
+      width: 52px; height: 52px;
+      background: var(--primary-bg);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .feature-card .fc-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .feature-card .fc-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Steps ─────────────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .step-num {
+      width: 36px; height: 36px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-body { flex: 1; min-width: 0; }
+    .step-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+    .step-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+    .step-text strong { color: var(--text); }
+
+    /* ── Callouts ──────────────────────────────────────────────── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+    .callout.tip    { background: var(--info-bg);    border: 1px solid #bfdbfe; color: #1e40af; }
+    .callout.warn   { background: var(--warning-bg); border: 1px solid #fde68a; color: #92400e; }
+    .callout.danger { background: var(--danger-bg);  border: 1px solid #fecaca; color: #991b1b; }
+    .callout.success{ background: var(--success-bg); border: 1px solid #bbf7d0; color: #166534; }
+
+    /* ── Badges ────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .badge-primary { background: var(--primary-bg); color: var(--primary); border: 1px solid var(--accent); }
+    .badge-success { background: var(--success-bg); color: #166534; border: 1px solid #bbf7d0; }
+    .badge-warn    { background: var(--warning-bg); color: #92400e; border: 1px solid #fde68a; }
+    .badge-danger  { background: var(--danger-bg);  color: #991b1b; border: 1px solid #fecaca; }
+
+    /* ── Table ─────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; margin-bottom: 20px; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: var(--primary-bg); color: var(--primary); font-weight: 700; padding: 12px 16px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+    td { padding: 12px 16px; border-top: 1px solid var(--border); color: var(--text); }
+    tr:hover td { background: var(--primary-bg); }
+
+    /* ── FAQ ───────────────────────────────────────────────────── */
+    .faq-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .faq-q {
+      padding: 18px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 15px;
+      user-select: none;
+      transition: background .2s;
+    }
+    .faq-q:hover { background: var(--primary-bg); }
+    .faq-q::after { content: "▼"; font-size: 12px; color: var(--text-muted); transition: transform .2s; flex-shrink: 0; }
+    .faq-item.open .faq-q::after { transform: rotate(180deg); }
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease, padding .3s ease;
+      padding: 0 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-a { max-height: 500px; padding: 0 20px 18px; }
+
+    /* ── Improvement cards ─────────────────────────────────────── */
+    .improvement-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .improvement-card .ic-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .improvement-card .ic-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 40px 36px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "🍮";
+      position: absolute;
+      right: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 100px;
+      opacity: .18;
+    }
+    .hero h1 { font-size: 30px; font-weight: 900; margin-bottom: 10px; line-height: 1.2; }
+    .hero p { font-size: 16px; opacity: .9; max-width: 500px; line-height: 1.6; }
+    .hero-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .hero-chip {
+      background: rgba(255,255,255,.2);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* ── Menu navigation path ──────────────────────────────────── */
+    .nav-path {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-bg);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      margin: 4px 0;
+    }
+    .nav-path span { opacity: .6; }
+
+    /* ── Inline list ───────────────────────────────────────────── */
+    ul.checklist { list-style: none; padding-left: 4px; margin-bottom: 16px; }
+    ul.checklist li { padding: 5px 0; font-size: 14px; display: flex; align-items: flex-start; gap: 10px; }
+    ul.checklist li::before { content: "✓"; color: var(--success); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    ul.dotlist { list-style: disc; padding-left: 22px; margin-bottom: 16px; }
+    ul.dotlist li { padding: 4px 0; font-size: 14px; color: var(--text-muted); }
+    ul.dotlist li strong { color: var(--text); }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      background: var(--primary);
+      color: rgba(255,255,255,.8);
+      text-align: center;
+      padding: 32px 40px;
+      font-size: 13px;
+      margin-left: var(--sidebar-w);
+    }
+    footer strong { color: #fff; }
+
+    /* ── Divider ───────────────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #menu-toggle { display: flex; }
+      .main, footer { margin-left: 0; }
+      .topbar { padding: 14px 18px 14px 64px; }
+      .content { padding: 24px 18px; }
+      .hero h1 { font-size: 22px; }
+      .hero::before { display: none; }
+      .cards-grid { grid-template-columns: 1fr 1fr; }
+      #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 90; }
+      #overlay.show { display: block; }
+    }
+
+    @media (max-width: 480px) {
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Print ─────────────────────────────────────────────────── */
+    @media print {
+      #sidebar, #menu-toggle, .topbar { display: none; }
+      .main, footer { margin-left: 0; }
+      .content { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mobile overlay -->
+<div id="overlay" onclick="closeSidebar()"></div>
+
+<!-- Mobile toggle -->
+<button id="menu-toggle" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">🍮 Dr. Pudim</div>
+    <div class="tagline">Central de Ajuda — Manual do Usuário</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Primeiros Passos</div>
+    <a href="#inicio" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🚀</span> Visão Geral</a>
+    <a href="#login" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🔐</span> Login</a>
+    <a href="#dashboard" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">📊</span> Dashboard</a>
+    <a href="#navegacao" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🗺️</span> Navegação</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Módulos Principais</div>
+    <a href="#insumos" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🧪</span> Insumos</a>
+    <a href="#compras" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🛒</span> Compras</a>
+    <a href="#produtos" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">📦</span> Produtos</a>
+    <a href="#receitas" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">👨‍🍳</span> Receitas</a>
+    <a href="#producao" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🏭</span> Produção</a>
+    <a href="#vendas" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">💰</span> Vendas</a>
+    <a href="#movimentacoes" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">↔️</span> Movimentações</a>
+    <a href="#fornecedores" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🚚</span> Fornecedores</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Configurações & Ajuda</div>
+    <a href="#configuracoes" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">⚙️</span> Configurações</a>
+    <a href="#financeiro" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">📈</span> Financeiro</a>
+    <a href="#dicas" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">💡</span> Dicas de Uso</a>
+    <a href="#problemas" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">🔧</span> Problemas Comuns</a>
+    <a href="#faq" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">❓</span> FAQ</a>
+    <a href="#melhorias" class="sidebar-link" onclick="closeSidebar()"><span class="sidebar-icon">✨</span> Melhorias</a>
+  </div>
+</nav>
+
+<!-- Main content -->
+<div class="layout">
+  <div class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <span class="topbar-title">📖 Central de Ajuda — Dr. Pudim</span>
+      <span class="topbar-badge">v1.0 · 2025</span>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- ══ HERO ══════════════════════════════════════════════════ -->
+      <div class="hero">
+        <h1>Bem-vindo ao Sistema Dr. Pudim</h1>
+        <p>Este guia vai te ajudar a usar todas as funcionalidades da plataforma, do começo ao fim — sem precisar de conhecimento técnico.</p>
+        <div class="hero-chips">
+          <span class="hero-chip">🧪 Insumos</span>
+          <span class="hero-chip">🏭 Produção</span>
+          <span class="hero-chip">💰 Vendas</span>
+          <span class="hero-chip">📊 Dashboard</span>
+          <span class="hero-chip">👨‍🍳 Receitas</span>
+          <span class="hero-chip">🚚 Fornecedores</span>
+        </div>
+      </div>
+
+      <!-- ══ VISÃO GERAL ════════════════════════════════════════════ -->
+      <section id="inicio">
+        <h2><span class="section-icon">🚀</span> O que é o Dr. Pudim?</h2>
+        <p class="section-desc">Entenda em poucos minutos o que o sistema faz e como ele pode ajudar sua fábrica.</p>
+
+        <p>O <strong>Dr. Pudim</strong> é um sistema de gestão completo criado para fábricas de doces e gelados. Com ele, você controla tudo em um só lugar: desde a compra de matérias-primas até a venda dos produtos prontos.</p>
+
+        <div class="cards-grid">
+          <div class="feature-card">
+            <div class="fc-icon">🧪</div>
+            <div class="fc-title">Insumos</div>
+            <div class="fc-desc">Controle o estoque de matérias-primas como leite, açúcar, chocolate e muito mais.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🛒</div>
+            <div class="fc-title">Compras</div>
+            <div class="fc-desc">Registre as notas fiscais de fornecedores e dê entrada nos insumos automaticamente.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">📦</div>
+            <div class="fc-title">Produtos</div>
+            <div class="fc-desc">Cadastre seu catálogo de produtos com preços de custo e preço de venda.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">👨‍🍳</div>
+            <div class="fc-title">Receitas</div>
+            <div class="fc-desc">Defina quais insumos entram em cada produto e o sistema calcula o custo automaticamente.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🏭</div>
+            <div class="fc-title">Produção</div>
+            <div class="fc-desc">Registre cada lote produzido. O sistema desconta os insumos usados do estoque.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">💰</div>
+            <div class="fc-title">Vendas</div>
+            <div class="fc-desc">Registre saídas e vendas com carrinho, emita comprovantes e acompanhe o faturamento do dia.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">📊</div>
+            <div class="fc-title">Dashboard</div>
+            <div class="fc-desc">Veja um resumo de tudo em tempo real: estoque, faturamento, produções e alertas.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-icon">🚚</div>
+            <div class="fc-title">Fornecedores</div>
+            <div class="fc-desc">Mantenha uma lista organizada de todos os seus fornecedores com telefone e CNPJ.</div>
+          </div>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-icon">💡</div>
+          <div class="callout-body"><strong>Fluxo recomendado para começar:</strong>
+            Cadastre os insumos → Crie os produtos → Monte as receitas → Registre compras → Registre produções → Registre vendas.
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ LOGIN ══════════════════════════════════════════════════ -->
+      <section id="login">
+        <h2><span class="section-icon">🔐</span> Fazendo Login</h2>
+        <p class="section-desc">Como acessar o sistema pela primeira vez.</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Abra o sistema no navegador</div>
+              <div class="step-text">Acesse o endereço do sistema fornecido pelo seu administrador. Recomendamos usar <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong> para melhor experiência.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Digite suas credenciais</div>
+              <div class="step-text">Preencha o campo <strong>E-mail / Usuário</strong> com o nome de usuário que recebeu, e o campo <strong>Senha</strong> com sua senha. O mínimo é 5 caracteres para o usuário e 6 para a senha.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Entrar"</div>
+              <div class="step-text">Após clicar no botão, você será redirecionado para o <strong>Dashboard</strong> automaticamente. O sistema irá demorar apenas alguns segundos.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout warn">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body"><strong>Importante sobre cookies:</strong>
+            O sistema precisa de cookies para funcionar. Não use o modo anônimo do navegador ou bloqueadores de rastreamento. Se aparecer um aviso vermelho sobre cookies, consulte a seção "Problemas Comuns" deste guia.
+          </div>
+        </div>
+
+        <h3>Como sair do sistema</h3>
+        <p>No canto inferior esquerdo da tela (dentro do menu), clique no botão <strong>"Sair do Sistema"</strong> com o ícone de saída. Isso vai desconectar sua sessão com segurança.</p>
+      </section>
+
+      <!-- ══ DASHBOARD ══════════════════════════════════════════════ -->
+      <section id="dashboard">
+        <h2><span class="section-icon">📊</span> Dashboard — Visão Geral</h2>
+        <p class="section-desc">A tela inicial do sistema com todos os indicadores importantes do negócio.</p>
+
+        <p>Ao fazer login, você chega ao <strong>Dashboard</strong>. Esta é a tela de controle central. Tudo que acontece no sistema aparece aqui de forma resumida.</p>
+
+        <h3>O que você verá no Dashboard</h3>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Indicador</th><th>O que significa</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Vendas (Mês)</strong></td><td>Receita bruta total acumulada no mês atual</td></tr>
+              <tr><td><strong>Margem de Lucro</strong></td><td>Porcentagem média de lucro nas vendas. Verde = acima de 30%, Amarelo = abaixo de 30%</td></tr>
+              <tr><td><strong>Produtos Cadastrados</strong></td><td>Quantos produtos estão no catálogo do sistema</td></tr>
+              <tr><td><strong>Valor em Estoque (Produtos)</strong></td><td>Valor total dos produtos prontos que estão no estoque</td></tr>
+              <tr><td><strong>Insumos Cadastrados</strong></td><td>Quantas matérias-primas estão no sistema</td></tr>
+              <tr><td><strong>Valor em Estoque (Insumos)</strong></td><td>Valor total das matérias-primas em estoque</td></tr>
+              <tr><td><strong>Produções Hoje</strong></td><td>Quantas produções foram registradas no dia atual e o custo total</td></tr>
+              <tr><td><strong>Insumos com Estoque Baixo</strong></td><td>Alerta de matérias-primas que precisam de reposição</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Gráfico de Produções</h3>
+        <p>O gráfico de área mostra a evolução das produções nos <strong>últimos 7 dias</strong>. Passe o mouse sobre os pontos para ver o valor exato de cada dia.</p>
+
+        <h3>Produções Recentes</h3>
+        <p>Logo abaixo do gráfico, aparecem os <strong>5 últimos lotes</strong> produzidos com data, quantidade e custo.</p>
+
+        <h3>Alerta de Estoque Crítico</h3>
+        <div class="callout danger">
+          <div class="callout-icon">🚨</div>
+          <div class="callout-body"><strong>Atenção ao alerta vermelho piscando!</strong>
+            Se um card vermelho aparecer no lado direito com "Estoque Crítico", significa que um ou mais produtos estão com estoque abaixo do mínimo configurado. Reponha esses produtos assim que possível.
+          </div>
+        </div>
+
+        <h3>Status do Sistema</h3>
+        <p>No lado direito há um painel de saúde do sistema que mostra se o banco de dados, memória e API estão funcionando corretamente. <span class="badge badge-success">✓ SISTEMA OPERACIONAL</span> significa que tudo está bem.</p>
+
+        <h3>Atualizando os dados</h3>
+        <p>Os dados atualizam automaticamente a cada 1 minuto. Para forçar uma atualização imediata, clique no botão <strong>"Atualizar"</strong> no canto superior direito da página.</p>
+      </section>
+
+      <!-- ══ NAVEGAÇÃO ══════════════════════════════════════════════ -->
+      <section id="navegacao">
+        <h2><span class="section-icon">🗺️</span> Navegação e Menu</h2>
+        <p class="section-desc">Como se movimentar pelo sistema com facilidade.</p>
+
+        <p>O sistema tem um <strong>menu lateral fixo</strong> no lado esquerdo da tela. Ele está organizado em 4 grupos:</p>
+
+        <div class="card">
+          <div class="table-wrap" style="margin-bottom:0;">
+            <table>
+              <thead><tr><th>Grupo</th><th>Páginas Disponíveis</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Operações</strong></td><td>Visão Geral, Saídas/Vendas, Entradas/Compras, Movimentações</td></tr>
+                <tr><td><strong>Catálogo & Produção</strong></td><td>Produção, Receitas, Produtos, Insumos</td></tr>
+                <tr><td><strong>Gestão</strong></td><td>Fornecedores</td></tr>
+                <tr><td><strong>Sistema</strong></td><td>Configurações</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p>No rodapé do menu, você verá seu <strong>nome e e-mail</strong> e o botão de sair.</p>
+
+        <div class="callout tip">
+          <div class="callout-icon">📱</div>
+          <div class="callout-body"><strong>No celular ou tablet:</strong>
+            O menu se esconde automaticamente. Toque no ícone <strong>☰</strong> no canto superior esquerdo para abrir o menu. Toque em qualquer item ou na área escura ao lado para fechar.
+          </div>
+        </div>
+      </section>
+
+      <hr />
+
+      <!-- ══ INSUMOS ═════════════════════════════════════════════════ -->
+      <section id="insumos">
+        <h2><span class="section-icon">🧪</span> Insumos</h2>
+        <p class="section-desc">Matérias-primas usadas na produção dos seus produtos. Tudo começa aqui.</p>
+
+        <p>Insumos são todos os ingredientes e materiais que você usa para fabricar seus produtos. Exemplos: leite condensado, açúcar, chocolate em pó, embalagens.</p>
+
+        <h3>Cadastrar um novo insumo</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Insumos</div>
+              <div class="step-text">No menu lateral, clique em <span class="nav-path">🧪 Insumos</span> dentro do grupo "Catálogo & Produção".</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Novo Insumo"</div>
+              <div class="step-text">Botão laranja no canto superior direito da tela.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Preencha as informações</div>
+              <div class="step-text">
+                <strong>Nome:</strong> ex. "Leite Condensado"<br/>
+                <strong>Unidade de medida:</strong> KG, G, L, ML ou UN (unidade)<br/>
+                <strong>Estoque mínimo:</strong> Quantidade abaixo da qual o sistema vai te alertar<br/>
+                <strong>Estoque inicial:</strong> Quanto você tem agora
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Salvar"</div>
+              <div class="step-text">O insumo aparecerá na lista com status <span class="badge badge-success">Normal</span>.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Entendendo os status de estoque</h3>
+        <div class="card">
+          <ul class="dotlist">
+            <li><span class="badge badge-success">Normal</span> — Estoque acima do mínimo configurado. Tudo certo.</li>
+            <li><span class="badge badge-warn">⚠ Estoque baixo</span> — Estoque igual ou abaixo do mínimo. Atenção: hora de comprar.</li>
+            <li><span class="badge badge-danger">Sem estoque</span> — Estoque zerado. Não será possível produzir com este insumo.</li>
+          </ul>
+        </div>
+
+        <h3>Custo médio ponderado (CMP)</h3>
+        <p>O campo <strong>"Custo Médio"</strong> é calculado automaticamente cada vez que você registra uma compra. Ele usa a fórmula de custo médio ponderado — ou seja, divide o valor total gasto pela quantidade total em estoque. Você não precisa calcular nada manualmente.</p>
+
+        <h3>Ver detalhes de um insumo</h3>
+        <p>Clique em qualquer linha da tabela para ver os detalhes completos do insumo, incluindo histórico de movimentações e lotes.</p>
+
+        <h3>Alerta de vencimento</h3>
+        <div class="callout warn">
+          <div class="callout-icon">⏰</div>
+          <div class="callout-body"><strong>Lotes próximos do vencimento:</strong>
+            Quando um insumo tem um lote vencendo em até 30 dias, o sistema exibe um alerta amarelo no topo da página de Insumos. Fique atento para usar os produtos antes de vencerem.
+          </div>
+        </div>
+
+        <h3>Editar ou remover um insumo</h3>
+        <p>Clique no ícone <strong>⋯</strong> (três pontos) na coluna "Ações" ao lado do insumo e escolha <strong>Editar</strong> ou <strong>Remover</strong>. Atenção: só é possível remover insumos que não estejam vinculados a receitas.</p>
+      </section>
+
+      <!-- ══ COMPRAS ═════════════════════════════════════════════════ -->
+      <section id="compras">
+        <h2><span class="section-icon">🛒</span> Registrar Compras</h2>
+        <p class="section-desc">Como dar entrada de matérias-primas quando você compra de um fornecedor.</p>
+
+        <p>Sempre que comprar insumos, registre a compra no sistema. Isso atualiza o estoque e recalcula o custo médio de cada ingrediente.</p>
+
+        <h3>Fazendo uma compra</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Entradas/Compras</div>
+              <div class="step-text">No menu lateral, clique em <span class="nav-path">🛒 Entradas/Compras</span>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Selecione o fornecedor (opcional)</div>
+              <div class="step-text">Escolha o fornecedor da lista suspensa. Se for uma compra avulsa, deixe em "Nenhum (avulso)". Você também pode digitar o número da nota fiscal no campo <strong>Observações</strong>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Adicione os insumos comprados</div>
+              <div class="step-text">
+                Na seção verde "Adicionar Insumo":<br/>
+                • Selecione o <strong>insumo</strong> na lista<br/>
+                • Informe a <strong>quantidade</strong> comprada<br/>
+                • Informe o <strong>custo total</strong> (valor que você pagou por tudo)<br/>
+                • Opcionalmente: informe a <strong>marca</strong> e a <strong>data de validade</strong><br/>
+                Clique em <strong>"Incluir na Nota"</strong>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Use a calculadora de embalagem (se necessário)</div>
+              <div class="step-text">Para insumos medidos em gramas (G) ou mililitros (ML): se você comprou, por exemplo, <strong>2 pacotes de 5.000g</strong>, use a calculadora: informe "2" no campo de pacotes e "5000" no tamanho. O sistema calcula 10.000g automaticamente.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Repita para todos os itens da nota</div>
+              <div class="step-text">Você pode adicionar vários insumos de uma só vez na mesma nota de compra.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Confirme a compra</div>
+              <div class="step-text">Revise o <strong>Resumo da Compra</strong> no lado direito. Confira o total e clique em <strong>"Confirmar Compra"</strong>. Os estoques serão atualizados automaticamente.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout success">
+          <div class="callout-icon">✅</div>
+          <div class="callout-body"><strong>Após confirmar a compra:</strong>
+            O sistema atualiza o estoque dos insumos e recalcula o custo médio ponderado automaticamente. Você será redirecionado para a página de Insumos para confirmar as mudanças.
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ PRODUTOS ════════════════════════════════════════════════ -->
+      <section id="produtos">
+        <h2><span class="section-icon">📦</span> Produtos</h2>
+        <p class="section-desc">O catálogo completo de tudo que sua empresa vende.</p>
+
+        <p>Produtos são os itens finais que você vende. Podem ser produtos <strong>fabricados</strong> (como pudins que você produz internamente) ou produtos <strong>comprados prontos</strong> para revenda.</p>
+
+        <h3>Cadastrar um novo produto</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Produtos</div>
+              <div class="step-text">No menu lateral, clique em <span class="nav-path">📦 Produtos</span>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Novo Produto"</div>
+              <div class="step-text">Botão no canto superior direito.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Preencha as informações</div>
+              <div class="step-text">
+                <strong>Nome:</strong> ex. "Pudim de Leite 500g"<br/>
+                <strong>Código interno:</strong> código de referência (ex: PUD-001)<br/>
+                <strong>Categoria:</strong> Pudim, Picolé, Dindin, Sorvete, Bolo, Torta, Outros<br/>
+                <strong>Unidade:</strong> UN (unidade), KG, L etc.<br/>
+                <strong>Preço de venda:</strong> quanto você vende este produto<br/>
+                <strong>Estoque mínimo:</strong> abaixo de quanto o sistema deve alertar<br/>
+                <strong>É fabricado?</strong> Marque "Sim" se você produz este item internamente
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Salve o produto</div>
+              <div class="step-text">Clique em <strong>"Salvar"</strong>. O produto aparecerá no catálogo.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Produtos fabricados vs. comprados</h3>
+        <div class="card">
+          <ul class="dotlist">
+            <li><strong>Fabricado (ícone 👨‍🍳):</strong> Você produz internamente. O custo é calculado automaticamente pela receita. O estoque aumenta ao registrar uma produção.</li>
+            <li><strong>Comprado (ícone 📦):</strong> Você compra de terceiros para revender. O custo deve ser informado manualmente. O estoque é ajustado manualmente via "Movimentar".</li>
+          </ul>
+        </div>
+
+        <h3>Margem de lucro por produto</h3>
+        <p>Na coluna "Custo / Venda", você verá a margem calculada automaticamente:</p>
+        <ul class="dotlist">
+          <li><span class="badge badge-success">▲ 35%</span> — Margem saudável (acima de 30%)</li>
+          <li><span class="badge badge-warn">▲ 18%</span> — Margem baixa (entre 0% e 30%)</li>
+          <li><span class="badge badge-danger">▲ -5%</span> — Prejuízo! Você está vendendo abaixo do custo</li>
+        </ul>
+
+        <h3>Exportar para Excel</h3>
+        <p>Clique no botão <strong>"Exportar"</strong> para baixar um arquivo Excel com todos os produtos, preços e custos. Útil para relatórios e análises externas.</p>
+
+        <h3>Movimentar estoque manualmente</h3>
+        <p>Para produtos <strong>não fabricados</strong>, use o menu de ações (⋯) e selecione <strong>"Movimentar"</strong>. Informe se é uma <strong>Entrada (+)</strong> ou <strong>Saída (-)</strong>, a quantidade e o motivo.</p>
+      </section>
+
+      <!-- ══ RECEITAS ════════════════════════════════════════════════ -->
+      <section id="receitas">
+        <h2><span class="section-icon">👨‍🍳</span> Receitas</h2>
+        <p class="section-desc">Defina quais insumos entram em cada produto e calcule os custos automaticamente.</p>
+
+        <p>As receitas são a <strong>inteligência financeira</strong> do sistema. Ao definir a receita de um produto, o sistema calcula automaticamente o custo de produção e a margem de lucro.</p>
+
+        <div class="callout tip">
+          <div class="callout-icon">💡</div>
+          <div class="callout-body"><strong>Receitas são necessárias para produzir!</strong>
+            Antes de registrar uma produção, você precisa ter a receita do produto cadastrada. Sem receita, o sistema não saberá quais insumos descontar do estoque.
+          </div>
+        </div>
+
+        <h3>Criar ou editar uma receita</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Receitas</div>
+              <div class="step-text">Clique em <span class="nav-path">👨‍🍳 Receitas</span> no menu lateral.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Selecione o produto</div>
+              <div class="step-text">Na seção "1. Selecionar Produto", escolha o produto para o qual você quer criar a receita.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Adicione os ingredientes</div>
+              <div class="step-text">Na seção "2. Ingredientes da Receita", use o menu suspenso para escolher o insumo e clique em <strong>"Adicionar"</strong>. Para cada insumo adicionado, informe a <strong>quantidade necessária por unidade produzida</strong>.<br/><br/>Exemplo: para fazer 1 pudim, usa-se 200g de leite condensado → campo: 200.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Defina o preço de venda</div>
+              <div class="step-text">No painel direito, informe o <strong>Preço de Venda</strong> (R$). O sistema calculará automaticamente a margem de lucro.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Verifique o resumo financeiro</div>
+              <div class="step-text">O painel mostra em tempo real: <strong>Custo de produção</strong>, <strong>Preço de venda</strong>, <strong>Lucro por unidade</strong> e <strong>Margem %</strong>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Salve a receita</div>
+              <div class="step-text">Clique em <strong>"Salvar Receita"</strong>. O custo do produto será atualizado automaticamente no catálogo.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Atualizar custos da receita</h3>
+        <p>Se o preço dos insumos mudou (por exemplo, depois de uma nova compra), clique em <strong>"Atualizar custos"</strong> dentro da página de receitas para recalcular o custo com os preços mais recentes.</p>
+      </section>
+
+      <!-- ══ PRODUÇÃO ════════════════════════════════════════════════ -->
+      <section id="producao">
+        <h2><span class="section-icon">🏭</span> Produção</h2>
+        <p class="section-desc">Registre cada lote produzido. O estoque de insumos é descontado automaticamente.</p>
+
+        <p>Cada vez que você produz um lote de produtos, registre no sistema. Ele vai:<br/>
+        • Descontar os insumos usados do estoque<br/>
+        • Calcular o custo real do lote<br/>
+        • Adicionar as unidades prontas ao estoque de produtos</p>
+
+        <h3>Registrar uma produção</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Produção</div>
+              <div class="step-text">Clique em <span class="nav-path">🏭 Produção</span> no menu lateral.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Nova Produção"</div>
+              <div class="step-text">Botão laranja no canto superior direito.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Selecione o produto a produzir</div>
+              <div class="step-text">Escolha o produto na lista. Apenas produtos com receita cadastrada aparecem aqui.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Informe a quantidade</div>
+              <div class="step-text">Quantas unidades você vai produzir neste lote? Ex: 50 pudins.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Confira a previsão de consumo</div>
+              <div class="step-text">O sistema mostrará automaticamente quais insumos serão usados e o <strong>custo total estimado</strong> do lote. Verifique se há estoque suficiente de todos os insumos.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Adicione uma observação (opcional)</div>
+              <div class="step-text">Ex: "Lote para evento de sábado" ou "Lote 001 — Janeiro".</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <div class="step-title">Confirme a produção</div>
+              <div class="step-text">Clique em <strong>"Confirmar produção"</strong>. Uma mensagem confirmará com a quantidade produzida e o custo total real.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Visualizar histórico de produções</h3>
+        <p>A tabela na página de Produção lista todos os lotes registrados com: produto, quantidade, custo por unidade, custo total, data e operador.</p>
+        <p>Clique na seta <strong>▶</strong> ao lado de uma produção para expandir e ver o detalhe de quais insumos foram consumidos e quanto custou cada um.</p>
+
+        <div class="callout warn">
+          <div class="callout-icon">⚠️</div>
+          <div class="callout-body"><strong>Se aparecer um aviso amarelo de "sem receita":</strong>
+            O produto selecionado não tem receita cadastrada ainda. Vá ao menu <span class="nav-path">👨‍🍳 Receitas</span> e cadastre os ingredientes desse produto antes de produzir.
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ VENDAS ══════════════════════════════════════════════════ -->
+      <section id="vendas">
+        <h2><span class="section-icon">💰</span> Vendas e Saídas</h2>
+        <p class="section-desc">Registre vendas com carrinho, emita comprovantes e acompanhe o faturamento do dia.</p>
+
+        <p>A tela de Vendas funciona como um <strong>PDV (Ponto de Venda)</strong> simplificado. Você adiciona produtos ao carrinho e confirma a venda de uma vez.</p>
+
+        <h3>Fazer uma venda</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Saídas/Vendas</div>
+              <div class="step-text">Clique em <span class="nav-path">💰 Saídas/Vendas</span> no menu lateral.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Selecione o produto</div>
+              <div class="step-text">No campo "Produto", escolha o item a vender. A lista mostra apenas produtos com estoque disponível. Produtos sem estoque aparecem desabilitados.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Informe a quantidade e o preço</div>
+              <div class="step-text">Digite a <strong>quantidade</strong> e o <strong>valor unitário de saída</strong>. Se o produto tiver preço de venda cadastrado, o campo de preço será preenchido automaticamente.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Adicione ao carrinho</div>
+              <div class="step-text">Clique em <strong>"Adicionar ao Carrinho"</strong>. O item aparecerá na tabela abaixo. Repita para adicionar mais produtos à mesma venda.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Finalize a venda</div>
+              <div class="step-text">No painel direito, adicione uma observação se quiser (ex: "Cliente Maria" ou "Venda para restaurante"). Verifique o <strong>Total da Venda</strong> e clique em <strong>"Confirmar Venda"</strong>.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Comprovante impresso automaticamente</div>
+              <div class="step-text">Após confirmar, o sistema abre automaticamente um <strong>comprovante de venda</strong> no formato de cupom para impressão. Certifique-se que o bloqueador de pop-ups do navegador está desativado para este site.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Últimas vendas registradas</h3>
+        <p>Na parte inferior da página, você vê as <strong>10 últimas vendas</strong>. Para cada uma, é possível:</p>
+        <ul class="checklist">
+          <li>Ver os detalhes completos (ícone 👁️)</li>
+          <li>Reimprimir o comprovante (ícone 🖨️)</li>
+        </ul>
+
+        <h3>Faturamento do dia</h3>
+        <p>No topo da página há um indicador em destaque com as <strong>Vendas de Hoje</strong>, atualizado automaticamente a cada 30 segundos.</p>
+
+        <div class="callout danger">
+          <div class="callout-icon">🚫</div>
+          <div class="callout-body"><strong>Atenção ao estoque!</strong>
+            O sistema bloqueia automaticamente a adição de produtos ao carrinho se não houver estoque suficiente. Se tentar adicionar mais do que o disponível, aparecerá uma mensagem de erro.
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ MOVIMENTAÇÕES ══════════════════════════════════════════ -->
+      <section id="movimentacoes">
+        <h2><span class="section-icon">↔️</span> Movimentações de Estoque</h2>
+        <p class="section-desc">Histórico auditável de todas as entradas e saídas do sistema.</p>
+
+        <p>A página de Movimentações registra <strong>tudo que já aconteceu</strong> com o estoque: vendas, produções, compras, ajustes manuais. Funciona como um extrato bancário, mas do estoque.</p>
+
+        <h3>Tipos de movimentação</h3>
+        <div class="card">
+          <ul class="dotlist">
+            <li><span class="badge badge-success">↓ Entrada</span> — Estoque aumentou (compra, produção concluída)</li>
+            <li><span class="badge badge-danger">↑ Saída</span> — Estoque diminuiu (venda, consumo na produção)</li>
+            <li><span class="badge badge-warn">↔ Ajuste</span> — Correção manual do estoque</li>
+          </ul>
+        </div>
+
+        <h3>Filtros disponíveis</h3>
+        <ul class="checklist">
+          <li>Filtrar por <strong>data inicial e data final</strong></li>
+          <li>Filtrar por <strong>tipo</strong>: Entradas, Saídas, Ajustes ou Todos</li>
+        </ul>
+
+        <h3>Informações disponíveis em cada registro</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Coluna</th><th>O que mostra</th></tr></thead>
+            <tbody>
+              <tr><td>Data/Hora</td><td>Quando a movimentação ocorreu</td></tr>
+              <tr><td>Tipo</td><td>Entrada, Saída ou Ajuste</td></tr>
+              <tr><td>Item Movimentado</td><td>Nome do produto ou insumo</td></tr>
+              <tr><td>Qtd. Movimentada</td><td>Quanto foi movimentado</td></tr>
+              <tr><td>Estoque Atualizado</td><td>Saldo após a movimentação (e o saldo anterior)</td></tr>
+              <tr><td>Usuário</td><td>Quem fez a movimentação</td></tr>
+              <tr><td>Observação</td><td>Motivo ou descrição adicional</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ FORNECEDORES ════════════════════════════════════════════ -->
+      <section id="fornecedores">
+        <h2><span class="section-icon">🚚</span> Fornecedores</h2>
+        <p class="section-desc">Gerencie seus parceiros e contatos de compra.</p>
+
+        <h3>Cadastrar um fornecedor</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Acesse o menu Fornecedores</div>
+              <div class="step-text">Clique em <span class="nav-path">🚚 Fornecedores</span> no grupo "Gestão".</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Clique em "Novo Fornecedor"</div>
+              <div class="step-text">Botão no canto superior direito.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Preencha as informações</div>
+              <div class="step-text">
+                <strong>Nome:</strong> nome da empresa ou pessoa<br/>
+                <strong>CNPJ/CPF:</strong> documento fiscal (opcional)<br/>
+                <strong>E-mail:</strong> contato por e-mail<br/>
+                <strong>Telefone:</strong> número de contato<br/>
+                <strong>Endereço:</strong> endereço completo
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Salve</div>
+              <div class="step-text">Clique em <strong>"Salvar"</strong>. O fornecedor ficará disponível na lista de compras.</div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Buscar fornecedores</h3>
+        <p>Use a barra de pesquisa para encontrar fornecedores pelo <strong>nome</strong> ou <strong>CNPJ</strong>.</p>
+      </section>
+
+      <hr />
+
+      <!-- ══ CONFIGURAÇÕES ══════════════════════════════════════════ -->
+      <section id="configuracoes">
+        <h2><span class="section-icon">⚙️</span> Configurações</h2>
+        <p class="section-desc">Personalize sua conta e gerencie os usuários do sistema.</p>
+
+        <p>Acesse em <span class="nav-path">⚙️ Configurações</span> no menu lateral. Há três abas:</p>
+
+        <h3>Aba: Meu Perfil</h3>
+        <ul class="checklist">
+          <li>Alterar seu <strong>nome completo</strong></li>
+          <li>Alterar seu <strong>e-mail</strong></li>
+          <li>Definir uma <strong>nova senha</strong> (deixe em branco para manter a atual)</li>
+        </ul>
+
+        <h3>Aba: Usuários</h3>
+        <p>Gerencie quem pode acessar o sistema:</p>
+        <ul class="checklist">
+          <li>Clique em <strong>"Novo Usuário"</strong> para cadastrar um colaborador</li>
+          <li>Defina o <strong>nome, usuário, e-mail, senha e permissão</strong></li>
+          <li>Use o ícone ✏️ para editar ou 🗑️ para excluir um usuário</li>
+        </ul>
+
+        <div class="callout tip">
+          <div class="callout-icon">🔐</div>
+          <div class="callout-body"><strong>Sobre permissões:</strong>
+            Cada usuário tem um nível de acesso (role). Usuários com permissão de administrador podem gerenciar outros usuários e acessar todas as configurações.
+          </div>
+        </div>
+
+        <h3>Aba: Aparência</h3>
+        <ul class="checklist">
+          <li><strong>Tema Claro:</strong> interface em tons claros (padrão)</li>
+          <li><strong>Tema Escuro:</strong> interface em tons escuros, ideal para ambientes com pouca luz</li>
+          <li><strong>Imagem do Login:</strong> você pode personalizar a foto que aparece na tela de entrada do sistema. Informe a URL de uma imagem e clique em "Salvar Imagem".</li>
+        </ul>
+      </section>
+
+      <!-- ══ FINANCEIRO ══════════════════════════════════════════════ -->
+      <section id="financeiro">
+        <h2><span class="section-icon">📈</span> Acompanhamento Financeiro</h2>
+        <p class="section-desc">Como usar o sistema para entender a saúde financeira do negócio.</p>
+
+        <p>O sistema não tem um módulo financeiro separado, mas todas as informações financeiras estão distribuídas de forma clara:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>O que você quer saber</th><th>Onde encontrar</th></tr></thead>
+            <tbody>
+              <tr><td>Faturamento do dia</td><td>Topo da página <strong>Saídas/Vendas</strong></td></tr>
+              <tr><td>Faturamento do mês</td><td>Card "Vendas (Mês)" no <strong>Dashboard</strong></td></tr>
+              <tr><td>Margem de lucro média</td><td>Card "Margem de Lucro" no <strong>Dashboard</strong></td></tr>
+              <tr><td>Custo de produção de um lote</td><td>Coluna "Custo Total" na página <strong>Produção</strong></td></tr>
+              <tr><td>Custo por produto</td><td>Coluna "Custo/Venda" na página <strong>Produtos</strong></td></tr>
+              <tr><td>Lucro por produto</td><td>Resumo Financeiro na página <strong>Receitas</strong></td></tr>
+              <tr><td>Valor total em estoque</td><td>Cards no <strong>Dashboard</strong></td></tr>
+              <tr><td>Evolução de produções</td><td>Gráfico "Últimos 7 dias" no <strong>Dashboard</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Exportação de dados</h3>
+        <p>Na página de <strong>Produtos</strong>, clique em <strong>"Exportar"</strong> para baixar uma planilha Excel com todos os produtos, custos e preços de venda. Use esta planilha para análises mais detalhadas no Excel ou Google Sheets.</p>
+      </section>
+
+      <hr />
+
+      <!-- ══ DICAS ════════════════════════════════════════════════════ -->
+      <section id="dicas">
+        <h2><span class="section-icon">💡</span> Dicas e Boas Práticas</h2>
+        <p class="section-desc">Faça o máximo do sistema seguindo estas recomendações.</p>
+
+        <div class="card">
+          <h3 style="margin-top:0;">🏆 Sequência ideal para começar</h3>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <div class="step-title">Cadastre todos os insumos</div>
+                <div class="step-text">Liste todas as matérias-primas que você usa. Inclua o estoque atual e o estoque mínimo de cada uma.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <div class="step-title">Cadastre os fornecedores</div>
+                <div class="step-text">Adicione os principais fornecedores para facilitar o registro de compras futuras.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <div class="step-title">Cadastre o catálogo de produtos</div>
+                <div class="step-text">Todos os produtos que você vende, com preços e categorias.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <div class="step-title">Monte as receitas</div>
+                <div class="step-text">Para cada produto fabricado, defina os ingredientes e as quantidades por unidade.</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">5</div>
+              <div class="step-body">
+                <div class="step-title">Use diariamente</div>
+                <div class="step-text">Registre compras ao receber mercadorias, produções ao fabricar lotes e vendas ao vender.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">📅 Registre as compras sempre que comprar</div>
+          <div class="ic-desc">Não deixe para depois. Registrar compras no momento da chegada garante que os custos médios estejam sempre atualizados e o estoque reflita a realidade.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">🎯 Defina estoques mínimos realistas</div>
+          <div class="ic-desc">Configure o estoque mínimo de insumos com base no seu consumo diário. Se você usa 5kg de leite por dia e quer ter 3 dias de segurança, configure o mínimo como 15kg.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">💰 Revise as receitas quando os preços mudarem</div>
+          <div class="ic-desc">Quando um insumo ficar mais caro, acesse a página de Receitas e clique em "Atualizar custos". Isso recalcula a margem de lucro com os preços atuais.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">🖥️ Monitore o Dashboard todo dia</div>
+          <div class="ic-desc">Reserve 5 minutos pela manhã para checar o Dashboard. Verifique o estoque crítico, as produções do dia anterior e o faturamento da semana.</div>
+        </div>
+      </section>
+
+      <!-- ══ PROBLEMAS COMUNS ════════════════════════════════════════ -->
+      <section id="problemas">
+        <h2><span class="section-icon">🔧</span> Problemas Comuns</h2>
+        <p class="section-desc">Soluções para as situações mais frequentes.</p>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ "Cookies estão bloqueados"</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">O botão de login ficará desativado com uma mensagem vermelha.</p>
+          <p><strong>Solução:</strong></p>
+          <ul class="checklist">
+            <li>Saia do modo anônimo/privado do navegador</li>
+            <li>No Chrome: Configurações → Privacidade → Cookies → Permitir cookies</li>
+            <li>Desative extensões de bloqueio (AdBlock, Privacy Badger) para este site</li>
+            <li>Adicione o endereço do sistema nas exceções de cookies</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ Não consigo confirmar uma produção</h3>
+          <p style="color: var(--text-muted); font-size: 14px;">Aparece um erro ao tentar registrar uma produção.</p>
+          <p><strong>Verifique:</strong></p>
+          <ul class="checklist">
+            <li>O produto possui receita cadastrada? Acesse <span class="nav-path">👨‍🍳 Receitas</span> e verifique</li>
+            <li>Há estoque suficiente de todos os insumos da receita? Veja a previsão de consumo antes de confirmar</li>
+            <li>A quantidade informada é maior que zero?</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ O produto não aparece na lista de vendas</h3>
+          <ul class="checklist">
+            <li>Verifique se o produto está cadastrado em <span class="nav-path">📦 Produtos</span></li>
+            <li>Verifique se o produto tem estoque disponível (> 0)</li>
+            <li>Produtos sem estoque aparecem desabilitados na lista</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ O comprovante de venda não abre</h3>
+          <ul class="checklist">
+            <li>Verifique se o bloqueador de pop-ups está ativado no navegador</li>
+            <li>No Chrome: clique no ícone de pop-up bloqueado na barra de endereço e permita para este site</li>
+            <li>Você ainda pode reimprimir qualquer venda anterior pela tabela de últimas vendas</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ O Dashboard mostra erro de conexão</h3>
+          <ul class="checklist">
+            <li>Verifique sua conexão com a internet</li>
+            <li>Verifique o painel "Status do Sistema" — se o banco de dados ou API mostrar erro, contate o suporte</li>
+            <li>Tente recarregar a página (F5)</li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h3 style="margin-top:0; color: var(--danger);">❌ Não consigo excluir um insumo</h3>
+          <p><strong>Motivo:</strong> O insumo está vinculado a uma ou mais receitas. Para excluí-lo, primeiro remova ele de todas as receitas em que aparece.</p>
+        </div>
+      </section>
+
+      <!-- ══ FAQ ════════════════════════════════════════════════════ -->
+      <section id="faq">
+        <h2><span class="section-icon">❓</span> Perguntas Frequentes (FAQ)</h2>
+        <p class="section-desc">Respostas rápidas para as dúvidas mais comuns.</p>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Posso usar o sistema no celular?</div>
+          <div class="faq-a">Sim! O sistema é totalmente responsivo. No celular, o menu fica oculto e você abre pelo botão ☰ no canto superior esquerdo. Algumas tabelas podem precisar de rolagem horizontal para visualização completa.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">O que é "custo médio ponderado"?</div>
+          <div class="faq-a">É o custo calculado automaticamente considerando o histórico de compras. Se você comprou 10kg a R$5,00/kg e depois mais 10kg a R$7,00/kg, o custo médio será R$6,00/kg. Esse valor é usado para calcular o custo dos produtos nas receitas.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Como eu sei se estou tendo lucro?</div>
+          <div class="faq-a">Veja o card "Margem de Lucro" no Dashboard. Além disso, ao montar uma receita, o painel lateral mostra em tempo real o lucro por unidade e a margem percentual. Margem acima de 30% é considerada saudável (indicador verde).</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Como adicionar um novo funcionário ao sistema?</div>
+          <div class="faq-a">Acesse Configurações → aba "Usuários" → clique em "Novo Usuário". Preencha nome, usuário, e-mail e senha. O novo colaborador poderá fazer login com essas credenciais.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Posso registrar uma venda sem preço de venda?</div>
+          <div class="faq-a">Sim. Se o produto não tiver preço de venda cadastrado ou se você quiser usar um preço diferente, basta digitar manualmente no campo "Valor Unitário de Saída" ao adicionar o item ao carrinho.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">O sistema funciona sem internet?</div>
+          <div class="faq-a">Não. O sistema é baseado na web e precisa de conexão com a internet para funcionar. Certifique-se de ter uma conexão estável antes de usar, especialmente na hora de registrar vendas e produções.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Posso desfazer uma venda ou produção registrada?</div>
+          <div class="faq-a">Atualmente o sistema não possui uma função de "desfazer" automática. Em caso de erro, faça um ajuste manual de estoque na página de Produtos (movimentar estoque) ou entre em contato com o administrador do sistema.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Como funciona o alerta de lote vencendo?</div>
+          <div class="faq-a">Ao registrar uma compra de insumos, você pode informar a data de validade. O sistema monitora automaticamente e exibe um alerta na página de Insumos quando algum lote está a 30 dias ou menos do vencimento.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Como mudar o tema para modo escuro?</div>
+          <div class="faq-a">Acesse Configurações → aba "Aparência" → clique na opção "Escuro". A mudança é imediata e a preferência fica salva no seu navegador.</div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Posso cadastrar um produto que não é fabricado por mim?</div>
+          <div class="faq-a">Sim. Ao criar o produto, não marque a opção "É fabricado". Para este tipo de produto, o custo deve ser informado manualmente e o estoque é controlado via "Movimentar Estoque" no menu de ações do produto.</div>
+        </div>
+      </section>
+
+      <!-- ══ MELHORIAS ══════════════════════════════════════════════ -->
+      <section id="melhorias">
+        <h2><span class="section-icon">✨</span> Sugestões de Melhoria</h2>
+        <p class="section-desc">Pontos identificados na análise do sistema que podem melhorar a experiência do usuário.</p>
+
+        <div class="callout tip">
+          <div class="callout-icon">ℹ️</div>
+          <div class="callout-body"><strong>Para os responsáveis pelo desenvolvimento:</strong>
+            As sugestões abaixo foram identificadas com base na análise do fluxo completo do sistema. São oportunidades de melhoria de UX e usabilidade.
+          </div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">🔍 UX — Busca em Compras</div>
+          <div class="ic-desc">A página de Compras não exibe histórico de compras anteriores. Seria valioso ter uma lista de compras recentes para consulta, facilitando rastrear quando cada insumo foi comprado e por qual valor.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">↩️ Desfazer Vendas e Produções</div>
+          <div class="ic-desc">Atualmente não é possível cancelar ou estornar uma venda ou produção registrada por engano. Uma funcionalidade de cancelamento com ajuste automático de estoque reduziria muito os erros operacionais.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">📊 Relatórios Financeiros Detalhados</div>
+          <div class="ic-desc">O sistema tem excelentes dados financeiros, mas eles estão dispersos em várias telas. Uma página dedicada de relatórios (faturamento por período, DRE simplificado, ranking de produtos mais vendidos) centralizaria estas informações.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">👤 Cadastro de Clientes</div>
+          <div class="ic-desc">Não há módulo de clientes. Adicionar um cadastro básico de clientes (nome, telefone, WhatsApp) permitiria vincular vendas a clientes específicos, histórico de compras e ações de fidelização.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">📱 Integração com WhatsApp</div>
+          <div class="ic-desc">O sistema não possui integração com WhatsApp ainda, apesar de ser mencionado como funcionalidade planejada. Uma integração simples para enviar comprovantes ou alertas de estoque baixo seria muito útil para o público-alvo.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">🔔 Notificações de Alerta</div>
+          <div class="ic-desc">Os alertas de estoque baixo e vencimento aparecem apenas quando o usuário acessa as páginas. Notificações proativas (e-mail, push ou badge no menu) garantiriam que esses alertas não passem despercebidos.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">📅 Agendamentos</div>
+          <div class="ic-desc">Nenhuma funcionalidade de agendamento foi encontrada no sistema atual. Para uma fábrica de doces, poder agendar pedidos, produções e entregas por data seria um diferencial importante.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">🔄 Fluxo de Navegação nas Compras</div>
+          <div class="ic-desc">Após confirmar uma compra, o usuário é redirecionado para a lista de Insumos. Seria mais intuitivo confirmar na mesma página ou exibir um resumo da compra antes do redirecionamento, dando mais confiança ao usuário sobre o que foi registrado.</div>
+        </div>
+
+        <div class="improvement-card">
+          <div class="ic-title">📋 Planos SOLO, DIGITAL e PRO</div>
+          <div class="ic-desc">Os planos de assinatura mencionados na documentação não foram encontrados no frontend. Recomenda-se criar uma tela de planos clara dentro do sistema, explicando as limitações e benefícios de cada tier para o usuário logado.</div>
+        </div>
+      </section>
+
+    </div><!-- /.content -->
+  </div><!-- /.main -->
+</div><!-- /.layout -->
+
+<!-- Footer -->
+<footer>
+  <p><strong>Dr. Pudim</strong> — Central de Ajuda · Manual do Usuário v1.0</p>
+  <p style="margin-top:6px; opacity:.7;">Dúvidas? Entre em contato com o suporte da sua plataforma.</p>
+</footer>
+
+<script>
+  // ── Sidebar toggle ──────────────────────────────────────────────
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // ── FAQ accordion ───────────────────────────────────────────────
+  function toggleFaq(el) {
+    const item = el.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // ── Active sidebar link on scroll ──────────────────────────────
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.sidebar-link');
+
+  function updateActive() {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY + 120 >= s.offsetTop) current = s.id;
+    });
+    links.forEach(l => {
+      l.classList.remove('active');
+      if (l.getAttribute('href') === '#' + current) l.classList.add('active');
+    });
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+
+  // ── Smooth scroll for anchor links ─────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

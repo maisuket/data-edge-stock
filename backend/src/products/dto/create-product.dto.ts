@@ -88,6 +88,11 @@ export class CreateProductDto {
   @IsString()
   location?: string;
 
+  @ApiPropertyOptional({ example: 'https://example.com/foto-produto.jpg' })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @ApiPropertyOptional({ type: [SpecificationDto] })
   @IsOptional()
   @IsArray()
