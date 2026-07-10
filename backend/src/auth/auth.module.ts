@@ -14,10 +14,20 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' }, // Token expira em 1 dia
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+
+        if (!secret) {
+          throw new Error(
+            'CRÍTICO: Variável de ambiente JWT_SECRET não está definida.',
+          );
+        }
+
+        return {
+          secret,
+          signOptions: { expiresIn: '1d' }, // Token expira em 1 dia
+        };
+      },
       inject: [ConfigService],
     }),
   ],

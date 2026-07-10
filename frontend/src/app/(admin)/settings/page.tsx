@@ -11,7 +11,6 @@ import {
   Sun,
   UserCircle,
   Shield,
-  Mail,
   Lock,
   Check,
   Users,
@@ -46,7 +45,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -368,7 +367,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
-                  <div className="relative w-[300px]">
+                  <div className="relative w-75">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar usuários..."
@@ -494,7 +493,7 @@ export default function SettingsPage() {
                     <div className="space-y-2 rounded-lg bg-[#ecedef] p-2">
                       <div className="space-y-2 rounded-xl bg-white p-2 shadow-sm border border-black/5">
                         <div className="h-2 w-20 rounded-full bg-[#ecedef]" />
-                        <div className="h-2 w-[80px] rounded-full bg-[#ecedef]" />
+                        <div className="h-2 w-20 rounded-full bg-[#ecedef]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
@@ -514,7 +513,7 @@ export default function SettingsPage() {
                     <div className="space-y-2 rounded-lg bg-[#09090b] p-2 border border-white/10">
                       <div className="space-y-2 rounded-xl bg-[#18181b] p-2 shadow-sm border border-white/5">
                         <div className="h-2 w-20 rounded-full bg-[#27272a]" />
-                        <div className="h-2 w-[80px] rounded-full bg-[#27272a]" />
+                        <div className="h-2 w-20 rounded-full bg-[#27272a]" />
                       </div>
                     </div>
                     <div className="mt-2 text-center text-sm font-medium flex items-center justify-center gap-2 p-2">
@@ -635,6 +634,51 @@ export default function SettingsPage() {
                         de login. Recomendamos imagens em alta resolução.
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                <Separator className="my-8" />
+
+                <div className="space-y-4 max-w-2xl">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                    Barra Lateral (Sidebar)
+                  </h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="sidebarLogo">URL da Logo</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="sidebarLogo"
+                        placeholder="https://sua-empresa.com/logo.png"
+                        value={sidebarLogoUrl}
+                        onChange={(e) => setSidebarLogoUrl(e.target.value)}
+                        className="rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
+                      />
+                      <Button
+                        onClick={async () => {
+                          try {
+                            await SettingsService.update(
+                              "SIDEBAR_LOGO_URL",
+                              sidebarLogoUrl,
+                            );
+                            toast.success(
+                              "Logo da barra lateral atualizada! Recarregue a página para ver a mudança.",
+                            );
+                          } catch (err) {
+                            toast.error(
+                              "Erro ao salvar logo da barra lateral.",
+                            );
+                          }
+                        }}
+                        className="rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm shrink-0"
+                      >
+                        Salvar Logo
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Insira o link direto para a imagem que aparecerá no topo
+                      da barra lateral. Recomendamos imagens com fundo
+                      transparente (PNG).
+                    </p>
                   </div>
                 </div>
               </CardContent>

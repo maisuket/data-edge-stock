@@ -35,6 +35,7 @@ export default function LoginPage() {
     "https://chatgpt.com/backend-api/estuary/public_content/enc/eyJpZCI6Im1fNmEwODY0OTBjZjQ0ODE5MWE0MTMxNWMxZmVkMTVkNmI6ZmlsZV8wMDAwMDAwMDk4ZGM3MWZiYmJkYjFmZmNhZDE5MzFkNSIsInRzIjoiMjA1ODkiLCJwIjoicHlpIiwiY2lkIjoiMSIsInNpZyI6IjdjMjU3MmYyNWM0YTcxNjM4Y2FiNzkwZGZmMzk4YTlmY2Q0N2IxMGQ2OWRmYjEzZTZlYzA5ZDAxMWE0MTA2OWUiLCJ2IjoiMCIsImdpem1vX2lkIjpudWxsLCJjcyI6bnVsbCwiY2RuIjpudWxsLCJmbiI6bnVsbCwiY2QiOm51bGwsImNwIjpudWxsLCJtYSI6bnVsbH0=",
   );
   const [cookiesBlocked, setCookiesBlocked] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
 
   // Carrega a imagem dinâmica salva nas configurações
   useEffect(() => {
@@ -60,6 +61,12 @@ export default function LoginPage() {
         if (res?.value) setBgImage(res.value);
       })
       .catch(console.error); // Ignora erro silenciosamente no login para não impedir o usuário de logar
+
+    SettingsService.getByKey("SIDEBAR_LOGO_URL")
+      .then((res) => {
+        if (res?.value) setLogoUrl(res.value);
+      })
+      .catch(console.error);
 
     return () => clearTimeout(cookieCheckTimer);
   }, []);
@@ -156,12 +163,13 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center mb-2">
               {/* Substitua o src pelo caminho real da sua logo na pasta 'public' (ex: '/minha-logo.svg') */}
               <Image
-                src="/logo.png"
+                src={logoUrl}
                 alt="Logo Dr.Pudim"
                 width={400}
                 height={240}
-                className="h-60 w-auto object-contain"
+                className="h-60 w-auto max-w-full object-contain transition-all duration-300"
                 priority
+                unoptimized={logoUrl.startsWith("http")}
               />
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">

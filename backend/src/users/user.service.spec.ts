@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConflictException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserEntity } from './entities/user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
 
 // 1. MOCK DO BCRYPT (Global)
 jest.mock('bcrypt', () => ({
@@ -21,6 +23,7 @@ describe('UsersService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -125,6 +128,71 @@ describe('UsersService', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(UserEntity);
       expect(result[0].name).toBe('User 1');
+    });
+  });
+
+  describe('update', () => {
+    it('deve fazer o hash da senha caso ela seja enviada no update', async () => {
+      const updateUserDto: UpdateUserDto = {
+        password: 'nova_senha_secreta',
+      };
+
+      // Simulando o usuário atual que está fazendo a requisição (neste caso, ele mesmo)
+      const currentUser = { id: 'uuid-123', role: 'USER' as any };
+
+      const updatedUserFromDb = {
+        id: 'uuid-123',
+        name: 'Teste',
+        email: 'teste@email.com',
+        username: 'teste_user',
+        role: 'USER',
+        password: 'hashed_password_xyz', // Retorno esperado após o mock do Prisma
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      jest
+        .spyOn(mockPrismaService.user, 'update')
+        .mockResolvedValue(updatedUserFromDb);
+
+      const result = await service.update('uuid-123', updateUserDto, currentUser);
+
+      // 1. Verifica se o bcrypt foi chamado interceptando a nova senha e com o 'salt' correto (10)
+      expect(bcrypt.hash).toHaveBeenCalledWith('nova_senha_secreta', 10);
+
+      // 2. Verifica se a chamada do Prisma.update enviou para o banco a senha com hash e não a senha em texto plano
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+        data: expect.objectContaining({
+          password: 'hashed_password_xyz',
+        }),
+      });
+    });
+
+    it('não deve permitir que usuários comuns alterem sua própria role', async () => {
+      const updateUserDto: UpdateUserDto = {
+        role: 'ADMIN' as any, // Tentativa maliciosa de virar administrador
+        name: 'Novo Nome',
+      };
+
+      // Simulando que o autor da requisição é um usuário comum (USER)
+      const currentUser = { id: 'uuid-123', role: 'USER' as any };
+
+      jest
+        .spyOn(mockPrismaService.user, 'update')
+        .mockResolvedValue({ id: 'uuid-123', role: 'USER', name: 'Novo Nome' }); // Retorno fake
+
+      await service.update('uuid-123', updateUserDto, currentUser);
+
+      // Verifica se a requisição enviada ao Prisma ignorou solenemente o campo 'role'
+      // e enviou apenas os campos seguros (como 'name')
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+        data: {
+          name: 'Novo Nome',
+          // o campo 'role' não deve estar presente no objeto enviado ao banco!
+        },
+      });
     });
   });
 });
