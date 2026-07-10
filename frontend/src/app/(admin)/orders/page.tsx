@@ -222,6 +222,10 @@ export default function OrdersPage() {
         statusFilter === "TODOS" ? undefined : statusFilter,
       ),
     placeholderData: keepPreviousData,
+    // Atualiza sozinha para os novos pedidos do cardápio aparecerem sem
+    // precisar dar F5; continua mesmo com a aba em segundo plano.
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
   });
 
   const orders = data?.data ?? [];
