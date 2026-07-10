@@ -15,6 +15,7 @@ export interface Production {
   id: string;
   productId: string;
   product: { name: string; unit: string };
+  batches: number;
   quantity: number;
   unitCost: number;
   totalCost: number;
@@ -33,7 +34,7 @@ export interface ProductionDetail extends Production {
 
 export interface CreateProductionDto {
   productId: string;
-  quantity: number;
+  batches: number;
   notes?: string;
 }
 

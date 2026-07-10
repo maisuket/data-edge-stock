@@ -16,6 +16,8 @@ export interface Recipe {
   productId: string;
   productName: string;
   isManufactured: boolean;
+  yieldQuantity: number;
+  productionCostPerBatch: number;
   productionCostPerUnit: number;
   salePrice?: number;
   profitMargin?: number;
@@ -29,6 +31,8 @@ export interface SetRecipeItemDto {
 
 export interface SetRecipeDto {
   items: SetRecipeItemDto[];
+  yieldQuantity?: number;
+  salePrice?: number | null;
 }
 
 // ── Service ────────────────────────────────────────────────────────────────

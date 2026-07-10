@@ -73,10 +73,11 @@ export class ProductionsService {
 
       // ── 3. Valida estoque de cada insumo ───
       const insufficientIngredients: string[] = [];
-      const qtyDecimal = new Prisma.Decimal(dto.quantity);
+      const batchesDecimal = new Prisma.Decimal(dto.batches);
+      const producedUnits = batchesDecimal.mul(product.yieldQuantity);
 
       for (const item of recipeItems) {
-        const required = item.quantity.mul(qtyDecimal);
+        const required = item.quantity.mul(batchesDecimal);
         if (item.ingredient.currentStock.lt(required)) {
           insufficientIngredients.push(
             `"${item.ingredient.name}": necessário ${required.toNumber()} ${item.ingredient.unit}, ` +
@@ -102,7 +103,7 @@ export class ProductionsService {
       }[] = [];
 
       for (const item of recipeItems) {
-        const quantityUsed = item.quantity.mul(qtyDecimal);
+        const quantityUsed = item.quantity.mul(batchesDecimal);
         const itemTotalCost = quantityUsed.mul(item.ingredient.averageCost);
         totalProductionCost = totalProductionCost.add(itemTotalCost);
 
@@ -114,15 +115,15 @@ export class ProductionsService {
         });
       }
 
-      const unitCost = qtyDecimal.gt(0)
-        ? totalProductionCost.div(qtyDecimal)
+      const unitCost = producedUnits.gt(0)
+        ? totalProductionCost.div(producedUnits)
         : new Prisma.Decimal(0);
 
       // ── 5. Deduz estoque dos insumos ───────
       // Usamos o valor retornado pelo UPDATE para calcular stockBefore/stockAfter
       // com precisão, mesmo em cenários de produções concorrentes.
       for (const item of recipeItems) {
-        const consumed = item.quantity.mul(qtyDecimal);
+        const consumed = item.quantity.mul(batchesDecimal);
 
         const updatedIngredient = await tx.ingredient.update({
           where: { id: item.ingredientId },
@@ -147,21 +148,22 @@ export class ProductionsService {
       }
 
       // ── 6. Incrementa estoque do produto ───
+      const producedUnitsNum = producedUnits.toNumber();
       const updatedProduct = await tx.product.update({
         where: { id: dto.productId },
-        data: { currentStock: { increment: dto.quantity } },
+        data: { currentStock: { increment: producedUnitsNum } },
         select: { currentStock: true },
       });
 
       const productStockAfterNum = updatedProduct.currentStock.toNumber();
-      const productStockBeforeNum = productStockAfterNum - dto.quantity;
+      const productStockBeforeNum = productStockAfterNum - producedUnitsNum;
 
       // ── 6.5. Registra o histórico da movimentação (ENTRY) ──
       await tx.stockMovement.create({
         data: {
           productId: dto.productId,
           type: 'ENTRY',
-          quantity: dto.quantity,
+          quantity: producedUnitsNum,
           stockBefore: productStockBeforeNum,
           stockAfter: productStockAfterNum,
           userId,
@@ -173,7 +175,8 @@ export class ProductionsService {
       const production = await tx.production.create({
         data: {
           productId: dto.productId,
-          quantity: dto.quantity,
+          batches: batchesDecimal,
+          quantity: producedUnits,
           unitCost,
           totalCost: totalProductionCost,
           notes: dto.notes,
@@ -196,6 +199,7 @@ export class ProductionsService {
       return {
         id: production.id,
         product: production.product,
+        batches: production.batches.toNumber(),
         quantity: production.quantity.toNumber(),
         unitCost: unitCost.toNumber(),
         totalCost: totalProductionCost.toNumber(),
@@ -239,6 +243,7 @@ export class ProductionsService {
       productions.map((p) => ({
         ...p,
         producedBy: p.user.name,
+        batches: p.batches.toNumber(),
         quantity: p.quantity.toNumber(),
         unitCost: p.unitCost.toNumber(),
         totalCost: p.totalCost.toNumber(),
@@ -277,6 +282,7 @@ export class ProductionsService {
 
     return {
       ...production,
+      batches: production.batches.toNumber(),
       quantity: production.quantity.toNumber(),
       unitCost: production.unitCost.toNumber(),
       totalCost: production.totalCost.toNumber(),

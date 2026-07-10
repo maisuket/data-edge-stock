@@ -80,11 +80,11 @@ const fmt = new Intl.NumberFormat("pt-BR", {
 
 const schema = z.object({
   productId: z.string().min(1, "Selecione um produto"),
-  quantity: z
+  batches: z
     .number({
-      message: "Quantidade é obrigatória ou inválida",
+      message: "Quantidade de lotes é obrigatória ou inválida",
     })
-    .min(0.001, "Quantidade deve ser > 0"),
+    .min(0.001, "Quantidade de lotes deve ser > 0"),
   notes: z.string().optional(),
 });
 
@@ -103,11 +103,11 @@ function ProductionFormDialog({
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { productId: "", quantity: 0, notes: "" },
+    defaultValues: { productId: "", batches: 0, notes: "" },
   });
 
   const productId = useWatch({ control: form.control, name: "productId" });
-  const quantity = useWatch({ control: form.control, name: "quantity" }) || 0;
+  const batches = useWatch({ control: form.control, name: "batches" }) || 0;
 
   // Load manufactured products
   const { data: productsData } = useQuery({
@@ -126,14 +126,17 @@ function ProductionFormDialog({
 
   // Live cost estimate
   const estimatedTotalCost = recipe
-    ? recipe.productionCostPerUnit * quantity
+    ? recipe.productionCostPerBatch * batches
+    : 0;
+  const estimatedUnitsProduced = recipe
+    ? recipe.yieldQuantity * batches
     : 0;
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       ProductionService.create({
         productId: data.productId,
-        quantity: data.quantity,
+        batches: data.batches,
         notes: data.notes || undefined,
       }),
     onSuccess: (result) => {
@@ -203,13 +206,13 @@ function ProductionFormDialog({
               )}
             />
 
-            {/* Quantity */}
+            {/* Batches */}
             <FormField
               control={form.control}
-              name="quantity"
+              name="batches"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantidade a produzir (unidades)</FormLabel>
+                  <FormLabel>Quantos lotes da receita produzir?</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -222,6 +225,16 @@ function ProductionFormDialog({
                       }}
                     />
                   </FormControl>
+                  {recipe && batches > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      = {estimatedUnitsProduced.toLocaleString("pt-BR", {
+                        maximumFractionDigits: 3,
+                      })}{" "}
+                      un de{" "}
+                      {productsData?.data.find((p) => p.id === productId)
+                        ?.name ?? "produto"}
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -251,7 +264,7 @@ function ProductionFormDialog({
                           {item.ingredientName}
                         </span>
                         <span className="font-medium tabular-nums text-foreground">
-                          {(item.quantity * quantity).toLocaleString("pt-BR", {
+                          {(item.quantity * batches).toLocaleString("pt-BR", {
                             maximumFractionDigits: 3,
                           })}{" "}
                           {UNIT_SHORT[item.unit] ?? item.unit}
@@ -489,6 +502,12 @@ export default function ProductionsPage() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-semibold">
                         {prod.quantity.toLocaleString("pt-BR")}
+                        {prod.batches !== prod.quantity && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {prod.batches.toLocaleString("pt-BR")} lote
+                            {prod.batches !== 1 ? "s" : ""}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {fmt.format(prod.unitCost)}

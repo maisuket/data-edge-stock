@@ -54,16 +54,21 @@ export class RecipesService {
       });
 
       // 4. Calcula e persiste o custo de produção no produto
-      const productionCost = this.calculateCostFromIngredients(
+      // `productionCostPerBatch` é o custo de 1 execução da receita; o produto
+      // guarda o custo por UNIDADE, então dividimos pelo rendimento.
+      const yieldQuantity = new Prisma.Decimal(dto.yieldQuantity ?? 1);
+      const productionCostPerBatch = this.calculateCostFromIngredients(
         dto.items,
         ingredients,
       );
+      const productionCostPerUnit = productionCostPerBatch.div(yieldQuantity);
 
       await tx.product.update({
         where: { id: productId },
         data: {
           isManufactured: true,
-          costPrice: productionCost,
+          costPrice: productionCostPerUnit,
+          yieldQuantity,
           ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
         },
       });
@@ -81,7 +86,9 @@ export class RecipesService {
       return {
         productId,
         productName: product.name,
-        productionCostPerUnit: productionCost.toNumber(),
+        yieldQuantity: yieldQuantity.toNumber(),
+        productionCostPerBatch: productionCostPerBatch.toNumber(),
+        productionCostPerUnit: productionCostPerUnit.toNumber(),
         items: recipeItems.map((item) => ({
           ingredientId: item.ingredientId,
           ingredientName: item.ingredient.name,
@@ -122,9 +129,12 @@ export class RecipesService {
       },
     });
 
-    const productionCostPerUnit = items.reduce(
+    const productionCostPerBatch = items.reduce(
       (sum, item) => sum.add(item.quantity.mul(item.ingredient.averageCost)),
       new Prisma.Decimal(0),
+    );
+    const productionCostPerUnit = productionCostPerBatch.div(
+      product.yieldQuantity,
     );
 
     const profitMargin =
@@ -140,6 +150,8 @@ export class RecipesService {
       productId,
       productName: product.name,
       isManufactured: product.isManufactured,
+      yieldQuantity: product.yieldQuantity.toNumber(),
+      productionCostPerBatch: productionCostPerBatch.toNumber(),
       productionCostPerUnit: productionCostPerUnit.toNumber(),
       salePrice: product.salePrice ? product.salePrice.toNumber() : null,
       profitMargin: profitMargin ? profitMargin.toNumber() : null,
@@ -164,6 +176,13 @@ export class RecipesService {
    * médios atuais dos insumos da receita.
    */
   async refreshProductCost(productId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+    if (!product) {
+      throw new NotFoundException(`Produto ${productId} não encontrado.`);
+    }
+
     const items = await this.prisma.recipeItem.findMany({
       where: { productId },
       include: { ingredient: { select: { averageCost: true } } },
@@ -175,10 +194,11 @@ export class RecipesService {
       );
     }
 
-    const newCost = items.reduce(
+    const newCostPerBatch = items.reduce(
       (sum, item) => sum.add(item.quantity.mul(item.ingredient.averageCost)),
       new Prisma.Decimal(0),
     );
+    const newCost = newCostPerBatch.div(product.yieldQuantity);
 
     await this.prisma.product.update({
       where: { id: productId },

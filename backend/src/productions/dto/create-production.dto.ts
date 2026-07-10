@@ -10,12 +10,12 @@ export class CreateProductionDto {
   productId: string;
 
   @ApiProperty({
-    example: 20,
-    description: 'Quantidade de unidades a produzir',
+    example: 3,
+    description: 'Quantos lotes da receita executar',
   })
   @IsNumber()
   @Min(0.001)
-  quantity: number;
+  batches: number;
 
   @ApiPropertyOptional({
     example: 'Lote para evento do fim de semana',

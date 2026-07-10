@@ -21,7 +21,7 @@ export class RecipeItemDto {
   @ApiProperty({
     example: 0.5,
     description:
-      'Quantidade do insumo necessária para produzir 1 unidade do produto',
+      'Quantidade do insumo necessária por lote (rendimento) da receita',
   })
   @IsNumber()
   @Min(0.001)
@@ -39,6 +39,16 @@ export class SetRecipeDto {
   @ValidateNested({ each: true })
   @Type(() => RecipeItemDto)
   items: RecipeItemDto[];
+
+  @ApiPropertyOptional({
+    example: 2,
+    description:
+      'Quantas unidades do produto uma execução da receita produz (rendimento). Padrão: 1.',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0.001)
+  yieldQuantity?: number;
 
   @ApiPropertyOptional({
     example: 15.5,
