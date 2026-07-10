@@ -12,6 +12,8 @@ export type OrderStatus =
 
 export type DeliveryType = "PICKUP" | "DELIVERY";
 
+export type PaymentMethod = "PIX" | "CREDIT_CARD" | "DEBIT_CARD" | "CASH";
+
 // ── Interfaces ─────────────────────────────────────────────────────────────
 
 export interface OrderItem {
@@ -36,6 +38,7 @@ export interface Order {
   deliveryType: DeliveryType;
   deliveryNeighborhood?: string | null;
   deliveryFee: number;
+  paymentMethod?: PaymentMethod | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +61,7 @@ export interface CreateOrderDto {
   notes?: string;
   deliveryType: DeliveryType;
   deliveryNeighborhood?: string;
+  paymentMethod: PaymentMethod;
 }
 
 export interface UpdateOrderDto {
@@ -66,6 +70,7 @@ export interface UpdateOrderDto {
   notes?: string;
   deliveryType?: DeliveryType;
   deliveryNeighborhood?: string;
+  paymentMethod?: PaymentMethod;
   items?: CreateOrderItemDto[];
 }
 

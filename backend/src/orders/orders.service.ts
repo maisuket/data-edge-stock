@@ -72,6 +72,7 @@ export class OrdersService {
           deliveryType: dto.deliveryType,
           deliveryNeighborhood,
           deliveryFee,
+          paymentMethod: dto.paymentMethod,
           items: {
             create: orderItemsData,
           },
@@ -236,6 +237,9 @@ export class OrdersService {
             customerPhone: dto.customerPhone,
           }),
           ...(dto.notes !== undefined && { notes: dto.notes }),
+          ...(dto.paymentMethod !== undefined && {
+            paymentMethod: dto.paymentMethod,
+          }),
           deliveryType,
           deliveryNeighborhood,
           deliveryFee,

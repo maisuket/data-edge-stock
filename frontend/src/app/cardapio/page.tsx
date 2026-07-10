@@ -15,12 +15,19 @@ import {
   Package,
   Store,
   Bike,
+  QrCode,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
-import { OrderService, type DeliveryType } from "@/lib/services/orders";
+import {
+  OrderService,
+  type DeliveryType,
+  type PaymentMethod,
+} from "@/lib/services/orders";
 import { DeliveryZoneService } from "@/lib/services/delivery-zones";
 import { normalizeBrazilPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
@@ -53,6 +60,13 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "BRL",
   }).format(value);
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof QrCode }[] = [
+  { value: "PIX", label: "Pix", icon: QrCode },
+  { value: "CREDIT_CARD", label: "Crédito", icon: CreditCard },
+  { value: "DEBIT_CARD", label: "Débito", icon: CreditCard },
+  { value: "CASH", label: "Dinheiro", icon: Banknote },
+];
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Pudim: "🍮",
@@ -200,6 +214,7 @@ function CartDrawer({
   const [notes, setNotes] = useState("");
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("PICKUP");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const qc = useQueryClient();
 
   const { data: deliveryZones = [] } = useQuery({
@@ -231,6 +246,9 @@ function CartDrawer({
       if (deliveryType === "DELIVERY" && !selectedNeighborhood) {
         throw new Error("Escolha o bairro para calcular a taxa de entrega.");
       }
+      if (!paymentMethod) {
+        throw new Error("Escolha a forma de pagamento.");
+      }
       return OrderService.create({
         customerName: customerName.trim() || undefined,
         customerPhone: normalizedPhone,
@@ -238,6 +256,7 @@ function CartDrawer({
         deliveryType,
         deliveryNeighborhood:
           deliveryType === "DELIVERY" ? selectedNeighborhood : undefined,
+        paymentMethod,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -261,11 +280,18 @@ function CartDrawer({
           ? `\n\n🛵 Entrega: ${selectedNeighborhood} — ${formatCurrency(deliveryFee)}`
           : `\n\n🏠 Retirada na loja`;
 
+      const paymentLabel = PAYMENT_METHODS.find(
+        (m) => m.value === paymentMethod,
+      )?.label;
+      const paymentLine = paymentLabel
+        ? `\n💳 Pagamento: ${paymentLabel}`
+        : "";
+
       const notesBlock = notes.trim()
         ? `\n\n📝 Observações: ${notes.trim()}`
         : "";
 
-      const message = `${intro}${orderLines}${deliveryLine}\n\n*Total: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
+      const message = `${intro}${orderLines}${deliveryLine}${paymentLine}\n\n*Total: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
 
       const phone = whatsappNumber.replace(/\D/g, "");
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -438,6 +464,30 @@ function CartDrawer({
               )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Forma de pagamento
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {PAYMENT_METHODS.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <button
+                    key={method.value}
+                    onClick={() => setPaymentMethod(method.value)}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                      paymentMethod === method.value
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" /> {method.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {deliveryFee > 0 && (
             <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">

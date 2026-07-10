@@ -26,6 +26,9 @@ import {
   AlertTriangle,
   Store,
   Bike,
+  QrCode,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -36,6 +39,7 @@ import {
   type OrderStatus,
   type OrderDetail,
   type DeliveryType,
+  type PaymentMethod,
 } from "../../../lib/services/orders";
 import { ProductService } from "../../../lib/services/products";
 import { DeliveryZoneService } from "../../../lib/services/delivery-zones";
@@ -82,6 +86,24 @@ const fmt = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
+
+const PAYMENT_METHODS: {
+  value: PaymentMethod;
+  label: string;
+  icon: typeof QrCode;
+}[] = [
+  { value: "PIX", label: "Pix", icon: QrCode },
+  { value: "CREDIT_CARD", label: "Crédito", icon: CreditCard },
+  { value: "DEBIT_CARD", label: "Débito", icon: CreditCard },
+  { value: "CASH", label: "Dinheiro", icon: Banknote },
+];
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  PIX: "Pix",
+  CREDIT_CARD: "Cartão de Crédito",
+  DEBIT_CARD: "Cartão de Débito",
+  CASH: "Dinheiro",
+};
 
 // ── Status ───────────────────────────────────────────────────────────────────
 
@@ -137,6 +159,7 @@ function EditOrderDialog({
   const [notes, setNotes] = useState("");
   const [deliveryType, setDeliveryType] = useState<DeliveryType>("PICKUP");
   const [neighborhood, setNeighborhood] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
   const [items, setItems] = useState<
     { productId: string; name: string; quantity: number }[]
   >([]);
@@ -150,6 +173,7 @@ function EditOrderDialog({
     setNotes(order.notes ?? "");
     setDeliveryType(order.deliveryType);
     setNeighborhood(order.deliveryNeighborhood ?? "");
+    setPaymentMethod(order.paymentMethod ?? "");
     setItems(
       order.items.map((i) => ({
         productId: i.productId,
@@ -229,6 +253,7 @@ function EditOrderDialog({
         deliveryType,
         deliveryNeighborhood:
           deliveryType === "DELIVERY" ? neighborhood : undefined,
+        paymentMethod: paymentMethod || undefined,
         items: items.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
@@ -327,6 +352,30 @@ function EditOrderDialog({
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">
+              Forma de pagamento
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {PAYMENT_METHODS.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <Button
+                    key={method.value}
+                    type="button"
+                    variant={
+                      paymentMethod === method.value ? "default" : "outline"
+                    }
+                    onClick={() => setPaymentMethod(method.value)}
+                    className="gap-1.5"
+                  >
+                    <Icon className="w-4 h-4" /> {method.label}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -529,6 +578,12 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
         {data.customerPhone && (
           <div className="text-xs text-muted-foreground mb-1">
             📱 {data.customerPhone}
+          </div>
+        )}
+
+        {data.paymentMethod && (
+          <div className="text-xs text-muted-foreground mb-1">
+            💳 {PAYMENT_METHOD_LABELS[data.paymentMethod]}
           </div>
         )}
 

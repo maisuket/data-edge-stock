@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DeliveryType } from '@prisma/client';
+import { DeliveryType, PaymentMethod } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -66,4 +66,8 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   deliveryNeighborhood?: string;
+
+  @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.PIX })
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 }
