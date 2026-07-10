@@ -15,6 +15,7 @@ enum Role {
 enum OrderStatus {
   PENDING
   CONFIRMED
+  PAID
   CANCELLED
   COMPLETED
 }
@@ -298,6 +299,10 @@ model Order {
   notes        String?
   status       OrderStatus @default(PENDING)
   totalAmount  Decimal     @map("total_amount")
+  /// URL de pagamento gerada sob demanda (Mercado Pago Checkout Pro)
+  paymentLinkUrl      String? @map("payment_link_url")
+  /// ID da preferência de pagamento no Mercado Pago
+  paymentPreferenceId String? @map("payment_preference_id")
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 

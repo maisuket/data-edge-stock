@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
+import { MercadoPagoService } from '../mercado-pago/mercado-pago.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 const SYSTEM_USERNAME = 'cardapio-publico';
@@ -13,7 +14,10 @@ const ORDER_NUMBER_PREFIX = 'PED';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mercadoPagoService: MercadoPagoService,
+  ) {}
 
   // ──────────────────────────────────────────
   // Criar pedido (rota pública do cardápio)
@@ -175,6 +179,51 @@ export class OrdersService {
         totalPrice: i.totalPrice.toNumber(),
       })),
     };
+  }
+
+  // ──────────────────────────────────────────
+  // Link de pagamento (admin)
+  // ──────────────────────────────────────────
+
+  /**
+   * Gera (ou regenera) um link de pagamento Mercado Pago para o pedido e
+   * persiste a URL/ID da preferência. Não altera o status do pedido —
+   * a confirmação de pagamento continua manual (ver updateStatus).
+   */
+  async generatePaymentLink(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: { include: { product: { select: { name: true } } } },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Pedido ${id} não encontrado.`);
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Não é possível gerar link de pagamento para um pedido cancelado.',
+      );
+    }
+
+    const { preferenceId, paymentLink } =
+      await this.mercadoPagoService.createPreference(
+        order.orderNumber,
+        order.items.map((item) => ({
+          title: item.product.name,
+          quantity: item.quantity.toNumber(),
+          unitPrice: item.unitPrice.toNumber(),
+        })),
+      );
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: { paymentLinkUrl: paymentLink, paymentPreferenceId: preferenceId },
+    });
+
+    return { ...updated, totalAmount: updated.totalAmount.toNumber() };
   }
 
   // ──────────────────────────────────────────

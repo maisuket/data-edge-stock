@@ -3,7 +3,12 @@ import type { Page } from "./products";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+export type OrderStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "PAID"
+  | "CANCELLED"
+  | "COMPLETED";
 
 // ── Interfaces ─────────────────────────────────────────────────────────────
 
@@ -23,6 +28,8 @@ export interface Order {
   notes?: string | null;
   status: OrderStatus;
   totalAmount: number;
+  paymentLinkUrl?: string | null;
+  paymentPreferenceId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +75,11 @@ export const OrderService = {
     const response = await api.patch<Order>(`/orders/${id}/status`, {
       status,
     });
+    return response.data;
+  },
+
+  generatePaymentLink: async (id: string) => {
+    const response = await api.post<Order>(`/orders/${id}/payment-link`);
     return response.data;
   },
 };

@@ -61,4 +61,17 @@ export class OrdersController {
   updateStatus(@Param('id') id: string, @Body() dto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(id, dto.status);
   }
+
+  @Post(':id/payment-link')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Gerar link de pagamento Mercado Pago para o pedido (admin)',
+    description:
+      'Cria uma preferência de Checkout Pro (Pix/débito/crédito) e retorna o link pronto para enviar ao cliente. Não confirma pagamento automaticamente.',
+  })
+  @ApiParam({ name: 'id', description: 'UUID do pedido' })
+  generatePaymentLink(@Param('id') id: string) {
+    return this.ordersService.generatePaymentLink(id);
+  }
 }

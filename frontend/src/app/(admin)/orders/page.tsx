@@ -15,6 +15,9 @@ import {
   Check,
   X,
   PackageCheck,
+  Link2,
+  Copy,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -72,6 +75,10 @@ const STATUS_CONFIG: Record<
     label: "Confirmado",
     className: "bg-[#2196F3]/10 text-[#2196F3] border-[#2196F3]/30 border",
   },
+  PAID: {
+    label: "Pago",
+    className: "bg-[#9C27B0]/10 text-[#9C27B0] border-[#9C27B0]/30 border",
+  },
   COMPLETED: {
     label: "Concluído",
     className: "bg-[#4CAF50]/10 text-[#4CAF50] border-[#4CAF50]/30 border",
@@ -123,6 +130,24 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
       ),
   });
 
+  const linkMutation = useMutation({
+    mutationFn: () => OrderService.generatePaymentLink(orderId),
+    onSuccess: () => {
+      toast.success("Link de pagamento gerado!");
+      qc.invalidateQueries({ queryKey: ["order-detail", orderId] });
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) =>
+      toast.error(
+        e?.response?.data?.message ??
+          "Erro ao gerar link de pagamento.",
+      ),
+  });
+
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    toast.success("Link copiado!");
+  };
+
   if (isLoading)
     return (
       <TableRow>
@@ -159,7 +184,45 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
           </div>
         )}
 
-        {(data.status === "PENDING" || data.status === "CONFIRMED") && (
+        {(data.status === "CONFIRMED" || data.status === "PAID") && (
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            {data.paymentLinkUrl && (
+              <>
+                <span className="text-xs text-muted-foreground truncate max-w-60">
+                  {data.paymentLinkUrl}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCopyLink(data.paymentLinkUrl!)}
+                  className="h-7 text-xs gap-1.5"
+                >
+                  <Copy className="w-3 h-3" /> Copiar link
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={linkMutation.isPending}
+              onClick={() => linkMutation.mutate()}
+              className="h-7 text-xs gap-1.5"
+            >
+              {linkMutation.isPending ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Link2 className="w-3 h-3" />
+              )}
+              {data.paymentLinkUrl
+                ? "Gerar novo link"
+                : "Gerar link de pagamento"}
+            </Button>
+          </div>
+        )}
+
+        {(data.status === "PENDING" ||
+          data.status === "CONFIRMED" ||
+          data.status === "PAID") && (
           <div className="flex gap-2">
             {data.status === "PENDING" && (
               <Button
@@ -177,26 +240,39 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
                 size="sm"
                 variant="outline"
                 disabled={statusMutation.isPending}
+                onClick={() => statusMutation.mutate("PAID")}
+                className="h-8 text-xs gap-1.5"
+              >
+                <DollarSign className="w-3.5 h-3.5" /> Marcar como pago
+              </Button>
+            )}
+            {(data.status === "CONFIRMED" || data.status === "PAID") && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={statusMutation.isPending}
                 onClick={() => statusMutation.mutate("COMPLETED")}
                 className="h-8 text-xs gap-1.5"
               >
                 <PackageCheck className="w-3.5 h-3.5" /> Concluir
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={statusMutation.isPending}
-              onClick={() => statusMutation.mutate("CANCELLED")}
-              className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              {statusMutation.isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <X className="w-3.5 h-3.5" />
-              )}
-              Cancelar
-            </Button>
+            {data.status !== "PAID" && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={statusMutation.isPending}
+                onClick={() => statusMutation.mutate("CANCELLED")}
+                className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                {statusMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
+                Cancelar
+              </Button>
+            )}
           </div>
         )}
       </TableCell>
@@ -259,6 +335,7 @@ export default function OrdersPage() {
             <SelectItem value="TODOS">Todos os status</SelectItem>
             <SelectItem value="PENDING">Pendentes</SelectItem>
             <SelectItem value="CONFIRMED">Confirmados</SelectItem>
+            <SelectItem value="PAID">Pagos</SelectItem>
             <SelectItem value="COMPLETED">Concluídos</SelectItem>
             <SelectItem value="CANCELLED">Cancelados</SelectItem>
           </SelectContent>
