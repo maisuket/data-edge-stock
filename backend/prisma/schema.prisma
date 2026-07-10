@@ -12,6 +12,26 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PAID
+  CANCELLED
+  COMPLETED
+}
+
+enum DeliveryType {
+  PICKUP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -70,6 +90,7 @@ model Product {
   stockMovements StockMovement[]
   priceHistories ProductPriceHistory[]
   saleItems      SaleItem[]
+  orderItems     OrderItem[]
 
   @@map("products")
 }
@@ -279,4 +300,78 @@ model SaleItem {
   product     Product  @relation(fields: [productId], references: [id])
 
   @@map("sale_items")
+}
+
+/// Pedido feito pelo cardápio público, antes de virar uma Sale/venda de fato
+model Order {
+  id           String      @id @default(uuid())
+  /// Código legível do pedido, ex: "PED-0001"
+  orderNumber  String      @unique @map("order_number")
+  customerName String?     @map("customer_name")
+  /// Telefone/WhatsApp do cliente, normalizado com DDI (ex: "5592991433005")
+  customerPhone String?    @map("customer_phone")
+  notes        String?
+  status       OrderStatus @default(PENDING)
+  totalAmount  Decimal     @map("total_amount")
+  /// URL de pagamento gerada sob demanda (Mercado Pago Checkout Pro)
+  paymentLinkUrl      String? @map("payment_link_url")
+  /// ID da preferência de pagamento no Mercado Pago
+  paymentPreferenceId String? @map("payment_preference_id")
+  deliveryType         DeliveryType @default(PICKUP) @map("delivery_type")
+  /// Nome do bairro no momento do pedido (snapshot — não referencia DeliveryZone)
+  deliveryNeighborhood String?      @map("delivery_neighborhood")
+  /// Taxa de entrega no momento do pedido (snapshot — não referencia DeliveryZone)
+  deliveryFee          Decimal      @default(0) @map("delivery_fee")
+  /// Forma de pagamento escolhida pelo cliente no checkout — nulo em pedidos
+  /// anteriores a essa funcionalidade
+  paymentMethod        PaymentMethod? @map("payment_method")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  items OrderItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+/// Itens individuais de um Pedido do cardápio
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String  @map("order_id")
+  productId  String  @map("product_id")
+  quantity   Decimal
+  unitPrice  Decimal @map("unit_price")
+  totalPrice Decimal @map("total_price")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+/// Bairro com taxa de entrega para o cardápio público
+model DeliveryZone {
+  id           String   @id @default(uuid())
+  neighborhood String   @unique
+  fee          Decimal
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("delivery_zones")
+}
+
+/// Cadastro agregado de clientes do cardápio (por telefone), atualizado a
+/// cada pedido — base para segmentação/promoções futuras. Sem relação com
+/// Order (cada Order já guarda seu próprio snapshot de nome/telefone).
+model Customer {
+  id         String   @id @default(uuid())
+  name       String?
+  phone      String   @unique
+  orderCount Int      @default(0) @map("order_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("customers")
 }

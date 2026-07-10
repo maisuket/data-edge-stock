@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ShoppingCart,
   Plus,
@@ -13,14 +13,38 @@ import {
   Loader2,
   ChevronRight,
   Package,
+  Store,
+  Bike,
+  QrCode,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
+import {
+  OrderService,
+  type DeliveryType,
+  type PaymentMethod,
+} from "@/lib/services/orders";
+import { DeliveryZoneService } from "@/lib/services/delivery-zones";
+import { normalizeBrazilPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// ── Constantes ───────────────────────────────────────────────────────────────
+
+const CART_STORAGE_KEY = "cardapio_cart";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +60,13 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "BRL",
   }).format(value);
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof QrCode }[] = [
+  { value: "PIX", label: "Pix", icon: QrCode },
+  { value: "CREDIT_CARD", label: "Crédito", icon: CreditCard },
+  { value: "DEBIT_CARD", label: "Débito", icon: CreditCard },
+  { value: "CASH", label: "Dinheiro", icon: Banknote },
+];
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Pudim: "🍮",
@@ -65,9 +96,15 @@ function ProductCard({
   onRemove: () => void;
 }) {
   const emoji = getCategoryEmoji(product.category);
+  const isOutOfStock = product.currentStock <= 0;
+  const atStockLimit = !isOutOfStock && quantity >= product.currentStock;
 
   return (
-    <div className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+    <div
+      className={`group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col ${
+        isOutOfStock ? "opacity-60" : ""
+      }`}
+    >
       {/* Image / Placeholder */}
       <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {product.imageUrl ? (
@@ -80,6 +117,13 @@ function ProductCard({
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl select-none group-hover:scale-110 transition-transform duration-500">
             {emoji}
+          </div>
+        )}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <Badge className="bg-zinc-900/90 text-white text-xs px-2.5 py-1 rounded-full">
+              Esgotado
+            </Badge>
           </div>
         )}
       </div>
@@ -106,7 +150,11 @@ function ProductCard({
               : "Consultar"}
           </span>
 
-          {quantity === 0 ? (
+          {isOutOfStock ? (
+            <span className="text-xs font-medium text-zinc-400 px-3 py-1.5">
+              Indisponível
+            </span>
+          ) : quantity === 0 ? (
             <Button
               aria-label={`Adicionar ${product.name} ao carrinho`}
               size="sm"
@@ -130,7 +178,9 @@ function ProductCard({
               <button
                 aria-label={`Aumentar quantidade de ${product.name}`}
                 onClick={onAdd}
-                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                disabled={atStockLimit}
+                title={atStockLimit ? "Estoque máximo atingido" : undefined}
+                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -160,30 +210,108 @@ function CartDrawer({
   onClear: () => void;
 }) {
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("PICKUP");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "">("");
+  const qc = useQueryClient();
 
-  const total = items.reduce(
+  const { data: deliveryZones = [] } = useQuery({
+    queryKey: ["delivery-zones"],
+    queryFn: () => DeliveryZoneService.getPublic(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const selectedZone = deliveryZones.find(
+    (z) => z.neighborhood === selectedNeighborhood,
+  );
+  const deliveryFee =
+    deliveryType === "DELIVERY" ? (selectedZone?.fee ?? 0) : 0;
+
+  const subtotal = items.reduce(
     (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
     0,
   );
+  const total = subtotal + deliveryFee;
 
-  const handleOrder = () => {
-    const intro = customerName.trim()
-      ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
-      : `Olá! Gostaria de fazer um pedido:\n\n`;
+  const orderMutation = useMutation({
+    mutationFn: () => {
+      const normalizedPhone = normalizeBrazilPhone(customerPhone);
+      if (!normalizedPhone) {
+        throw new Error(
+          "Telefone inválido. Informe um número com DDD (ex: (92) 99999-9999).",
+        );
+      }
+      if (deliveryType === "DELIVERY" && !selectedNeighborhood) {
+        throw new Error("Escolha o bairro para calcular a taxa de entrega.");
+      }
+      if (!paymentMethod) {
+        throw new Error("Escolha a forma de pagamento.");
+      }
+      return OrderService.create({
+        customerName: customerName.trim() || undefined,
+        customerPhone: normalizedPhone,
+        notes: notes.trim() || undefined,
+        deliveryType,
+        deliveryNeighborhood:
+          deliveryType === "DELIVERY" ? selectedNeighborhood : undefined,
+        paymentMethod,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+        })),
+      });
+    },
+    onSuccess: (order) => {
+      const intro = customerName.trim()
+        ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
+        : `Olá! Gostaria de fazer um pedido:\n\n`;
 
-    const orderLines = items
-      .map(
-        (item) =>
-          `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
-      )
-      .join("\n");
+      const orderLines = items
+        .map(
+          (item) =>
+            `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
+        )
+        .join("\n");
 
-    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*`;
+      const deliveryLine =
+        deliveryType === "DELIVERY"
+          ? `\n\n🛵 Entrega: ${selectedNeighborhood} — ${formatCurrency(deliveryFee)}`
+          : `\n\n🏠 Retirada na loja`;
 
-    const phone = whatsappNumber.replace(/\D/g, "");
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
-  };
+      const paymentLabel = PAYMENT_METHODS.find(
+        (m) => m.value === paymentMethod,
+      )?.label;
+      const paymentLine = paymentLabel
+        ? `\n💳 Pagamento: ${paymentLabel}`
+        : "";
+
+      const notesBlock = notes.trim()
+        ? `\n\n📝 Observações: ${notes.trim()}`
+        : "";
+
+      const message = `${intro}${orderLines}${deliveryLine}${paymentLine}\n\n*Total: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
+
+      const phone = whatsappNumber.replace(/\D/g, "");
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank");
+
+      // Pedido enviado — começa um carrinho novo para o próximo cliente/pedido.
+      onClear();
+      onClose();
+    },
+    onError: (
+      e: Error & { response?: { data?: { message?: string } } },
+    ) => {
+      toast.error(
+        e?.response?.data?.message ??
+          e?.message ??
+          "Não foi possível registrar o pedido. Tente novamente.",
+      );
+      qc.invalidateQueries({ queryKey: ["menu-products"] });
+    },
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -264,7 +392,13 @@ function CartDrawer({
                   <button
                     aria-label={`Aumentar quantidade de ${item.product.name}`}
                     onClick={() => onAdd(item.product)}
-                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                    disabled={item.quantity >= item.product.currentStock}
+                    title={
+                      item.quantity >= item.product.currentStock
+                        ? "Estoque máximo atingido"
+                        : undefined
+                    }
+                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -286,8 +420,90 @@ function CartDrawer({
         )}
 
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+          {deliveryZones.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setDeliveryType("PICKUP")}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                    deliveryType === "PICKUP"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                  }`}
+                >
+                  <Store className="w-4 h-4" /> Retirar na loja
+                </button>
+                <button
+                  onClick={() => setDeliveryType("DELIVERY")}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                    deliveryType === "DELIVERY"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                  }`}
+                >
+                  <Bike className="w-4 h-4" /> Entrega
+                </button>
+              </div>
+
+              {deliveryType === "DELIVERY" && (
+                <Select
+                  value={selectedNeighborhood}
+                  onValueChange={setSelectedNeighborhood}
+                >
+                  <SelectTrigger className="rounded-xl text-sm w-full">
+                    <SelectValue placeholder="Escolha o bairro..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deliveryZones.map((zone) => (
+                      <SelectItem key={zone.id} value={zone.neighborhood}>
+                        {zone.neighborhood} — {formatCurrency(zone.fee)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              Forma de pagamento
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {PAYMENT_METHODS.map((method) => {
+                const Icon = method.icon;
+                return (
+                  <button
+                    key={method.value}
+                    onClick={() => setPaymentMethod(method.value)}
+                    className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                      paymentMethod === method.value
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" /> {method.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+          )}
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>Taxa de entrega</span>
+              <span>{formatCurrency(deliveryFee)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            <span>Total estimado</span>
+            <span>Total</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold text-base">
               {formatCurrency(total)}
             </span>
@@ -300,13 +516,35 @@ function CartDrawer({
             className="rounded-xl text-sm"
           />
 
+          <Input
+            placeholder="Seu WhatsApp com DDD (obrigatório)"
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            className="rounded-xl text-sm"
+          />
+
+          <Textarea
+            placeholder="Observações (opcional): preferências, ponto de retirada..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="rounded-xl text-sm resize-none"
+          />
+
           <Button
-            onClick={handleOrder}
-            disabled={!whatsappNumber || items.length === 0}
+            onClick={() => orderMutation.mutate()}
+            disabled={
+              !whatsappNumber || items.length === 0 || orderMutation.isPending
+            }
             className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white gap-2 h-11"
           >
-            <MessageCircle className="w-4 h-4" />
-            Pedir via WhatsApp
+            {orderMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <MessageCircle className="w-4 h-4" />
+            )}
+            {orderMutation.isPending ? "Enviando pedido..." : "Pedir via WhatsApp"}
           </Button>
 
           {!whatsappNumber && (
@@ -344,6 +582,7 @@ function ProductSkeleton() {
 
 export default function CardapioPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todos");
@@ -353,6 +592,55 @@ export default function CardapioPage() {
     queryFn: () => ProductService.getPublic(),
     staleTime: 1000 * 60 * 5,
   });
+
+  // Restaura o carrinho salvo assim que o catálogo carrega, descartando
+  // itens que não existem mais ou ficaram sem estoque.
+  useEffect(() => {
+    if (isCartHydrated || products.length === 0) return;
+
+    try {
+      const raw = localStorage.getItem(CART_STORAGE_KEY);
+      if (raw) {
+        const saved: { productId: string; quantity: number }[] =
+          JSON.parse(raw);
+        let removedAny = false;
+        const restored: CartItem[] = [];
+
+        for (const entry of saved) {
+          const product = products.find((p) => p.id === entry.productId);
+          if (!product || product.currentStock <= 0) {
+            removedAny = true;
+            continue;
+          }
+          const quantity = Math.min(entry.quantity, product.currentStock);
+          if (quantity > 0) restored.push({ product, quantity });
+        }
+
+        setCart(restored);
+        if (removedAny) {
+          toast.info(
+            "Alguns itens do seu carrinho não estão mais disponíveis e foram removidos.",
+          );
+        }
+      }
+    } catch {
+      // localStorage indisponível ou conteúdo corrompido — ignora silenciosamente
+    }
+
+    setIsCartHydrated(true);
+  }, [products, isCartHydrated]);
+
+  // Persiste o carrinho a cada mudança (só depois de restaurar o salvo,
+  // para não sobrescrever o localStorage com [] antes de carregar).
+  useEffect(() => {
+    if (!isCartHydrated) return;
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify(
+        cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+      ),
+    );
+  }, [cart, isCartHydrated]);
 
   const { data: whatsappSetting } = useQuery({
     queryKey: ["setting-whatsapp"],
@@ -385,12 +673,32 @@ export default function CardapioPage() {
       if (!map.has(p.category)) map.set(p.category, []);
       map.get(p.category)!.push(p);
     }
+    // Produtos esgotados aparecem por último dentro de cada categoria
+    for (const items of map.values()) {
+      items.sort((a, b) => {
+        const aOut = a.currentStock <= 0 ? 1 : 0;
+        const bOut = b.currentStock <= 0 ? 1 : 0;
+        return aOut - bOut;
+      });
+    }
     return map;
   }, [filtered]);
 
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
 
   const addToCart = (product: PublicProduct) => {
+    const currentQty =
+      cart.find((i) => i.product.id === product.id)?.quantity ?? 0;
+
+    if (currentQty >= product.currentStock) {
+      toast.warning(
+        `Só temos ${product.currentStock} ${
+          product.currentStock === 1 ? "unidade" : "unidades"
+        } de ${product.name} em estoque.`,
+      );
+      return;
+    }
+
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {

@@ -421,7 +421,6 @@ export class ProductsService {
     const products = await this.prisma.product.findMany({
       where: {
         salePrice: { gt: 0 },
-        currentStock: { gt: 0 },
       },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
       select: {
@@ -430,6 +429,7 @@ export class ProductsService {
         category: true,
         unit: true,
         salePrice: true,
+        currentStock: true,
         imageUrl: true,
         specifications: { select: { name: true, value: true } },
       },
@@ -438,6 +438,7 @@ export class ProductsService {
     return products.map((p) => ({
       ...p,
       salePrice: p.salePrice ? p.salePrice.toNumber() : null,
+      currentStock: p.currentStock.toNumber(),
     }));
   }
 
