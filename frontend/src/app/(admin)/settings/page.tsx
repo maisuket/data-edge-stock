@@ -85,6 +85,7 @@ export default function SettingsPage() {
   const [userData, setUserData] = useState<ProfileData | null>(null);
   const [loginImageUrl, setLoginImageUrl] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [sidebarLogoUrl, setSidebarLogoUrl] = useState("");
 
   // Usuários
   const [userSearch, setUserSearch] = useState("");
@@ -125,6 +126,12 @@ export default function SettingsPage() {
     SettingsService.getByKey("WHATSAPP_NUMBER")
       .then((res) => {
         if (res?.value) setWhatsappNumber(res.value);
+      })
+      .catch(console.error);
+
+    SettingsService.getByKey("SIDEBAR_LOGO_URL")
+      .then((res) => {
+        if (res?.value) setSidebarLogoUrl(res.value);
       })
       .catch(console.error);
   }, []);
