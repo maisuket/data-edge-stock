@@ -10,6 +10,10 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+// Rotas públicas onde um 401 nunca deve forçar redirecionamento para o login
+// do painel administrativo (ex: cardápio acessado por clientes anônimos).
+const PUBLIC_PATH_PREFIXES = ["/login", "/cardapio"];
+
 // Interceptor de Resposta
 api.interceptors.response.use(
   (response) => {
@@ -19,11 +23,15 @@ api.interceptors.response.use(
   (error) => {
     // Captura erros 401 (Não Autorizado) globalmente
     if (error.response?.status === 401) {
-      // Redireciona o usuário para o login se ele já não estiver na página de login
-      if (
+      // Redireciona o usuário para o login apenas se ele estiver em uma
+      // área autenticada — nunca em páginas públicas (ex: cardápio).
+      const isPublicPath =
         typeof window !== "undefined" &&
-        window.location.pathname !== "/login"
-      ) {
+        PUBLIC_PATH_PREFIXES.some((prefix) =>
+          window.location.pathname.startsWith(prefix),
+        );
+
+      if (typeof window !== "undefined" && !isPublicPath) {
         window.location.href = "/login";
       }
     }

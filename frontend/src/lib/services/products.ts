@@ -26,6 +26,7 @@ export interface PublicProduct {
   category: string;
   unit: string;
   salePrice: number | null;
+  currentStock: number;
   imageUrl?: string | null;
   specifications?: { name: string; value: string }[];
 }

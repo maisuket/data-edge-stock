@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ShoppingCart,
@@ -21,6 +21,11 @@ import { SettingsService } from "@/lib/services/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+
+// ── Constantes ───────────────────────────────────────────────────────────────
+
+const CART_STORAGE_KEY = "cardapio_cart";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -65,9 +70,15 @@ function ProductCard({
   onRemove: () => void;
 }) {
   const emoji = getCategoryEmoji(product.category);
+  const isOutOfStock = product.currentStock <= 0;
+  const atStockLimit = !isOutOfStock && quantity >= product.currentStock;
 
   return (
-    <div className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+    <div
+      className={`group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col ${
+        isOutOfStock ? "opacity-60" : ""
+      }`}
+    >
       {/* Image / Placeholder */}
       <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
         {product.imageUrl ? (
@@ -80,6 +91,13 @@ function ProductCard({
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl select-none group-hover:scale-110 transition-transform duration-500">
             {emoji}
+          </div>
+        )}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <Badge className="bg-zinc-900/90 text-white text-xs px-2.5 py-1 rounded-full">
+              Esgotado
+            </Badge>
           </div>
         )}
       </div>
@@ -106,7 +124,11 @@ function ProductCard({
               : "Consultar"}
           </span>
 
-          {quantity === 0 ? (
+          {isOutOfStock ? (
+            <span className="text-xs font-medium text-zinc-400 px-3 py-1.5">
+              Indisponível
+            </span>
+          ) : quantity === 0 ? (
             <Button
               aria-label={`Adicionar ${product.name} ao carrinho`}
               size="sm"
@@ -130,7 +152,9 @@ function ProductCard({
               <button
                 aria-label={`Aumentar quantidade de ${product.name}`}
                 onClick={onAdd}
-                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                disabled={atStockLimit}
+                title={atStockLimit ? "Estoque máximo atingido" : undefined}
+                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -160,6 +184,7 @@ function CartDrawer({
   onClear: () => void;
 }) {
   const [customerName, setCustomerName] = useState("");
+  const [notes, setNotes] = useState("");
 
   const total = items.reduce(
     (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
@@ -178,11 +203,19 @@ function CartDrawer({
       )
       .join("\n");
 
-    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*`;
+    const notesBlock = notes.trim()
+      ? `\n\n📝 Observações: ${notes.trim()}`
+      : "";
+
+    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*${notesBlock}`;
 
     const phone = whatsappNumber.replace(/\D/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
+
+    // Pedido enviado — começa um carrinho novo para o próximo cliente/pedido.
+    onClear();
+    onClose();
   };
 
   return (
@@ -264,7 +297,13 @@ function CartDrawer({
                   <button
                     aria-label={`Aumentar quantidade de ${item.product.name}`}
                     onClick={() => onAdd(item.product)}
-                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
+                    disabled={item.quantity >= item.product.currentStock}
+                    title={
+                      item.quantity >= item.product.currentStock
+                        ? "Estoque máximo atingido"
+                        : undefined
+                    }
+                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -298,6 +337,14 @@ function CartDrawer({
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
             className="rounded-xl text-sm"
+          />
+
+          <Textarea
+            placeholder="Observações (opcional): preferências, ponto de retirada..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="rounded-xl text-sm resize-none"
           />
 
           <Button
@@ -344,6 +391,7 @@ function ProductSkeleton() {
 
 export default function CardapioPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todos");
@@ -353,6 +401,55 @@ export default function CardapioPage() {
     queryFn: () => ProductService.getPublic(),
     staleTime: 1000 * 60 * 5,
   });
+
+  // Restaura o carrinho salvo assim que o catálogo carrega, descartando
+  // itens que não existem mais ou ficaram sem estoque.
+  useEffect(() => {
+    if (isCartHydrated || products.length === 0) return;
+
+    try {
+      const raw = localStorage.getItem(CART_STORAGE_KEY);
+      if (raw) {
+        const saved: { productId: string; quantity: number }[] =
+          JSON.parse(raw);
+        let removedAny = false;
+        const restored: CartItem[] = [];
+
+        for (const entry of saved) {
+          const product = products.find((p) => p.id === entry.productId);
+          if (!product || product.currentStock <= 0) {
+            removedAny = true;
+            continue;
+          }
+          const quantity = Math.min(entry.quantity, product.currentStock);
+          if (quantity > 0) restored.push({ product, quantity });
+        }
+
+        setCart(restored);
+        if (removedAny) {
+          toast.info(
+            "Alguns itens do seu carrinho não estão mais disponíveis e foram removidos.",
+          );
+        }
+      }
+    } catch {
+      // localStorage indisponível ou conteúdo corrompido — ignora silenciosamente
+    }
+
+    setIsCartHydrated(true);
+  }, [products, isCartHydrated]);
+
+  // Persiste o carrinho a cada mudança (só depois de restaurar o salvo,
+  // para não sobrescrever o localStorage com [] antes de carregar).
+  useEffect(() => {
+    if (!isCartHydrated) return;
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify(
+        cart.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+      ),
+    );
+  }, [cart, isCartHydrated]);
 
   const { data: whatsappSetting } = useQuery({
     queryKey: ["setting-whatsapp"],
@@ -385,12 +482,32 @@ export default function CardapioPage() {
       if (!map.has(p.category)) map.set(p.category, []);
       map.get(p.category)!.push(p);
     }
+    // Produtos esgotados aparecem por último dentro de cada categoria
+    for (const items of map.values()) {
+      items.sort((a, b) => {
+        const aOut = a.currentStock <= 0 ? 1 : 0;
+        const bOut = b.currentStock <= 0 ? 1 : 0;
+        return aOut - bOut;
+      });
+    }
     return map;
   }, [filtered]);
 
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
 
   const addToCart = (product: PublicProduct) => {
+    const currentQty =
+      cart.find((i) => i.product.id === product.id)?.quantity ?? 0;
+
+    if (currentQty >= product.currentStock) {
+      toast.warning(
+        `Só temos ${product.currentStock} ${
+          product.currentStock === 1 ? "unidade" : "unidades"
+        } de ${product.name} em estoque.`,
+      );
+      return;
+    }
+
     setCart((prev) => {
       const existing = prev.find((i) => i.product.id === product.id);
       if (existing) {
