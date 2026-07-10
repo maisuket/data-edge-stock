@@ -35,28 +35,29 @@ export class SystemService implements OnModuleInit {
       dbPath = path.resolve(process.cwd(), dbPath);
     }
 
-    this.logger.log(`Tentando fazer backup do banco em: ${dbPath}`);
-    return dbPath;
-  }
-
-  createBackupStream() {
-    const dbPath = this.getDatabasePath();
-
-    // Verifica se existe no caminho principal ou alternativo
-    let finalPath = dbPath;
-    if (!fs.existsSync(finalPath)) {
+    // Fallback: Tenta resolver caminho relativo comum em monorepo (ambiente de dev)
+    if (!fs.existsSync(dbPath)) {
       const alternativePath = path.resolve(
         process.cwd(),
         '../backend/prisma/dev.db',
       );
       if (fs.existsSync(alternativePath)) {
-        finalPath = alternativePath;
-      } else {
-        this.logger.error(`Banco de dados não encontrado em: ${dbPath}`);
-        throw new InternalServerErrorException(
-          'Arquivo de banco de dados não encontrado.',
-        );
+        dbPath = alternativePath;
       }
+    }
+
+    this.logger.log(`Tentando fazer backup do banco em: ${dbPath}`);
+    return dbPath;
+  }
+
+  createBackupStream() {
+    const finalPath = this.getDatabasePath();
+
+    if (!fs.existsSync(finalPath)) {
+      this.logger.error(`Banco de dados não encontrado em: ${finalPath}`);
+      throw new InternalServerErrorException(
+        'Arquivo de banco de dados não encontrado.',
+      );
     }
 
     this.logger.log(`Gerando stream de backup do arquivo: ${finalPath}`);
@@ -79,18 +80,10 @@ export class SystemService implements OnModuleInit {
 
   async createLocalBackup(prefix: string) {
     try {
-      const dbPath = this.getDatabasePath();
-      // Em dev, pode falhar se o caminho não for exato, então tentamos achar o arquivo real
-      let finalPath = dbPath;
+      const finalPath = this.getDatabasePath();
+
       if (!fs.existsSync(finalPath)) {
-        // Tenta resolver caminho relativo comum em monorepo
-        if (
-          fs.existsSync(path.resolve(process.cwd(), '../backend/prisma/dev.db'))
-        ) {
-          finalPath = path.resolve(process.cwd(), '../backend/prisma/dev.db');
-        } else {
-          return; // Silenciosamente falha em dev se não achar, para não poluir log
-        }
+        return; // Silenciosamente falha em dev se não achar, para não poluir log
       }
 
       const backupDir = path.join(path.dirname(finalPath), 'backups');
@@ -106,8 +99,10 @@ export class SystemService implements OnModuleInit {
       );
 
       void this.cleanOldBackups(backupDir, prefix);
-    } catch (error) {
-      this.logger.error(`❌ Falha no backup automático: ${error.message}`);
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Falha no backup automático: ${error?.message || error}`,
+      );
     }
   }
 
@@ -128,13 +123,19 @@ export class SystemService implements OnModuleInit {
   private async cleanOldBackups(dir: string, prefix: string) {
     try {
       const files = await fs.readdir(dir);
-      const backups = files
-        .filter((f) => f.startsWith(prefix) && f.endsWith('.db'))
-        .map((f) => ({
-          name: f,
-          time: fs.statSync(path.join(dir, f)).mtime.getTime(),
-        }))
-        .sort((a, b) => b.time - a.time);
+      const backupFiles = files.filter(
+        (f) => f.startsWith(prefix) && f.endsWith('.db'),
+      );
+
+      // Resolve os stats de forma assíncrona para não bloquear o event loop
+      const backupsWithStats = await Promise.all(
+        backupFiles.map(async (f) => {
+          const stat = await fs.stat(path.join(dir, f));
+          return { name: f, time: stat.mtime.getTime() };
+        }),
+      );
+
+      const backups = backupsWithStats.sort((a, b) => b.time - a.time);
 
       if (backups.length > 5) {
         const toDelete = backups.slice(5);
@@ -144,7 +145,9 @@ export class SystemService implements OnModuleInit {
         }
       }
     } catch (e) {
-      this.logger.warn(`Falha na rotina de limpeza de backups (${prefix}): ${(e as Error).message}`);
+      this.logger.warn(
+        `Falha na rotina de limpeza de backups (${prefix}): ${(e as Error).message}`,
+      );
     }
   }
 }
