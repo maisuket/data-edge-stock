@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ShoppingCart,
   Plus,
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
+import { OrderService } from "@/lib/services/orders";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -185,38 +186,57 @@ function CartDrawer({
 }) {
   const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
+  const qc = useQueryClient();
 
   const total = items.reduce(
     (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
     0,
   );
 
-  const handleOrder = () => {
-    const intro = customerName.trim()
-      ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
-      : `Olá! Gostaria de fazer um pedido:\n\n`;
+  const orderMutation = useMutation({
+    mutationFn: () =>
+      OrderService.create({
+        customerName: customerName.trim() || undefined,
+        notes: notes.trim() || undefined,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+        })),
+      }),
+    onSuccess: (order) => {
+      const intro = customerName.trim()
+        ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
+        : `Olá! Gostaria de fazer um pedido:\n\n`;
 
-    const orderLines = items
-      .map(
-        (item) =>
-          `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
-      )
-      .join("\n");
+      const orderLines = items
+        .map(
+          (item) =>
+            `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
+        )
+        .join("\n");
 
-    const notesBlock = notes.trim()
-      ? `\n\n📝 Observações: ${notes.trim()}`
-      : "";
+      const notesBlock = notes.trim()
+        ? `\n\n📝 Observações: ${notes.trim()}`
+        : "";
 
-    const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*${notesBlock}`;
+      const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
 
-    const phone = whatsappNumber.replace(/\D/g, "");
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+      const phone = whatsappNumber.replace(/\D/g, "");
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(url, "_blank");
 
-    // Pedido enviado — começa um carrinho novo para o próximo cliente/pedido.
-    onClear();
-    onClose();
-  };
+      // Pedido enviado — começa um carrinho novo para o próximo cliente/pedido.
+      onClear();
+      onClose();
+    },
+    onError: (e: { response?: { data?: { message?: string } } }) => {
+      toast.error(
+        e?.response?.data?.message ??
+          "Não foi possível registrar o pedido. Tente novamente.",
+      );
+      qc.invalidateQueries({ queryKey: ["menu-products"] });
+    },
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -348,12 +368,18 @@ function CartDrawer({
           />
 
           <Button
-            onClick={handleOrder}
-            disabled={!whatsappNumber || items.length === 0}
+            onClick={() => orderMutation.mutate()}
+            disabled={
+              !whatsappNumber || items.length === 0 || orderMutation.isPending
+            }
             className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white gap-2 h-11"
           >
-            <MessageCircle className="w-4 h-4" />
-            Pedir via WhatsApp
+            {orderMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <MessageCircle className="w-4 h-4" />
+            )}
+            {orderMutation.isPending ? "Enviando pedido..." : "Pedir via WhatsApp"}
           </Button>
 
           {!whatsappNumber && (

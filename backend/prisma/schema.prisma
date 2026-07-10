@@ -12,6 +12,13 @@ enum Role {
   ADMIN
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -70,6 +77,7 @@ model Product {
   stockMovements StockMovement[]
   priceHistories ProductPriceHistory[]
   saleItems      SaleItem[]
+  orderItems     OrderItem[]
 
   @@map("products")
 }
@@ -279,4 +287,38 @@ model SaleItem {
   product     Product  @relation(fields: [productId], references: [id])
 
   @@map("sale_items")
+}
+
+/// Pedido feito pelo cardápio público, antes de virar uma Sale/venda de fato
+model Order {
+  id           String      @id @default(uuid())
+  /// Código legível do pedido, ex: "PED-0001"
+  orderNumber  String      @unique @map("order_number")
+  customerName String?     @map("customer_name")
+  notes        String?
+  status       OrderStatus @default(PENDING)
+  totalAmount  Decimal     @map("total_amount")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  items OrderItem[]
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+/// Itens individuais de um Pedido do cardápio
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String  @map("order_id")
+  productId  String  @map("product_id")
+  quantity   Decimal
+  unitPrice  Decimal @map("unit_price")
+  totalPrice Decimal @map("total_price")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
 }

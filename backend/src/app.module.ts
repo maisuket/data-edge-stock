@@ -21,6 +21,7 @@ import { RecipesModule } from './recipes/recipes.module';
 import { ProductionsModule } from './productions/productions.module';
 import { SettingsModule } from './settings/settings.module';
 import { SalesModule } from './sales/sales.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { SalesModule } from './sales/sales.module';
     RecipesModule,
     ProductionsModule,
     SettingsModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [
