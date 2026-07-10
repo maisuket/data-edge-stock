@@ -22,6 +22,8 @@ import { ProductionsModule } from './productions/productions.module';
 import { SettingsModule } from './settings/settings.module';
 import { SalesModule } from './sales/sales.module';
 import { OrdersModule } from './orders/orders.module';
+import { DeliveryZonesModule } from './delivery-zones/delivery-zones.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { OrdersModule } from './orders/orders.module';
     ProductionsModule,
     SettingsModule,
     OrdersModule,
+    DeliveryZonesModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [

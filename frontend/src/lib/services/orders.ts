@@ -10,6 +10,8 @@ export type OrderStatus =
   | "CANCELLED"
   | "COMPLETED";
 
+export type DeliveryType = "PICKUP" | "DELIVERY";
+
 // ── Interfaces ─────────────────────────────────────────────────────────────
 
 export interface OrderItem {
@@ -31,6 +33,9 @@ export interface Order {
   totalAmount: number;
   paymentLinkUrl?: string | null;
   paymentPreferenceId?: string | null;
+  deliveryType: DeliveryType;
+  deliveryNeighborhood?: string | null;
+  deliveryFee: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +56,8 @@ export interface CreateOrderDto {
   customerName?: string;
   customerPhone: string;
   notes?: string;
+  deliveryType: DeliveryType;
+  deliveryNeighborhood?: string;
 }
 
 // ── Service ────────────────────────────────────────────────────────────────

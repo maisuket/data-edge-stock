@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { DeliveryType, OrderStatus, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -109,6 +109,32 @@ export class OrdersService {
         });
       }
 
+      // ── Taxa de entrega ────────────────────
+      let deliveryFee = new Prisma.Decimal(0);
+      let deliveryNeighborhood: string | null = null;
+
+      if (dto.deliveryType === DeliveryType.DELIVERY) {
+        if (!dto.deliveryNeighborhood) {
+          throw new BadRequestException(
+            'Informe o bairro para calcular a taxa de entrega.',
+          );
+        }
+
+        const zone = await tx.deliveryZone.findFirst({
+          where: { neighborhood: dto.deliveryNeighborhood, active: true },
+        });
+
+        if (!zone) {
+          throw new BadRequestException(
+            `Bairro "${dto.deliveryNeighborhood}" não encontrado ou indisponível para entrega.`,
+          );
+        }
+
+        deliveryFee = zone.fee;
+        deliveryNeighborhood = zone.neighborhood;
+        totalAmount = totalAmount.add(deliveryFee);
+      }
+
       const order = await tx.order.create({
         data: {
           orderNumber,
@@ -116,12 +142,29 @@ export class OrdersService {
           customerPhone: dto.customerPhone,
           notes: dto.notes,
           totalAmount,
+          deliveryType: dto.deliveryType,
+          deliveryNeighborhood,
+          deliveryFee,
           items: {
             create: orderItemsData,
           },
         },
         include: {
           items: { include: { product: { select: { name: true, unit: true } } } },
+        },
+      });
+
+      // ── Cadastro agregado de cliente por telefone ──
+      await tx.customer.upsert({
+        where: { phone: dto.customerPhone },
+        create: {
+          phone: dto.customerPhone,
+          name: dto.customerName,
+          orderCount: 1,
+        },
+        update: {
+          orderCount: { increment: 1 },
+          ...(dto.customerName ? { name: dto.customerName } : {}),
         },
       });
 
@@ -151,6 +194,7 @@ export class OrdersService {
       orders.map((o) => ({
         ...o,
         totalAmount: o.totalAmount.toNumber(),
+        deliveryFee: o.deliveryFee.toNumber(),
       })),
       pageMetaDto,
     );
@@ -173,6 +217,7 @@ export class OrdersService {
     return {
       ...order,
       totalAmount: order.totalAmount.toNumber(),
+      deliveryFee: order.deliveryFee.toNumber(),
       items: order.items.map((i) => ({
         ...i,
         quantity: i.quantity.toNumber(),
@@ -209,14 +254,24 @@ export class OrdersService {
       );
     }
 
+    const preferenceItems = order.items.map((item) => ({
+      title: item.product.name,
+      quantity: item.quantity.toNumber(),
+      unitPrice: item.unitPrice.toNumber(),
+    }));
+
+    if (order.deliveryFee.gt(0)) {
+      preferenceItems.push({
+        title: `Taxa de entrega — ${order.deliveryNeighborhood}`,
+        quantity: 1,
+        unitPrice: order.deliveryFee.toNumber(),
+      });
+    }
+
     const { preferenceId, paymentLink } =
       await this.mercadoPagoService.createPreference(
         order.orderNumber,
-        order.items.map((item) => ({
-          title: item.product.name,
-          quantity: item.quantity.toNumber(),
-          unitPrice: item.unitPrice.toNumber(),
-        })),
+        preferenceItems,
       );
 
     const updated = await this.prisma.order.update({
@@ -224,7 +279,11 @@ export class OrdersService {
       data: { paymentLinkUrl: paymentLink, paymentPreferenceId: preferenceId },
     });
 
-    return { ...updated, totalAmount: updated.totalAmount.toNumber() };
+    return {
+      ...updated,
+      totalAmount: updated.totalAmount.toNumber(),
+      deliveryFee: updated.deliveryFee.toNumber(),
+    };
   }
 
   // ──────────────────────────────────────────
@@ -281,7 +340,11 @@ export class OrdersService {
         data: { status },
       });
 
-      return { ...updatedOrder, totalAmount: updatedOrder.totalAmount.toNumber() };
+      return {
+        ...updatedOrder,
+        totalAmount: updatedOrder.totalAmount.toNumber(),
+        deliveryFee: updatedOrder.deliveryFee.toNumber(),
+      };
     });
   }
 

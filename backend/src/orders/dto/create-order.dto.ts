@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { DeliveryType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -52,4 +54,16 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiProperty({ enum: DeliveryType, example: DeliveryType.PICKUP })
+  @IsEnum(DeliveryType)
+  deliveryType: DeliveryType;
+
+  @ApiPropertyOptional({
+    description: 'Bairro para entrega — obrigatório quando deliveryType = DELIVERY',
+    example: 'Centro',
+  })
+  @IsOptional()
+  @IsString()
+  deliveryNeighborhood?: string;
 }

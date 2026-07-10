@@ -22,6 +22,8 @@ import {
   Search,
   AlertTriangle,
   Link2,
+  MapPin,
+  Power,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +34,10 @@ import {
 } from "../../../lib/services/profile";
 import { UserService, type User } from "../../../lib/services/users";
 import { SettingsService } from "../../../lib/services/settings";
+import {
+  DeliveryZoneService,
+  type DeliveryZone,
+} from "../../../lib/services/delivery-zones";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
@@ -94,6 +100,11 @@ export default function SettingsPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
 
+  // Bairros de entrega
+  const [newZoneName, setNewZoneName] = useState("");
+  const [newZoneFee, setNewZoneFee] = useState("");
+  const [zoneFeeEdits, setZoneFeeEdits] = useState<Record<string, string>>({});
+
   const {
     register,
     handleSubmit,
@@ -135,6 +146,55 @@ export default function SettingsPage() {
     queryKey: ["users", userPage, userSearch],
     queryFn: () => UserService.getAll(userPage, 10, userSearch),
     enabled: activeTab === "users",
+  });
+
+  // Load Bairros de Entrega
+  const { data: deliveryZones, isLoading: isLoadingZones } = useQuery({
+    queryKey: ["delivery-zones-admin"],
+    queryFn: () => DeliveryZoneService.getAll(),
+    enabled: activeTab === "appearance",
+  });
+
+  const invalidateZones = () => {
+    queryClient.invalidateQueries({ queryKey: ["delivery-zones-admin"] });
+    queryClient.invalidateQueries({ queryKey: ["delivery-zones"] });
+  };
+
+  const createZoneMutation = useMutation({
+    mutationFn: () =>
+      DeliveryZoneService.create({
+        neighborhood: newZoneName.trim(),
+        fee: parseFloat(newZoneFee) || 0,
+      }),
+    onSuccess: () => {
+      toast.success("Bairro cadastrado!");
+      setNewZoneName("");
+      setNewZoneFee("");
+      invalidateZones();
+    },
+    onError: () => toast.error("Erro ao cadastrar bairro."),
+  });
+
+  const updateZoneMutation = useMutation({
+    mutationFn: ({
+      id,
+      ...dto
+    }: {
+      id: string;
+      fee?: number;
+      active?: boolean;
+    }) => DeliveryZoneService.update(id, dto),
+    onSuccess: () => invalidateZones(),
+    onError: () => toast.error("Erro ao atualizar bairro."),
+  });
+
+  const deleteZoneMutation = useMutation({
+    mutationFn: (id: string) => DeliveryZoneService.delete(id),
+    onSuccess: () => {
+      toast.success("Bairro removido.");
+      invalidateZones();
+    },
+    onError: () => toast.error("Erro ao remover bairro."),
   });
 
   // Delete User
@@ -635,6 +695,162 @@ export default function SettingsPage() {
                         de login. Recomendamos imagens em alta resolução.
                       </p>
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                      <MapPin className="h-4 w-4" />
+                      Bairros de Entrega
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Cadastre os bairros que a loja entrega e a taxa de cada
+                      um. No cardápio, o cliente escolhe entre retirar na loja
+                      (grátis) ou entrega por bairro.
+                    </p>
+
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nome do bairro"
+                        value={newZoneName}
+                        onChange={(e) => setNewZoneName(e.target.value)}
+                        className="rounded-xl"
+                      />
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min={0}
+                        placeholder="Taxa (R$)"
+                        value={newZoneFee}
+                        onChange={(e) => setNewZoneFee(e.target.value)}
+                        className="rounded-xl w-32"
+                      />
+                      <Button
+                        onClick={() => createZoneMutation.mutate()}
+                        disabled={
+                          !newZoneName.trim() ||
+                          !newZoneFee ||
+                          createZoneMutation.isPending
+                        }
+                        className="rounded-xl shrink-0 gap-2"
+                      >
+                        {createZoneMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        Adicionar
+                      </Button>
+                    </div>
+
+                    {isLoadingZones ? (
+                      <Skeleton className="h-24 w-full rounded-xl" />
+                    ) : !deliveryZones || deliveryZones.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center border border-dashed border-border rounded-xl">
+                        Nenhum bairro cadastrado ainda.
+                      </p>
+                    ) : (
+                      <div className="rounded-md border border-border overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50 hover:bg-muted/50">
+                              <TableHead className="font-semibold">
+                                Bairro
+                              </TableHead>
+                              <TableHead className="font-semibold w-32">
+                                Taxa (R$)
+                              </TableHead>
+                              <TableHead className="font-semibold w-24">
+                                Ativo
+                              </TableHead>
+                              <TableHead className="text-right font-semibold w-16">
+                                Ações
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {deliveryZones.map((zone: DeliveryZone) => (
+                              <TableRow key={zone.id}>
+                                <TableCell
+                                  className={
+                                    zone.active
+                                      ? "text-foreground"
+                                      : "text-muted-foreground line-through"
+                                  }
+                                >
+                                  {zone.neighborhood}
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    step="0.5"
+                                    min={0}
+                                    value={
+                                      zoneFeeEdits[zone.id] ??
+                                      String(zone.fee)
+                                    }
+                                    onChange={(e) =>
+                                      setZoneFeeEdits((prev) => ({
+                                        ...prev,
+                                        [zone.id]: e.target.value,
+                                      }))
+                                    }
+                                    onBlur={(e) => {
+                                      const newFee = parseFloat(
+                                        e.target.value,
+                                      );
+                                      if (
+                                        !isNaN(newFee) &&
+                                        newFee !== zone.fee
+                                      ) {
+                                        updateZoneMutation.mutate({
+                                          id: zone.id,
+                                          fee: newFee,
+                                        });
+                                      }
+                                    }}
+                                    className="h-8 w-24 rounded-lg"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      updateZoneMutation.mutate({
+                                        id: zone.id,
+                                        active: !zone.active,
+                                      })
+                                    }
+                                    className={`h-8 gap-1.5 rounded-lg ${
+                                      zone.active
+                                        ? "text-[#4CAF50] hover:text-[#4CAF50]"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    <Power className="h-3.5 w-3.5" />
+                                    {zone.active ? "Ativo" : "Inativo"}
+                                  </Button>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() =>
+                                      deleteZoneMutation.mutate(zone.id)
+                                    }
+                                    className="rounded-xl hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

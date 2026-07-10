@@ -13,16 +13,26 @@ import {
   Loader2,
   ChevronRight,
   Package,
+  Store,
+  Bike,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ProductService, type PublicProduct } from "@/lib/services/products";
 import { SettingsService } from "@/lib/services/settings";
-import { OrderService } from "@/lib/services/orders";
+import { OrderService, type DeliveryType } from "@/lib/services/orders";
+import { DeliveryZoneService } from "@/lib/services/delivery-zones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // ── Constantes ───────────────────────────────────────────────────────────────
 
@@ -198,12 +208,27 @@ function CartDrawer({
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("PICKUP");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
   const qc = useQueryClient();
 
-  const total = items.reduce(
+  const { data: deliveryZones = [] } = useQuery({
+    queryKey: ["delivery-zones"],
+    queryFn: () => DeliveryZoneService.getPublic(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const selectedZone = deliveryZones.find(
+    (z) => z.neighborhood === selectedNeighborhood,
+  );
+  const deliveryFee =
+    deliveryType === "DELIVERY" ? (selectedZone?.fee ?? 0) : 0;
+
+  const subtotal = items.reduce(
     (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
     0,
   );
+  const total = subtotal + deliveryFee;
 
   const orderMutation = useMutation({
     mutationFn: () => {
@@ -213,10 +238,16 @@ function CartDrawer({
           "Telefone inválido. Informe um número com DDD (ex: (92) 99999-9999).",
         );
       }
+      if (deliveryType === "DELIVERY" && !selectedNeighborhood) {
+        throw new Error("Escolha o bairro para calcular a taxa de entrega.");
+      }
       return OrderService.create({
         customerName: customerName.trim() || undefined,
         customerPhone: normalizedPhone,
         notes: notes.trim() || undefined,
+        deliveryType,
+        deliveryNeighborhood:
+          deliveryType === "DELIVERY" ? selectedNeighborhood : undefined,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -235,11 +266,16 @@ function CartDrawer({
         )
         .join("\n");
 
+      const deliveryLine =
+        deliveryType === "DELIVERY"
+          ? `\n\n🛵 Entrega: ${selectedNeighborhood} — ${formatCurrency(deliveryFee)}`
+          : `\n\n🏠 Retirada na loja`;
+
       const notesBlock = notes.trim()
         ? `\n\n📝 Observações: ${notes.trim()}`
         : "";
 
-      const message = `${intro}${orderLines}\n\n*Total estimado: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
+      const message = `${intro}${orderLines}${deliveryLine}\n\n*Total: ${formatCurrency(total)}*${notesBlock}\n\n*Pedido #${order.orderNumber}*`;
 
       const phone = whatsappNumber.replace(/\D/g, "");
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -368,8 +404,66 @@ function CartDrawer({
         )}
 
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+          {deliveryZones.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setDeliveryType("PICKUP")}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                    deliveryType === "PICKUP"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                  }`}
+                >
+                  <Store className="w-4 h-4" /> Retirar na loja
+                </button>
+                <button
+                  onClick={() => setDeliveryType("DELIVERY")}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
+                    deliveryType === "DELIVERY"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
+                  }`}
+                >
+                  <Bike className="w-4 h-4" /> Entrega
+                </button>
+              </div>
+
+              {deliveryType === "DELIVERY" && (
+                <Select
+                  value={selectedNeighborhood}
+                  onValueChange={setSelectedNeighborhood}
+                >
+                  <SelectTrigger className="rounded-xl text-sm w-full">
+                    <SelectValue placeholder="Escolha o bairro..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deliveryZones.map((zone) => (
+                      <SelectItem key={zone.id} value={zone.neighborhood}>
+                        {zone.neighborhood} — {formatCurrency(zone.fee)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+          )}
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>Taxa de entrega</span>
+              <span>{formatCurrency(deliveryFee)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            <span>Total estimado</span>
+            <span>Total</span>
             <span className="text-emerald-600 dark:text-emerald-400 font-bold text-base">
               {formatCurrency(total)}
             </span>

@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Store,
   ClipboardList,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/lib/services/auth";
@@ -32,6 +33,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const mainMenuItems = [
   { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { href: "/orders", label: "Pedidos", icon: ClipboardList },
+  { href: "/customers", label: "Clientes", icon: Users },
   { href: "/sales", label: "Saídas/Vendas", icon: Store },
   { href: "/purchases", label: "Entradas/Compras", icon: ShoppingCart },
   { href: "/stock-history", label: "Movimentações", icon: ArrowLeftRight },
