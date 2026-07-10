@@ -296,6 +296,8 @@ model Order {
   /// Código legível do pedido, ex: "PED-0001"
   orderNumber  String      @unique @map("order_number")
   customerName String?     @map("customer_name")
+  /// Telefone/WhatsApp do cliente, normalizado com DDI (ex: "5592991433005")
+  customerPhone String?    @map("customer_phone")
   notes        String?
   status       OrderStatus @default(PENDING)
   totalAmount  Decimal     @map("total_amount")

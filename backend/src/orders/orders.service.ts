@@ -113,6 +113,7 @@ export class OrdersService {
         data: {
           orderNumber,
           customerName: dto.customerName,
+          customerPhone: dto.customerPhone,
           notes: dto.notes,
           totalAmount,
           items: {

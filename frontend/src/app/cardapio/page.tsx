@@ -43,6 +43,17 @@ const formatCurrency = (value: number) =>
     currency: "BRL",
   }).format(value);
 
+// Normaliza telefone BR pra formato com DDI (ex: "(92) 99143-3005" -> "5592991433005").
+// Retorna null se não parecer um telefone válido (DDD + 8 ou 9 dígitos, com ou sem "55").
+function normalizeBrazilPhone(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) return `55${digits}`;
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    return digits;
+  }
+  return null;
+}
+
 const CATEGORY_EMOJI: Record<string, string> = {
   Pudim: "🍮",
   Picolé: "🍦",
@@ -185,6 +196,7 @@ function CartDrawer({
   onClear: () => void;
 }) {
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const qc = useQueryClient();
 
@@ -194,15 +206,23 @@ function CartDrawer({
   );
 
   const orderMutation = useMutation({
-    mutationFn: () =>
-      OrderService.create({
+    mutationFn: () => {
+      const normalizedPhone = normalizeBrazilPhone(customerPhone);
+      if (!normalizedPhone) {
+        throw new Error(
+          "Telefone inválido. Informe um número com DDD (ex: (92) 99999-9999).",
+        );
+      }
+      return OrderService.create({
         customerName: customerName.trim() || undefined,
+        customerPhone: normalizedPhone,
         notes: notes.trim() || undefined,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
         })),
-      }),
+      });
+    },
     onSuccess: (order) => {
       const intro = customerName.trim()
         ? `Olá! Meu nome é *${customerName.trim()}* e gostaria de fazer um pedido:\n\n`
@@ -229,9 +249,12 @@ function CartDrawer({
       onClear();
       onClose();
     },
-    onError: (e: { response?: { data?: { message?: string } } }) => {
+    onError: (
+      e: Error & { response?: { data?: { message?: string } } },
+    ) => {
       toast.error(
         e?.response?.data?.message ??
+          e?.message ??
           "Não foi possível registrar o pedido. Tente novamente.",
       );
       qc.invalidateQueries({ queryKey: ["menu-products"] });
@@ -356,6 +379,14 @@ function CartDrawer({
             placeholder="Seu nome (opcional)"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
+            className="rounded-xl text-sm"
+          />
+
+          <Input
+            placeholder="Seu WhatsApp com DDD (obrigatório)"
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
             className="rounded-xl text-sm"
           />
 

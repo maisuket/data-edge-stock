@@ -25,6 +25,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   customerName?: string | null;
+  customerPhone?: string | null;
   notes?: string | null;
   status: OrderStatus;
   totalAmount: number;
@@ -48,6 +49,7 @@ export interface CreateOrderItemDto {
 export interface CreateOrderDto {
   items: CreateOrderItemDto[];
   customerName?: string;
+  customerPhone: string;
   notes?: string;
 }
 

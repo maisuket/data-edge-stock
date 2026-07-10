@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -33,6 +34,17 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   customerName?: string;
+
+  @ApiProperty({
+    description:
+      'Telefone/WhatsApp do cliente, apenas dígitos, com DDI (ex: 5592991433005)',
+    example: '5592991433005',
+  })
+  @IsString()
+  @Matches(/^\d{10,13}$/, {
+    message: 'Telefone inválido. Envie apenas dígitos, com DDI.',
+  })
+  customerPhone: string;
 
   @ApiPropertyOptional({
     description: 'Observações do cliente sobre o pedido',

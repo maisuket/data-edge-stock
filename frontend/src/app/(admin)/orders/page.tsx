@@ -18,6 +18,7 @@ import {
   Link2,
   Copy,
   DollarSign,
+  MessageCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -148,6 +149,12 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
     toast.success("Link copiado!");
   };
 
+  const handleOpenWhatsApp = (phone: string, orderNumber: string, link: string) => {
+    const message = `Olá${data?.customerName ? ` ${data.customerName}` : ""}! Segue o link de pagamento do seu pedido *#${orderNumber}*:\n\n${link}`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
+
   if (isLoading)
     return (
       <TableRow>
@@ -178,6 +185,12 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
           ))}
         </div>
 
+        {data.customerPhone && (
+          <div className="text-xs text-muted-foreground mb-1">
+            📱 {data.customerPhone}
+          </div>
+        )}
+
         {data.notes && (
           <div className="text-xs text-muted-foreground italic mb-3">
             📝 {data.notes}
@@ -199,6 +212,21 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
                 >
                   <Copy className="w-3 h-3" /> Copiar link
                 </Button>
+                {data.customerPhone && (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      handleOpenWhatsApp(
+                        data.customerPhone!,
+                        data.orderNumber,
+                        data.paymentLinkUrl!,
+                      )
+                    }
+                    className="h-7 text-xs gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white"
+                  >
+                    <MessageCircle className="w-3 h-3" /> Abrir WhatsApp
+                  </Button>
+                )}
               </>
             )}
             <Button
