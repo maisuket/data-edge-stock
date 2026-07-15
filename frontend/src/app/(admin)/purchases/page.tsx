@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Beaker,
   Calculator,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +20,7 @@ import {
   UNIT_SHORT,
 } from "../../../lib/services/ingredients";
 import { SupplierService } from "../../../lib/services/suppliers";
+import { PurchaseService, type Purchase } from "../../../lib/services/purchases";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,21 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
@@ -53,9 +70,13 @@ export default function ComprasPage() {
   const qc = useQueryClient();
 
   // ── Estados Gerais ───────────────────────────────────────────────────────
-  const [supplier, setSupplier] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<PurchaseItem[]>([]);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(
+    null,
+  );
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // ── Estados do Formulário de Item ────────────────────────────────────────
   const [selectedIngId, setSelectedIngId] = useState("");
@@ -80,6 +101,21 @@ export default function ComprasPage() {
     queryFn: () => SupplierService.getAll(1, 100, ""),
   });
   const suppliers = suppliersData?.data ?? [];
+
+  // Total de compras do dia via endpoint dedicado (sem limitação de paginação)
+  const { data: todayStats } = useQuery({
+    queryKey: ["purchases", "today"],
+    queryFn: () => PurchaseService.getTodayStats(),
+    refetchInterval: 30_000,
+  });
+  const todayPurchasesTotal = todayStats?.total ?? 0;
+
+  // Busca as compras recentes
+  const { data: purchasesData, isLoading: isLoadingPurchases } = useQuery({
+    queryKey: ["purchases"],
+    queryFn: () => PurchaseService.getAll(1, 10),
+  });
+  const recentPurchases = purchasesData?.data ?? [];
 
   // Variáveis derivadas úteis para a UI
   const selectedIngredient = ingredients.find((i) => i.id === selectedIngId);
@@ -141,7 +177,7 @@ export default function ComprasPage() {
   const savePurchaseMutation = useMutation({
     mutationFn: async () => {
       const payload = {
-        supplier: supplier || undefined,
+        supplierId: supplierId || undefined,
         notes: notes || undefined,
         items: items.map((item) => ({
           ingredientId: item.ingredientId,
@@ -157,6 +193,7 @@ export default function ComprasPage() {
     onSuccess: () => {
       toast.success("Compra registrada com sucesso!");
       qc.invalidateQueries({ queryKey: ["ingredients"] });
+      qc.invalidateQueries({ queryKey: ["purchases"] });
       router.push("/ingredients");
     },
     onError: () => {
@@ -167,23 +204,34 @@ export default function ComprasPage() {
   return (
     <div className="p-6 md:p-8 max-w-300 mx-auto space-y-6 animate-in fade-in duration-500 pb-24">
       {/* Cabeçalho */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-10 w-10 rounded-xl"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ShoppingCart className="w-8 h-8 text-emerald-600" />
-            Registrar Compra
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Adicione múltiplos insumos de uma mesma nota ou fornecimento.
-          </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-10 w-10 rounded-xl"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <ShoppingCart className="w-8 h-8 text-emerald-600" />
+              Registrar Compra
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Adicione múltiplos insumos de uma mesma nota ou fornecimento.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-primary/10 border border-primary/20 px-5 py-3 rounded-lg flex flex-col shrink-0 min-w-40 text-right">
+          <span className="text-[10px] font-bold text-primary uppercase tracking-widest mb-0.5">
+            Compras de Hoje
+          </span>
+          <span className="text-2xl font-black text-foreground tabular-nums tracking-tight">
+            {fmt.format(todayPurchasesTotal)}
+          </span>
         </div>
       </div>
 
@@ -202,15 +250,15 @@ export default function ComprasPage() {
                 </label>
                 <select
                   className="flex h-10 w-full items-center justify-between rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
+                  value={supplierId}
+                  onChange={(e) => setSupplierId(e.target.value)}
                   disabled={isLoadingSuppliers}
                 >
                   <option value="">
                     {isLoadingSuppliers ? "Carregando..." : "Nenhum (avulso)"}
                   </option>
                   {suppliers.map((sup: any) => (
-                    <option key={sup.id} value={sup.name}>
+                    <option key={sup.id} value={sup.id}>
                       {sup.name}
                     </option>
                   ))}
@@ -473,6 +521,162 @@ export default function ComprasPage() {
           </Card>
         </div>
       </div>
+
+      {/* Tabela de Últimas Compras */}
+      <Card className="border-border shadow-sm rounded-xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg">Últimas Compras Registradas</CardTitle>
+          <CardDescription>
+            Lista das 10 compras mais recentes registradas no sistema.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Data / Hora</TableHead>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead>Itens</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Observações</TableHead>
+                  <TableHead className="text-right w-16">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingPurchases ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-5 w-full rounded-md" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : recentPurchases.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      Nenhuma compra registrada recentemente.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  recentPurchases.map((purchase) => (
+                    <TableRow key={purchase.id}>
+                      <TableCell className="text-muted-foreground tabular-nums text-xs">
+                        {new Date(purchase.createdAt).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {purchase.supplier?.name || "Avulso"}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {purchase.lots.length === 1
+                          ? purchase.lots[0].ingredient?.name ||
+                            "Insumo excluído"
+                          : `${purchase.lots.length} itens`}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-foreground">
+                        {fmt.format(Number(purchase.totalCost))}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-50 truncate text-xs">
+                        {purchase.notes || "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Ver detalhes"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() => {
+                            setSelectedPurchase(purchase);
+                            setIsViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog de Detalhes da Compra */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-125 w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Compra</DialogTitle>
+          </DialogHeader>
+          {selectedPurchase && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground bg-muted/10 p-3 rounded-lg border border-border">
+                <p>
+                  <strong className="text-foreground">Data:</strong>{" "}
+                  {new Date(selectedPurchase.createdAt).toLocaleString(
+                    "pt-BR",
+                  )}
+                </p>
+                <p className="mt-1">
+                  <strong className="text-foreground">Fornecedor:</strong>{" "}
+                  {selectedPurchase.supplier?.name || "Avulso"}
+                </p>
+                <p className="mt-1">
+                  <strong className="text-foreground">Observações:</strong>{" "}
+                  {selectedPurchase.notes || "-"}
+                </p>
+              </div>
+              <div className="max-h-[45vh] overflow-y-auto pr-2 space-y-2">
+                {selectedPurchase.lots.map((lot) => (
+                  <div
+                    key={lot.id}
+                    className="flex justify-between items-center bg-muted/30 p-3 rounded-lg border border-border"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm text-foreground">
+                        {lot.ingredient?.name || "Insumo excluído"}
+                        {lot.brand && (
+                          <span className="ml-1.5 text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded">
+                            {lot.brand}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-0.5">
+                        {Number(lot.quantity).toLocaleString("pt-BR")}{" "}
+                        {UNIT_SHORT[lot.ingredient?.unit] ??
+                          lot.ingredient?.unit}{" "}
+                        x {fmt.format(Number(lot.unitCost))}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-sm text-foreground tabular-nums">
+                      {fmt.format(Number(lot.totalCost))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t">
+                <span className="font-semibold text-muted-foreground">
+                  Total:
+                </span>
+                <span className="font-bold text-xl text-primary tabular-nums">
+                  {fmt.format(Number(selectedPurchase.totalCost))}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -108,7 +108,7 @@ export interface BuyBulkItemDto {
 
 export interface BuyBulkDto {
   items: BuyBulkItemDto[];
-  supplier?: string;
+  supplierId?: string;
   notes?: string;
 }
 
