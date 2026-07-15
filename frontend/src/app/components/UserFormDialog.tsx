@@ -68,7 +68,7 @@ export function UserFormDialog({
       if (userToEdit) {
         setFormData({
           name: userToEdit.name,
-          email: userToEdit.email,
+          email: userToEdit.email ?? "",
           username: userToEdit.username,
           password: "",
           role: userToEdit.role,
@@ -103,6 +103,7 @@ export function UserFormDialog({
 
       const payload = {
         ...formData,
+        email: formData.email.trim() || undefined,
         role: formData.role as "USER" | "ADMIN",
       };
 
@@ -170,7 +171,7 @@ export function UserFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail *</Label>
+              <Label htmlFor="email">E-mail (opcional)</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -180,7 +181,6 @@ export function UserFormDialog({
                   onChange={(e) => handleChange("email", e.target.value)}
                   className="pl-9 rounded-xl transition-all duration-300 focus-visible:ring-primary/20"
                   placeholder="joao@empresa.com"
-                  required
                 />
               </div>
             </div>

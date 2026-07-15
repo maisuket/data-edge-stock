@@ -514,7 +514,7 @@ export default function SettingsPage() {
                               </div>
                             </TableCell>
                             <TableCell className="text-muted-foreground">
-                              {user.email}
+                              {user.email || "—"}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">{user.role}</Badge>

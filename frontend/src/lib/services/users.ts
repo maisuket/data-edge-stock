@@ -4,7 +4,7 @@ import type { Page } from "./products";
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   username: string;
   role: "SUPER_ADMIN" | "ADMIN" | "USER";
   createdAt: string;

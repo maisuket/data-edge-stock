@@ -9,8 +9,8 @@ export class UserEntity {
   @ApiProperty({ example: 'john.doe' })
   username: string;
 
-  @ApiProperty({ example: 'john.doe@email.com' })
-  email: string;
+  @ApiProperty({ example: 'john.doe@email.com', required: false })
+  email: string | null;
 
   @ApiProperty({ example: 'John Doe' })
   name: string;

@@ -34,18 +34,22 @@ export class UsersService {
       );
     }
 
+    // Cuidado: um branch `{ email: undefined }` dentro do OR vira `{}` pro
+    // Prisma, que combina com qualquer registro — só inclui a checagem de
+    // email quando ele foi de fato informado.
+    const duplicateConditions: Array<{ email?: string; username?: string }> =
+      [{ username: createUserDto.username }];
+    if (createUserDto.email) {
+      duplicateConditions.push({ email: createUserDto.email });
+    }
+
     const userExists = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: createUserDto.email },
-          { username: createUserDto.username },
-        ],
-      },
+      where: { OR: duplicateConditions },
     });
 
     if (userExists) {
       this.logger.warn(
-        `Tentativa de cadastro duplicado: ${createUserDto.email}`,
+        `Tentativa de cadastro duplicado: ${createUserDto.username}`,
       ); // LOG WARN
       throw new ConflictException('Email ou Username já cadastrados.');
     }
