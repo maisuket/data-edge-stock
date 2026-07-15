@@ -67,19 +67,27 @@ export class UsersService {
     return new UserEntity(user);
   }
 
-  async findAll(pageOptionsDto: PageOptionsDto): Promise<PageDto<UserEntity>> {
+  async findAll(
+    pageOptionsDto: PageOptionsDto,
+    actingRole: Role,
+  ): Promise<PageDto<UserEntity>> {
     const queryBuilder = this.prisma.user;
+
+    // ADMIN não enxerga contas SUPER_ADMIN na listagem — nem a existência delas.
+    const where =
+      actingRole === Role.ADMIN ? { role: { not: Role.SUPER_ADMIN } } : {};
 
     // Transaction para buscar os itens e a contagem total ao mesmo tempo
     const [users, itemCount] = await this.prisma.$transaction([
       queryBuilder.findMany({
+        where,
         skip: pageOptionsDto.skip,
         take: pageOptionsDto.take,
         orderBy: {
           createdAt: pageOptionsDto.order,
         },
       }),
-      queryBuilder.count(),
+      queryBuilder.count({ where }),
     ]);
 
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });

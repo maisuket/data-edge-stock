@@ -54,9 +54,9 @@ export class UsersController {
   @ApiOperation({ summary: 'Listar usuários com paginação' })
   // No Swagger, explicamos que retorna um PageDto contendo UserEntity
   @ApiResponse({ status: 200, description: 'Lista paginada.', type: PageDto })
-  findAll(@Query() pageOptionsDto: PageOptionsDto) {
+  findAll(@Query() pageOptionsDto: PageOptionsDto, @Request() req) {
     // @Query pega os params da URL
-    return this.usersService.findAll(pageOptionsDto);
+    return this.usersService.findAll(pageOptionsDto, req.user.role);
   }
 
   @Get(':id')
