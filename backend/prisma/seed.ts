@@ -36,7 +36,7 @@ async function main() {
         username: adminUsername,
         name: 'Administrador do Sistema',
         password: hashedPassword,
-        role: 'ADMIN',
+        role: 'SUPER_ADMIN',
       },
     });
 

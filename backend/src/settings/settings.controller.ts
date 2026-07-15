@@ -25,10 +25,10 @@ export class SettingsController {
     return this.settingsService.findOne(key);
   }
 
-  // PUT é protegido e restrito para Admins
+  // PUT é protegido e restrito ao super admin (identidade/marca da instância)
   @Put(':key')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar ou criar uma configuração (Upsert)' })
   update(

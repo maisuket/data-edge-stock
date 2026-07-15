@@ -247,6 +247,13 @@ export default function SettingsPage() {
 
   const getInitials = (name: string) => name.substring(0, 2).toUpperCase();
 
+  const currentRole = userData?.role;
+  const isSuperAdmin = currentRole === "SUPER_ADMIN";
+  const canManageUsers = currentRole === "SUPER_ADMIN" || currentRole === "ADMIN";
+  /** ADMIN só pode mexer em contas de funcionário (USER) — SUPER_ADMIN mexe em qualquer uma */
+  const canManageTargetUser = (target: User) =>
+    isSuperAdmin || target.role === "USER";
+
   return (
     <div className="p-8 max-w-7xl mx-auto pb-10 animate-in fade-in duration-500">
       <div className="flex items-center justify-between border-b border-border pb-6 mb-8">
@@ -274,20 +281,24 @@ export default function SettingsPage() {
               <UserCircle className="mr-2 h-4 w-4" />
               Meu Perfil
             </TabsTrigger>
-            <TabsTrigger
-              value="users"
-              className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger
-              value="appearance"
-              className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
-            >
-              <Sun className="mr-2 h-4 w-4" />
-              Aparência
-            </TabsTrigger>
+            {canManageUsers && (
+              <TabsTrigger
+                value="users"
+                className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Usuários
+              </TabsTrigger>
+            )}
+            {isSuperAdmin && (
+              <TabsTrigger
+                value="appearance"
+                className="w-full justify-start px-4 py-2.5 h-10 text-sm font-medium hover:bg-muted/50 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border border-transparent data-[state=active]:border-primary/20 rounded-xl transition-all duration-300 shadow-none data-[state=active]:shadow-sm"
+              >
+                <Sun className="mr-2 h-4 w-4" />
+                Aparência
+              </TabsTrigger>
+            )}
           </TabsList>
         </aside>
 
@@ -510,22 +521,26 @@ export default function SettingsPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditUser(user)}
-                                  className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-amber-500/10"
-                                >
-                                  <Pencil className="h-4 w-4 text-amber-500" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteUser(user)}
-                                  className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-destructive/10"
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
+                                {canManageTargetUser(user) && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleEditUser(user)}
+                                      className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-amber-500/10"
+                                    >
+                                      <Pencil className="h-4 w-4 text-amber-500" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleDeleteUser(user)}
+                                      className="rounded-xl transition-all duration-300 hover:scale-110 hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-500" />
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -917,6 +932,7 @@ export default function SettingsPage() {
           queryClient.invalidateQueries({ queryKey: ["users"] });
         }}
         userToEdit={editingUser}
+        actingRole={(currentRole as "SUPER_ADMIN" | "ADMIN" | "USER") ?? "USER"}
       />
 
       <ConfirmDialog

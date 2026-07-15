@@ -40,6 +40,8 @@ interface UserFormDialogProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   userToEdit?: User | null;
+  /** Permissão de quem está logado — define quais roles podem ser atribuídas */
+  actingRole: "SUPER_ADMIN" | "ADMIN" | "USER";
 }
 
 export function UserFormDialog({
@@ -47,7 +49,9 @@ export function UserFormDialog({
   onOpenChange,
   onSuccess,
   userToEdit,
+  actingRole,
 }: UserFormDialogProps) {
+  const canAssignElevatedRoles = actingRole === "SUPER_ADMIN";
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -200,15 +204,28 @@ export function UserFormDialog({
                 <Select
                   value={formData.role}
                   onValueChange={(val) => handleChange("role", val)}
+                  disabled={!canAssignElevatedRoles}
                 >
                   <SelectTrigger className="w-full rounded-xl transition-all duration-300 focus-visible:ring-primary/20">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USER">Usuário Comum</SelectItem>
-                    <SelectItem value="ADMIN">Administrador</SelectItem>
+                    {canAssignElevatedRoles && (
+                      <>
+                        <SelectItem value="ADMIN">Administrador</SelectItem>
+                        <SelectItem value="SUPER_ADMIN">
+                          Super Admin
+                        </SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
+                {!canAssignElevatedRoles && (
+                  <p className="text-xs text-muted-foreground">
+                    Você só pode criar/editar contas de funcionário.
+                  </p>
+                )}
               </div>
             </div>
 
