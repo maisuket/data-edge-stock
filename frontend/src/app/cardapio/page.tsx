@@ -156,7 +156,7 @@ function ProductCard({
         </div>
 
         <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="font-bold text-emerald-600 dark:text-emerald-400 text-base">
+          <span className="font-bold text-primary text-base">
             {product.salePrice !== null
               ? formatCurrency(product.salePrice)
               : "Consultar"}
@@ -171,7 +171,7 @@ function ProductCard({
               aria-label={`Adicionar ${product.name} ao carrinho`}
               size="sm"
               onClick={onAdd}
-              className="h-8 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs gap-1"
+              className="h-8 px-3 rounded-xl bg-primary hover:bg-[#A65E2E] text-primary-foreground text-xs gap-1"
             >
               <Plus className="w-3 h-3" /> Adicionar
             </Button>
@@ -192,7 +192,7 @@ function ProductCard({
                 onClick={onAdd}
                 disabled={atStockLimit}
                 title={atStockLimit ? "Estoque máximo atingido" : undefined}
-                className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
+                className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-[#A65E2E] transition-colors disabled:opacity-40 disabled:hover:bg-primary disabled:cursor-not-allowed"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -350,8 +350,8 @@ function CartDrawer({
               </button>
             </div>
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-9 h-9 text-emerald-500" />
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <CheckCircle2 className="w-9 h-9 text-primary" />
               </div>
               <div>
                 <p className="font-bold text-lg text-zinc-900 dark:text-zinc-100">
@@ -392,11 +392,11 @@ function CartDrawer({
           <>
         <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-emerald-500" />
+            <ShoppingCart className="w-5 h-5 text-primary" />
             <span className="font-semibold text-zinc-900 dark:text-zinc-100">
               Meu Pedido
             </span>
-            <Badge className="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+            <Badge className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
               {items.reduce((s, i) => s + i.quantity, 0)}
             </Badge>
           </div>
@@ -468,7 +468,7 @@ function CartDrawer({
                         ? "Estoque máximo atingido"
                         : undefined
                     }
-                    className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:hover:bg-emerald-500 disabled:cursor-not-allowed"
+                    className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-[#A65E2E] transition-colors disabled:opacity-40 disabled:hover:bg-primary disabled:cursor-not-allowed"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -497,7 +497,7 @@ function CartDrawer({
                   onClick={() => setDeliveryType("PICKUP")}
                   className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
                     deliveryType === "PICKUP"
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
                   }`}
                 >
@@ -507,7 +507,7 @@ function CartDrawer({
                   onClick={() => setDeliveryType("DELIVERY")}
                   className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
                     deliveryType === "DELIVERY"
-                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
                   }`}
                 >
@@ -548,7 +548,7 @@ function CartDrawer({
                     onClick={() => setPaymentMethod(method.value)}
                     className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-sm font-medium transition-colors ${
                       paymentMethod === method.value
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        ? "border-primary bg-primary/10 text-primary"
                         : "border-zinc-200 dark:border-zinc-700 text-zinc-500"
                     }`}
                   >
@@ -574,7 +574,7 @@ function CartDrawer({
 
           <div className="flex justify-between text-sm font-medium text-zinc-900 dark:text-zinc-100">
             <span>Total</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold text-base">
+            <span className="text-primary font-bold text-base">
               {formatCurrency(total)}
             </span>
           </div>
@@ -870,7 +870,7 @@ export default function CardapioPage() {
             <span className="relative">
               <ShoppingCart className="w-5 h-5 text-zinc-700 dark:text-zinc-300" />
               {totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
                   {totalItems > 9 ? "9+" : totalItems}
                 </span>
               )}
@@ -905,7 +905,7 @@ export default function CardapioPage() {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 ${
                   activeCategory === cat
-                    ? "bg-emerald-500 text-white shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 }`}
               >
@@ -933,7 +933,7 @@ export default function CardapioPage() {
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="text-xs text-emerald-500 hover:underline"
+                className="text-xs text-primary hover:underline"
               >
                 Limpar busca
               </button>
@@ -975,7 +975,7 @@ export default function CardapioPage() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 sm:hidden animate-in slide-in-from-bottom-4 duration-300">
           <button
             onClick={() => setIsCartOpen(true)}
-            className="flex items-center gap-3 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-lg hover:bg-emerald-600 transition-all duration-200 hover:scale-105"
+            className="flex items-center gap-3 bg-primary text-primary-foreground px-5 py-3 rounded-2xl shadow-lg hover:bg-[#A65E2E] transition-all duration-200 hover:scale-105"
           >
             <ShoppingCart className="w-5 h-5" />
             <span className="font-semibold text-sm">
