@@ -46,6 +46,7 @@ model User {
   stockMovements StockMovement[]
   priceHistories ProductPriceHistory[]
   sales          Sale[]
+  purchases      Purchase[]
 
   @@map("users")
 }
@@ -61,6 +62,7 @@ model Supplier {
   updatedAt      DateTime        @updatedAt
   ingredientLots IngredientLot[]
   stockMovements StockMovement[]
+  purchases      Purchase[]
 
   @@map("suppliers")
 }
@@ -195,12 +197,33 @@ model IngredientLot {
   purchasedAt  DateTime   @default(now()) @map("purchased_at")
   expiresAt    DateTime?  @map("expires_at")
   supplierId   String?    @map("supplier_id")
+  /// Compra (nota) que originou este lote — nulo em lotes anteriores a essa funcionalidade
+  purchaseId   String?    @map("purchase_id")
   createdAt    DateTime   @default(now()) @map("created_at")
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
   supplier     Supplier?  @relation(fields: [supplierId], references: [id])
+  purchase     Purchase?  @relation(fields: [purchaseId], references: [id])
 
   @@index([expiresAt])
   @@map("ingredient_lots")
+}
+
+/// Cabeçalho de uma compra/nota — agrupa os lotes (IngredientLot) comprados juntos
+model Purchase {
+  id         String   @id @default(uuid())
+  /// Soma do totalCost de todos os itens/lotes desta compra
+  totalCost  Decimal  @map("total_cost")
+  notes      String?
+  supplierId String?  @map("supplier_id")
+  userId     String   @map("user_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  supplier Supplier?       @relation(fields: [supplierId], references: [id])
+  user     User            @relation(fields: [userId], references: [id])
+  lots     IngredientLot[]
+
+  @@index([createdAt])
+  @@map("purchases")
 }
 
 /// Item da receita: qual insumo e quanto é usado por lote (rendimento) da receita

@@ -252,6 +252,21 @@ export class IngredientsService {
     const result = await this.prisma.$transaction(async (tx) => {
       const processedItems: any[] = [];
 
+      // Cabeçalho da compra — agrupa os lotes criados abaixo pra permitir
+      // rastrear depois "o que comprei junto, de quem, e por quanto".
+      const totalCost = dto.items.reduce(
+        (sum, item) => sum.add(new Prisma.Decimal(item.totalCost)),
+        new Prisma.Decimal(0),
+      );
+      const purchase = await tx.purchase.create({
+        data: {
+          userId,
+          notes: dto.notes,
+          supplierId: dto.supplierId,
+          totalCost,
+        },
+      });
+
       for (const item of dto.items) {
         const ingredient = await tx.ingredient.findUnique({
           where: { id: item.ingredientId },
@@ -295,6 +310,7 @@ export class IngredientsService {
             expiresAt: item.expiresAt ? new Date(item.expiresAt) : null,
             brand: item.brand ?? null,
             supplierId: item.supplierId ?? null,
+            purchaseId: purchase.id,
           },
         });
 

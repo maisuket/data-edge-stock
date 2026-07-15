@@ -59,12 +59,12 @@ export class BuyBulkDto {
   items: BuyBulkItemDto[];
 
   @ApiPropertyOptional({
-    example: 'Fornecedor XYZ',
-    description: 'Nome do fornecedor',
+    example: 'uuid-do-fornecedor',
+    description: 'ID do fornecedor desta compra',
   })
   @IsOptional()
   @IsString()
-  supplier?: string;
+  supplierId?: string;
 
   @ApiPropertyOptional({
     example: 'Nota fiscal nº 12345',
