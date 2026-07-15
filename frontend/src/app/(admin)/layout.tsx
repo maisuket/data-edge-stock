@@ -31,11 +31,17 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // --- Itens do Menu ---
-const mainMenuItems = [
+const overviewMenuItems = [
   { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-  { href: "/orders", label: "Pedidos", icon: ClipboardList },
+];
+
+const salesMenuItems = [
+  { href: "/orders", label: "Pedidos do Cardápio", icon: ClipboardList },
   { href: "/customers", label: "Clientes", icon: Users },
-  { href: "/sales", label: "Saídas/Vendas", icon: Store },
+  { href: "/sales", label: "Venda Balcão (PDV)", icon: Store },
+];
+
+const stockMenuItems = [
   { href: "/purchases", label: "Entradas/Compras", icon: ShoppingCart },
   { href: "/stock-history", label: "Movimentações", icon: ArrowLeftRight },
 ];
@@ -209,8 +215,20 @@ export default function AdminLayout({
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <NavGroup
-            title="Operações"
-            items={mainMenuItems}
+            title="Início"
+            items={overviewMenuItems}
+            pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
+          />
+          <NavGroup
+            title="Vendas & Pedidos"
+            items={salesMenuItems}
+            pathname={pathname}
+            onItemClick={() => setIsSidebarOpen(false)}
+          />
+          <NavGroup
+            title="Estoque"
+            items={stockMenuItems}
             pathname={pathname}
             onItemClick={() => setIsSidebarOpen(false)}
           />
