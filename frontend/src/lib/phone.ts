@@ -10,3 +10,22 @@ export function normalizeBrazilPhone(raw: string): string | null {
   }
   return null;
 }
+
+/**
+ * Formata progressivamente o telefone digitado no padrão BR:
+ * "(92) 9914-3300" (fixo, 8 dígitos locais) ou "(92) 99143-3005" (celular, 9 dígitos).
+ * Usado para mascarar o campo enquanto o usuário digita.
+ */
+export function formatBrazilPhoneInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 11);
+  if (digits.length === 0) return "";
+
+  const ddd = digits.slice(0, 2);
+  if (digits.length <= 2) return `(${ddd}`;
+
+  const rest = digits.slice(2);
+  if (rest.length <= 4) return `(${ddd}) ${rest}`;
+
+  const splitAt = rest.length > 8 ? 5 : 4;
+  return `(${ddd}) ${rest.slice(0, splitAt)}-${rest.slice(splitAt)}`;
+}
