@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Package,
@@ -21,10 +22,12 @@ import {
   Store,
   ClipboardList,
   Users,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { authService } from "@/lib/services/auth";
 import { SettingsService } from "@/lib/services/settings";
+import { OrderService } from "@/lib/services/orders";
 
 // Componentes Shadcn
 import { Button } from "@/components/ui/button";
@@ -67,11 +70,13 @@ function NavGroup({
   items,
   pathname,
   onItemClick,
+  badges,
 }: {
   title: string;
   items: any[];
   pathname: string;
   onItemClick?: () => void;
+  badges?: Record<string, number>;
 }) {
   return (
     <div className="mb-6 last:mb-0">
@@ -85,6 +90,7 @@ function NavGroup({
             item.href === "/dashboard"
               ? pathname === item.href
               : pathname.startsWith(item.href);
+          const badgeCount = badges?.[item.href] ?? 0;
 
           return (
             <Link
@@ -114,9 +120,22 @@ function NavGroup({
                   }`}
                 />
               </div>
-              <span className="truncate tracking-wide">{item.label}</span>
+              <span className="truncate tracking-wide flex-1">
+                {item.label}
+              </span>
+              {badgeCount > 0 && (
+                <span
+                  className={`shrink-0 min-w-5 h-5 px-1.5 rounded-full text-[11px] font-bold flex items-center justify-center tabular-nums ${
+                    isActive
+                      ? "bg-white/20 text-sidebar-primary-foreground"
+                      : "bg-red-500 text-white"
+                  }`}
+                >
+                  {badgeCount > 99 ? "99+" : badgeCount}
+                </span>
+              )}
               {isActive && (
-                <ChevronRight className="w-4 h-4 ml-auto opacity-60 shrink-0" />
+                <ChevronRight className="w-4 h-4 ml-1 opacity-60 shrink-0" />
               )}
             </Link>
           );
@@ -161,6 +180,15 @@ export default function AdminLayout({
       })
       .catch(console.error);
   }, []);
+
+  // Contagem de pedidos aguardando ação, exibida como badge no menu
+  const { data: pendingOrdersPage } = useQuery({
+    queryKey: ["orders", "pending-count"],
+    queryFn: () => OrderService.getAll(1, 1, "PENDING"),
+    refetchInterval: 30_000,
+  });
+  const pendingOrdersCount = pendingOrdersPage?.meta.itemCount ?? 0;
+  const salesBadges = { "/orders": pendingOrdersCount };
 
   const handleLogout = async () => {
     toast.info("Você saiu do sistema.");
@@ -212,6 +240,20 @@ export default function AdminLayout({
           </button>
         </div>
 
+        {/* Atalho para o cardápio público */}
+        <div className="px-4 pt-4 shrink-0">
+          <a
+            href="/cardapio"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-sidebar-border bg-sidebar-accent/30 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm font-medium transition-all duration-300"
+          >
+            <Store className="w-4 h-4 shrink-0" />
+            <span className="flex-1">Ver Cardápio</span>
+            <ExternalLink className="w-3.5 h-3.5 opacity-60 shrink-0" />
+          </a>
+        </div>
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <NavGroup
@@ -225,6 +267,7 @@ export default function AdminLayout({
             items={salesMenuItems}
             pathname={pathname}
             onItemClick={() => setIsSidebarOpen(false)}
+            badges={salesBadges}
           />
           <NavGroup
             title="Estoque"
