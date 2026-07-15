@@ -19,6 +19,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 import { UserEntity } from './entities/user.entity';
 import { Query } from '@nestjs/common';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
@@ -30,6 +33,9 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo usuário' })
   // Documenta que a resposta será do tipo UserEntity (sem senha)
   @ApiResponse({
@@ -37,12 +43,13 @@ export class UsersController {
     description: 'Usuário criado.',
     type: UserEntity,
   })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createUserDto: CreateUserDto, @Request() req) {
+    return this.usersService.create(createUserDto, req.user.role);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar usuários com paginação' })
   // No Swagger, explicamos que retorna um PageDto contendo UserEntity
@@ -52,8 +59,10 @@ export class UsersController {
     return this.usersService.findAll(pageOptionsDto);
   }
 
-  // Mantemos os outros métodos vazios por enquanto...
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Buscar usuário por ID' })
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
@@ -88,7 +97,9 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Usuário removido.' })
   @ApiResponse({ status: 403, description: 'Proibido excluir a si mesmo.' })
   remove(@Param('id') id: string, @Request() req) {
-    // Passamos o ID da URL e o ID do usuário logado (req.user.userId)
-    return this.usersService.remove(id, req.user.userId);
+    return this.usersService.remove(id, {
+      id: req.user.userId,
+      role: req.user.role,
+    });
   }
 }

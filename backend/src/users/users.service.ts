@@ -3,6 +3,7 @@ import {
   ConflictException,
   Logger,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -20,7 +21,19 @@ export class UsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, actingRole: Role) {
+    // ADMIN só pode criar contas de funcionário (USER) — só SUPER_ADMIN
+    // pode criar outra conta ADMIN ou SUPER_ADMIN.
+    if (
+      actingRole === Role.ADMIN &&
+      createUserDto.role &&
+      createUserDto.role !== Role.USER
+    ) {
+      throw new ForbiddenException(
+        'Você só pode criar contas de funcionário (USER).',
+      );
+    }
+
     const userExists = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -80,7 +93,9 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    return this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado.');
+    return new UserEntity(user);
   }
 
   async update(
@@ -88,10 +103,26 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
     currentUser: { id: string; role: Role },
   ) {
-    if (id !== currentUser.id && currentUser.role !== Role.ADMIN) {
-      throw new ForbiddenException(
-        'Você não tem permissão para alterar dados de outro usuário.',
-      );
+    const isSelf = id === currentUser.id;
+
+    if (!isSelf) {
+      if (currentUser.role === Role.USER) {
+        throw new ForbiddenException(
+          'Você não tem permissão para alterar dados de outro usuário.',
+        );
+      }
+
+      // ADMIN só pode editar contas de funcionário (USER) — não pode mexer
+      // em outra conta ADMIN ou na SUPER_ADMIN.
+      if (currentUser.role === Role.ADMIN) {
+        const target = await this.prisma.user.findUnique({ where: { id } });
+        if (!target) throw new NotFoundException('Usuário não encontrado.');
+        if (target.role !== Role.USER) {
+          throw new ForbiddenException(
+            'Você só pode alterar contas de funcionário (USER).',
+          );
+        }
+      }
     }
 
     const { role, password, ...rest } = updateUserDto;
@@ -109,9 +140,19 @@ export class UsersService {
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    // Apenas admins podem alterar role
-    if (role && currentUser.role === Role.ADMIN) {
-      updateData.role = role as Role;
+    if (role) {
+      // SUPER_ADMIN pode promover/rebaixar pra qualquer role.
+      // ADMIN só pode manter/setar USER — não pode promover ninguém a ADMIN/SUPER_ADMIN.
+      if (currentUser.role === Role.SUPER_ADMIN) {
+        updateData.role = role as Role;
+      } else if (currentUser.role === Role.ADMIN) {
+        if (role !== Role.USER) {
+          throw new ForbiddenException(
+            'Você não tem permissão para atribuir essa permissão.',
+          );
+        }
+        updateData.role = role as Role;
+      }
     }
 
     const user = await this.prisma.user.update({
@@ -122,10 +163,21 @@ export class UsersService {
     return new UserEntity(user);
   }
 
-  async remove(id: string, currentUserId: string) {
+  async remove(id: string, currentUser: { id: string; role: Role }) {
     // Verifica se o usuário está tentando se excluir
-    if (id === currentUserId) {
+    if (id === currentUser.id) {
       throw new ForbiddenException('Você não pode excluir sua própria conta.');
+    }
+
+    // ADMIN só pode remover contas de funcionário (USER).
+    if (currentUser.role === Role.ADMIN) {
+      const target = await this.prisma.user.findUnique({ where: { id } });
+      if (!target) throw new NotFoundException('Usuário não encontrado.');
+      if (target.role !== Role.USER) {
+        throw new ForbiddenException(
+          'Você só pode remover contas de funcionário (USER).',
+        );
+      }
     }
 
     return this.prisma.user.delete({ where: { id } });
