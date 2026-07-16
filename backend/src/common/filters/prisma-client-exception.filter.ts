@@ -42,6 +42,28 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
         });
         break;
       }
+      // P2028: Transaction timeout (ex: banco "acordando" de hibernação no Render/Neon)
+      case 'P2028': {
+        const status = HttpStatus.GATEWAY_TIMEOUT;
+        response.status(status).send({
+          statusCode: status,
+          message:
+            'O banco de dados demorou demais para responder (pode estar iniciando após período de inatividade). Tente novamente em alguns segundos.',
+          error: 'Gateway Timeout',
+        });
+        break;
+      }
+      // P2034: Write conflict / deadlock em transação concorrente
+      case 'P2034': {
+        const status = HttpStatus.CONFLICT;
+        response.status(status).send({
+          statusCode: status,
+          message:
+            'Conflito ao salvar: outra operação concorrente alterou os mesmos dados. Tente novamente.',
+          error: 'Conflict',
+        });
+        break;
+      }
       default:
         // Para outros erros, usa o comportamento padrão (loga e retorna 500)
         super.catch(exception, host);

@@ -30,191 +30,200 @@ export class ProductionsService {
    *  parcialmente em caso de erro.
    */
   async create(dto: CreateProductionDto, userId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      // ── 1. Carrega o produto ────────────────
-      const product = await tx.product.findUnique({
-        where: { id: dto.productId },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        // ── 1. Carrega o produto ────────────────
+        const product = await tx.product.findUnique({
+          where: { id: dto.productId },
+        });
 
-      if (!product) {
-        throw new NotFoundException(`Produto ${dto.productId} não encontrado.`);
-      }
-
-      // ── 1.5. Valida se o usuário existe ─────
-      const userExists = await tx.user.findUnique({ where: { id: userId } });
-      if (!userExists) {
-        throw new UnauthorizedException(
-          'Usuário logado inválido ou não encontrado no banco de dados.',
-        );
-      }
-
-      // ── 2. Carrega a receita ────────────────
-      const recipeItems = await tx.recipeItem.findMany({
-        where: { productId: dto.productId },
-        include: {
-          ingredient: {
-            select: {
-              id: true,
-              name: true,
-              unit: true,
-              currentStock: true,
-              averageCost: true,
-            },
-          },
-        },
-      });
-
-      if (recipeItems.length === 0) {
-        throw new BadRequestException(
-          `Produto "${product.name}" não possui receita cadastrada. ` +
-            'Cadastre a receita antes de registrar uma produção.',
-        );
-      }
-
-      // ── 3. Valida estoque de cada insumo ───
-      const insufficientIngredients: string[] = [];
-      const batchesDecimal = new Prisma.Decimal(dto.batches);
-      const producedUnits = batchesDecimal.mul(product.yieldQuantity);
-
-      for (const item of recipeItems) {
-        const required = item.quantity.mul(batchesDecimal);
-        if (item.ingredient.currentStock.lt(required)) {
-          insufficientIngredients.push(
-            `"${item.ingredient.name}": necessário ${required.toNumber()} ${item.ingredient.unit}, ` +
-              `disponível ${item.ingredient.currentStock.toNumber()} ${item.ingredient.unit}`,
+        if (!product) {
+          throw new NotFoundException(
+            `Produto ${dto.productId} não encontrado.`,
           );
         }
-      }
 
-      if (insufficientIngredients.length > 0) {
-        throw new BadRequestException(
-          'Estoque insuficiente para os seguintes insumos:\n' +
-            insufficientIngredients.join('\n'),
-        );
-      }
+        // ── 1.5. Valida se o usuário existe ─────
+        const userExists = await tx.user.findUnique({ where: { id: userId } });
+        if (!userExists) {
+          throw new UnauthorizedException(
+            'Usuário logado inválido ou não encontrado no banco de dados.',
+          );
+        }
 
-      // ── 4. Calcula custo total da produção ─
-      let totalProductionCost = new Prisma.Decimal(0);
-      const consumptions: {
-        ingredientId: string;
-        quantityUsed: Prisma.Decimal;
-        unitCost: Prisma.Decimal;
-        totalCost: Prisma.Decimal;
-      }[] = [];
-
-      for (const item of recipeItems) {
-        const quantityUsed = item.quantity.mul(batchesDecimal);
-        const itemTotalCost = quantityUsed.mul(item.ingredient.averageCost);
-        totalProductionCost = totalProductionCost.add(itemTotalCost);
-
-        consumptions.push({
-          ingredientId: item.ingredientId,
-          quantityUsed,
-          unitCost: item.ingredient.averageCost,
-          totalCost: itemTotalCost,
+        // ── 2. Carrega a receita ────────────────
+        const recipeItems = await tx.recipeItem.findMany({
+          where: { productId: dto.productId },
+          orderBy: { ingredientId: 'asc' },
+          include: {
+            ingredient: {
+              select: {
+                id: true,
+                name: true,
+                unit: true,
+                currentStock: true,
+                averageCost: true,
+              },
+            },
+          },
         });
-      }
 
-      const unitCost = producedUnits.gt(0)
-        ? totalProductionCost.div(producedUnits)
-        : new Prisma.Decimal(0);
+        if (recipeItems.length === 0) {
+          throw new BadRequestException(
+            `Produto "${product.name}" não possui receita cadastrada. ` +
+              'Cadastre a receita antes de registrar uma produção.',
+          );
+        }
 
-      // ── 5. Deduz estoque dos insumos ───────
-      // Usamos o valor retornado pelo UPDATE para calcular stockBefore/stockAfter
-      // com precisão, mesmo em cenários de produções concorrentes.
-      for (const item of recipeItems) {
-        const consumed = item.quantity.mul(batchesDecimal);
+        // ── 3. Valida estoque de cada insumo ───
+        const insufficientIngredients: string[] = [];
+        const batchesDecimal = new Prisma.Decimal(dto.batches);
+        const producedUnits = batchesDecimal.mul(product.yieldQuantity);
 
-        const updatedIngredient = await tx.ingredient.update({
-          where: { id: item.ingredientId },
-          data: { currentStock: { decrement: consumed } },
+        for (const item of recipeItems) {
+          const required = item.quantity.mul(batchesDecimal);
+          if (item.ingredient.currentStock.lt(required)) {
+            insufficientIngredients.push(
+              `"${item.ingredient.name}": necessário ${required.toNumber()} ${item.ingredient.unit}, ` +
+                `disponível ${item.ingredient.currentStock.toNumber()} ${item.ingredient.unit}`,
+            );
+          }
+        }
+
+        if (insufficientIngredients.length > 0) {
+          throw new BadRequestException(
+            'Estoque insuficiente para os seguintes insumos:\n' +
+              insufficientIngredients.join('\n'),
+          );
+        }
+
+        // ── 4. Calcula custo total da produção ─
+        let totalProductionCost = new Prisma.Decimal(0);
+        const consumptions: {
+          ingredientId: string;
+          quantityUsed: Prisma.Decimal;
+          unitCost: Prisma.Decimal;
+          totalCost: Prisma.Decimal;
+        }[] = [];
+
+        for (const item of recipeItems) {
+          const quantityUsed = item.quantity.mul(batchesDecimal);
+          const itemTotalCost = quantityUsed.mul(item.ingredient.averageCost);
+          totalProductionCost = totalProductionCost.add(itemTotalCost);
+
+          consumptions.push({
+            ingredientId: item.ingredientId,
+            quantityUsed,
+            unitCost: item.ingredient.averageCost,
+            totalCost: itemTotalCost,
+          });
+        }
+
+        const unitCost = producedUnits.gt(0)
+          ? totalProductionCost.div(producedUnits)
+          : new Prisma.Decimal(0);
+
+        // ── 5. Deduz estoque dos insumos ───────
+        // Usamos o valor retornado pelo UPDATE para calcular stockBefore/stockAfter
+        // com precisão, mesmo em cenários de produções concorrentes.
+        for (const item of recipeItems) {
+          const consumed = item.quantity.mul(batchesDecimal);
+
+          const updatedIngredient = await tx.ingredient.update({
+            where: { id: item.ingredientId },
+            data: { currentStock: { decrement: consumed } },
+            select: { currentStock: true },
+          });
+
+          const stockAfterNum = updatedIngredient.currentStock.toNumber();
+          const stockBeforeNum = stockAfterNum + consumed.toNumber();
+
+          await tx.stockMovement.create({
+            data: {
+              ingredientId: item.ingredientId,
+              type: 'EXIT',
+              quantity: consumed.toNumber(),
+              stockBefore: stockBeforeNum,
+              stockAfter: stockAfterNum,
+              userId,
+              description: `Consumo na produção do item: ${product.name}`,
+            },
+          });
+        }
+
+        // ── 6. Incrementa estoque do produto ───
+        const producedUnitsNum = producedUnits.toNumber();
+        const updatedProduct = await tx.product.update({
+          where: { id: dto.productId },
+          data: { currentStock: { increment: producedUnitsNum } },
           select: { currentStock: true },
         });
 
-        const stockAfterNum = updatedIngredient.currentStock.toNumber();
-        const stockBeforeNum = stockAfterNum + consumed.toNumber();
+        const productStockAfterNum = updatedProduct.currentStock.toNumber();
+        const productStockBeforeNum = productStockAfterNum - producedUnitsNum;
 
+        // ── 6.5. Registra o histórico da movimentação (ENTRY) ──
         await tx.stockMovement.create({
           data: {
-            ingredientId: item.ingredientId,
-            type: 'EXIT',
-            quantity: consumed.toNumber(),
-            stockBefore: stockBeforeNum,
-            stockAfter: stockAfterNum,
+            productId: dto.productId,
+            type: 'ENTRY',
+            quantity: producedUnitsNum,
+            stockBefore: productStockBeforeNum,
+            stockAfter: productStockAfterNum,
             userId,
-            description: `Consumo na produção do item: ${product.name}`,
+            description: 'Produção Interna',
           },
         });
-      }
 
-      // ── 6. Incrementa estoque do produto ───
-      const producedUnitsNum = producedUnits.toNumber();
-      const updatedProduct = await tx.product.update({
-        where: { id: dto.productId },
-        data: { currentStock: { increment: producedUnitsNum } },
-        select: { currentStock: true },
-      });
-
-      const productStockAfterNum = updatedProduct.currentStock.toNumber();
-      const productStockBeforeNum = productStockAfterNum - producedUnitsNum;
-
-      // ── 6.5. Registra o histórico da movimentação (ENTRY) ──
-      await tx.stockMovement.create({
-        data: {
-          productId: dto.productId,
-          type: 'ENTRY',
-          quantity: producedUnitsNum,
-          stockBefore: productStockBeforeNum,
-          stockAfter: productStockAfterNum,
-          userId,
-          description: 'Produção Interna',
-        },
-      });
-
-      // ── 7. Cria o registro de produção ─────
-      const production = await tx.production.create({
-        data: {
-          productId: dto.productId,
-          batches: batchesDecimal,
-          quantity: producedUnits,
-          unitCost,
-          totalCost: totalProductionCost,
-          notes: dto.notes,
-          userId,
-          consumptions: {
-            create: consumptions,
-          },
-        },
-        include: {
-          product: { select: { name: true, unit: true } },
-          user: { select: { name: true } },
-          consumptions: {
-            include: {
-              ingredient: { select: { name: true, unit: true } },
+        // ── 7. Cria o registro de produção ─────
+        const production = await tx.production.create({
+          data: {
+            productId: dto.productId,
+            batches: batchesDecimal,
+            quantity: producedUnits,
+            unitCost,
+            totalCost: totalProductionCost,
+            notes: dto.notes,
+            userId,
+            consumptions: {
+              create: consumptions,
             },
           },
-        },
-      });
+          include: {
+            product: { select: { name: true, unit: true } },
+            user: { select: { name: true } },
+            consumptions: {
+              include: {
+                ingredient: { select: { name: true, unit: true } },
+              },
+            },
+          },
+        });
 
-      return {
-        id: production.id,
-        product: production.product,
-        batches: production.batches.toNumber(),
-        quantity: production.quantity.toNumber(),
-        unitCost: unitCost.toNumber(),
-        totalCost: totalProductionCost.toNumber(),
-        notes: production.notes,
-        producedBy: production.user.name,
-        producedAt: production.producedAt,
-        consumptions: production.consumptions.map((c) => ({
-          ingredient: c.ingredient.name,
-          unit: c.ingredient.unit,
-          quantityUsed: c.quantityUsed.toNumber(),
-          unitCost: c.unitCost.toNumber(),
-          totalCost: c.totalCost.toNumber(),
-        })),
-      };
-    });
+        return {
+          id: production.id,
+          product: production.product,
+          batches: production.batches.toNumber(),
+          quantity: production.quantity.toNumber(),
+          unitCost: unitCost.toNumber(),
+          totalCost: totalProductionCost.toNumber(),
+          notes: production.notes,
+          producedBy: production.user.name,
+          producedAt: production.producedAt,
+          consumptions: production.consumptions.map((c) => ({
+            ingredient: c.ingredient.name,
+            unit: c.ingredient.unit,
+            quantityUsed: c.quantityUsed.toNumber(),
+            unitCost: c.unitCost.toNumber(),
+            totalCost: c.totalCost.toNumber(),
+          })),
+        };
+      },
+      // Timeout maior que o padrão (5s): Render/Neon podem estar "acordando"
+      // de hibernação por inatividade, e essa transação faz várias idas
+      // sequenciais ao banco (uma por insumo da receita).
+      { maxWait: 10000, timeout: 20000 },
+    );
   }
 
   // ──────────────────────────────────────────
