@@ -18,6 +18,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { BuyLotDto } from './dto/buy-lot.dto';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
@@ -26,7 +29,7 @@ import { UpdateIngredientDto } from './dto/update-ingredient.dto';
 import { IngredientsService } from './ingredients.service';
 
 @ApiTags('ingredients')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 @Controller('ingredients')
 export class IngredientsController {
@@ -74,6 +77,7 @@ export class IngredientsController {
   }
 
   @Delete(':id')
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Remover insumo (apenas se não usado em receitas)' })
   remove(@Param('id') id: string) {
     return this.ingredientsService.remove(id);

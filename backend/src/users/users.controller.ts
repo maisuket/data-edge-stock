@@ -60,7 +60,8 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   findOne(@Param('id') id: string) {
