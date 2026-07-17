@@ -792,7 +792,10 @@ export default function SettingsPage() {
                           </TableHeader>
                           <TableBody>
                             {deliveryZones.map((zone: DeliveryZone) => (
-                              <TableRow key={zone.id}>
+                              <TableRow
+                                key={zone.id}
+                                className="hover:bg-muted/40 transition-colors duration-300"
+                              >
                                 <TableCell
                                   className={
                                     zone.active

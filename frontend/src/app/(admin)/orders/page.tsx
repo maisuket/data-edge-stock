@@ -722,6 +722,37 @@ function OrderDetailRow({ orderId }: { orderId: string }) {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="w-8">
+            <Skeleton className="h-4 w-4" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-20" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-16 ml-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-24 rounded-full" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function OrdersPage() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -729,7 +760,7 @@ export default function OrdersPage() {
     "TODOS",
   );
 
-  const { data, isLoading, isPlaceholderData } = useQuery({
+  const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: ["orders", page, statusFilter],
     queryFn: () =>
       OrderService.getAll(
@@ -748,15 +779,15 @@ export default function OrdersPage() {
   const meta = data?.meta;
 
   return (
-    <div className="p-6 md:p-8 max-w-350 mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <ClipboardList className="w-8 h-8 text-accent" />
+            <ClipboardList className="w-7 h-7 text-accent" />
             Pedidos
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Acompanhe os pedidos feitos pelo cardápio online.
           </p>
         </div>
@@ -783,96 +814,112 @@ export default function OrdersPage() {
       </div>
 
       {/* Table */}
-      <Card className="border-border bg-card shadow-sm">
+      <Card className="border-border shadow-md bg-card rounded-2xl overflow-hidden">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-bold">
-            Histórico de Pedidos
-          </CardTitle>
+          <CardTitle>Histórico de Pedidos</CardTitle>
           <CardDescription>
-            {meta
-              ? `${meta.itemCount} pedido${meta.itemCount !== 1 ? "s" : ""} registrado${meta.itemCount !== 1 ? "s" : ""}`
-              : ""}
+            Pedidos feitos pelo cardápio, do carrinho à entrega.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="pl-6 w-8" />
-                <TableHead>Pedido</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-6">Data</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-5 w-full rounded-md" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : orders.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-40 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <ClipboardList className="w-8 h-8 opacity-30" />
-                      <p>Nenhum pedido registrado ainda.</p>
-                    </div>
-                  </TableCell>
+        <CardContent>
+          <div className="rounded-md border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-8" />
+                  <TableHead className="font-semibold text-foreground">
+                    Pedido
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Cliente
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Total
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Data
+                  </TableHead>
                 </TableRow>
-              ) : (
-                orders.flatMap((order) => {
-                  const isExpanded = expandedId === order.id;
-                  return [
-                    <TableRow
-                      key={order.id}
-                      className="border-border hover:bg-muted/40 cursor-pointer transition-colors"
-                      onClick={() =>
-                        setExpandedId(isExpanded ? null : order.id)
-                      }
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableSkeleton />
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-32 text-center text-destructive"
                     >
-                      <TableCell className="pl-6 w-8">
-                        {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground tabular-nums">
-                        {order.orderNumber}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {order.customerName || "—"}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-bold text-foreground">
-                        {fmt.format(order.totalAmount)}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={order.status} />
-                      </TableCell>
-                      <TableCell className="pr-6 text-sm text-muted-foreground">
-                        {format(new Date(order.createdAt), "dd/MM/yy HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </TableCell>
-                    </TableRow>,
-                    isExpanded ? (
-                      <OrderDetailRow key={`${order.id}-detail`} orderId={order.id} />
-                    ) : null,
-                  ].filter(Boolean);
-                })
-              )}
-            </TableBody>
-          </Table>
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-6 w-6" />
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : orders.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-32 text-center text-muted-foreground"
+                    >
+                      Nenhum pedido registrado ainda.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  orders.flatMap((order) => {
+                    const isExpanded = expandedId === order.id;
+                    return [
+                      <TableRow
+                        key={order.id}
+                        className="group hover:bg-muted/40 transition-colors duration-300 cursor-pointer"
+                        onClick={() =>
+                          setExpandedId(isExpanded ? null : order.id)
+                        }
+                      >
+                        <TableCell className="w-8">
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-foreground tabular-nums">
+                          {order.orderNumber}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {order.customerName || "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums font-bold text-foreground">
+                          {fmt.format(order.totalAmount)}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={order.status} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(
+                            new Date(order.createdAt),
+                            "dd/MM/yy HH:mm",
+                            { locale: ptBR },
+                          )}
+                        </TableCell>
+                      </TableRow>,
+                      isExpanded ? (
+                        <OrderDetailRow
+                          key={`${order.id}-detail`}
+                          orderId={order.id}
+                        />
+                      ) : null,
+                    ].filter(Boolean);
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Paginação */}
           <div className="flex items-center justify-between pt-4">

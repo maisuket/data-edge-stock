@@ -9,6 +9,7 @@ import {
   Trash2,
   CheckCircle2,
   ArrowLeft,
+  AlertTriangle,
   Beaker,
   Calculator,
   Eye,
@@ -65,6 +66,37 @@ interface PurchaseItem {
   brand?: string;
 }
 
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-20" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-16 ml-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-8 w-8 rounded ml-auto" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function ComprasPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -111,7 +143,11 @@ export default function ComprasPage() {
   const todayPurchasesTotal = todayStats?.total ?? 0;
 
   // Busca as compras recentes
-  const { data: purchasesData, isLoading: isLoadingPurchases } = useQuery({
+  const {
+    data: purchasesData,
+    isLoading: isLoadingPurchases,
+    isError: isErrorPurchases,
+  } = useQuery({
     queryKey: ["purchases"],
     queryFn: () => PurchaseService.getAll(1, 10),
   });
@@ -535,25 +571,43 @@ export default function ComprasPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Data / Hora</TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Observações</TableHead>
-                  <TableHead className="text-right w-16">Ações</TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Data / Hora
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Fornecedor
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Itens
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Total
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Observações
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground w-16">
+                    Ações
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoadingPurchases ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-5 w-full rounded-md" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
+                  <TableSkeleton />
+                ) : isErrorPurchases ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-destructive"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-6 w-6" />
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : recentPurchases.length === 0 ? (
                   <TableRow>
                     <TableCell
@@ -565,7 +619,10 @@ export default function ComprasPage() {
                   </TableRow>
                 ) : (
                   recentPurchases.map((purchase) => (
-                    <TableRow key={purchase.id}>
+                    <TableRow
+                      key={purchase.id}
+                      className="hover:bg-muted/40 transition-colors duration-300"
+                    >
                       <TableCell className="text-muted-foreground tabular-nums text-xs">
                         {new Date(purchase.createdAt).toLocaleString("pt-BR", {
                           day: "2-digit",

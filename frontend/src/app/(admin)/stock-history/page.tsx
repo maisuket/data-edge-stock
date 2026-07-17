@@ -6,6 +6,8 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   ArrowRightLeft,
+  AlertTriangle,
+  History,
   Loader2,
   Calendar,
   Filter,
@@ -47,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatQty = (val: number | string | null | undefined) => {
   const num = Number(val);
@@ -54,6 +57,43 @@ const formatQty = (val: number | string | null | undefined) => {
     ? "0"
     : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 }).format(num);
 };
+
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="pl-6">
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </TableCell>
+          <TableCell>
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-12" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-16" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-20" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 export default function MovementsPage() {
   const [page, setPage] = useState(1);
@@ -115,7 +155,8 @@ export default function MovementsPage() {
     <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <History className="w-7 h-7 text-accent" />
             Movimentações
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -124,8 +165,8 @@ export default function MovementsPage() {
         </div>
       </div>
 
-      <Card className="border-border shadow-sm bg-card">
-        <CardHeader className="pb-4 border-b border-border">
+      <Card className="border-border shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
               <CardTitle>Histórico</CardTitle>
@@ -178,41 +219,50 @@ export default function MovementsPage() {
           </div>
         </CardHeader>
 
-        <CardContent className="pt-0 px-0">
+        <CardContent>
           {/* Tabela para Desktop */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block rounded-md border border-border overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50 border-b border-border">
-                  <TableHead className="pl-6 w-45">Data/Hora</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Item Movimentado</TableHead>
-                  <TableHead>Qtd. Movimentada</TableHead>
-                  <TableHead>Estoque Atualizado</TableHead>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead className="w-75">Observação</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-45 font-semibold text-foreground">
+                    Data/Hora
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Tipo
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Item Movimentado
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Qtd. Movimentada
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Estoque Atualizado
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Usuário
+                  </TableHead>
+                  <TableHead className="w-75 font-semibold text-foreground">
+                    Observação
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="h-32 text-center text-muted-foreground"
-                    >
-                      <div className="flex flex-col justify-center items-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                        <span className="text-sm">Carregando histórico...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeleton />
                 ) : isError ? (
                   <TableRow>
                     <TableCell
                       colSpan={7}
                       className="h-32 text-center text-destructive"
                     >
-                      Erro ao carregar dados.
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-6 w-6" />
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : data?.data?.length === 0 ? (
@@ -228,9 +278,9 @@ export default function MovementsPage() {
                   data?.data?.map((row: StockMovement) => (
                     <TableRow
                       key={row.id}
-                      className="group hover:bg-muted/30 transition-colors border-b border-border"
+                      className="group hover:bg-muted/40 transition-colors duration-300"
                     >
-                      <TableCell className="pl-6 font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono text-xs text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-3 h-3" />
                           {row.createdAt
@@ -296,7 +346,7 @@ export default function MovementsPage() {
           </div>
 
           {/* Lista de Cards para Mobile */}
-          <div className="block md:hidden p-4 space-y-4">
+          <div className="block md:hidden py-4 space-y-4">
             {isLoading ? (
               <div className="flex flex-col justify-center items-center gap-2 h-32 text-muted-foreground">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />

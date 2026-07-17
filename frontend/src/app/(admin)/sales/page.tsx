@@ -12,6 +12,7 @@ import {
   Plus,
   Trash2,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +67,34 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-28" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-16 ml-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-8 w-16 ml-auto" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function SalesPage() {
   const qc = useQueryClient();
 
@@ -99,7 +128,11 @@ export default function SalesPage() {
     : 0;
 
   // Busca as vendas recentes
-  const { data: salesData, isLoading: isLoadingSales } = useQuery({
+  const {
+    data: salesData,
+    isLoading: isLoadingSales,
+    isError: isErrorSales,
+  } = useQuery({
     queryKey: ["sales"],
     queryFn: () => SalesService.getAll(1, 10),
   });
@@ -469,11 +502,19 @@ export default function SalesPage() {
               <div className="rounded-md border border-border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Qtd.</TableHead>
-                      <TableHead className="text-right">Valor Un.</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
+                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                      <TableHead className="font-semibold text-foreground">
+                        Produto
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">
+                        Qtd.
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">
+                        Valor Un.
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-foreground">
+                        Subtotal
+                      </TableHead>
                       <TableHead className="w-12.5"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -489,7 +530,10 @@ export default function SalesPage() {
                       </TableRow>
                     ) : (
                       cart.map((item) => (
-                        <TableRow key={item.id}>
+                        <TableRow
+                          key={item.id}
+                          className="hover:bg-muted/40 transition-colors duration-300"
+                        >
                           <TableCell className="font-medium text-sm">
                             {item.productName}
                           </TableCell>
@@ -661,24 +705,40 @@ export default function SalesPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Data / Hora</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Observações</TableHead>
-                  <TableHead className="text-right w-25">Ações</TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Data / Hora
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Itens
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Total
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Observações
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground w-25">
+                    Ações
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoadingSales ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-5 w-full rounded-md" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
+                  <TableSkeleton />
+                ) : isErrorSales ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-destructive"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-6 w-6" />
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : recentSales.length === 0 ? (
                   <TableRow>
                     <TableCell
@@ -690,7 +750,10 @@ export default function SalesPage() {
                   </TableRow>
                 ) : (
                   recentSales.map((sale: any) => (
-                    <TableRow key={sale.id}>
+                    <TableRow
+                      key={sale.id}
+                      className="hover:bg-muted/40 transition-colors duration-300"
+                    >
                       <TableCell className="text-muted-foreground tabular-nums text-xs">
                         {new Date(sale.createdAt).toLocaleString("pt-BR", {
                           day: "2-digit",
