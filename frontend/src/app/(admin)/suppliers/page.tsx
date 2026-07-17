@@ -12,7 +12,6 @@ import {
   Search,
   Pencil,
   Trash2,
-  Loader2,
   Truck,
   MapPin,
   Phone,
@@ -41,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Card,
   CardContent,
@@ -59,6 +59,40 @@ import {
 import { SupplierFormDialog } from "@/app/components/SupllierFormDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          </TableCell>
+          <TableCell>
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-3 w-36" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-8 w-8 rounded ml-auto" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function SuppliersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,7 +101,9 @@ export default function SuppliersPage() {
 
   // Controle do Modal
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(
+    null,
+  );
   const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
 
   const queryClient = useQueryClient();
@@ -117,11 +153,12 @@ export default function SuppliersPage() {
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Truck className="w-7 h-7 text-accent" />
             Fornecedores
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -130,29 +167,29 @@ export default function SuppliersPage() {
         </div>
         <Button
           onClick={handleAdd}
-          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="gap-2 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Novo Fornecedor
         </Button>
       </div>
 
-      <Card className="border-border shadow-sm bg-card">
-        <CardHeader className="pb-4 border-b border-border">
+      <Card className="border-border shadow-md bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="pb-4">
           <CardTitle>Listagem de Parceiros</CardTitle>
           <CardDescription>
             Visualize todos os fornecedores cadastrados.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="pt-6">
+        <CardContent>
           {/* Busca */}
-          <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-md border border-border w-fit">
-            <div className="relative w-[300px]">
+          <div className="flex items-center space-x-2 mb-4 bg-background p-1 rounded-xl border w-fit shadow-sm transition-all focus-within:ring-2 focus-within:ring-primary/20">
+            <div className="relative w-75">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por nome ou CNPJ..."
-                className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent"
+                className="pl-9 border-0 shadow-none focus-visible:ring-0 h-9 bg-transparent rounded-xl"
                 value={searchInput}
                 onChange={(e) => {
                   setSearchInput(e.target.value);
@@ -176,24 +213,14 @@ export default function SuppliersPage() {
                   <TableHead className="font-semibold text-foreground">
                     Endereço
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-foreground w-[80px]">
+                  <TableHead className="text-right font-semibold text-foreground w-20">
                     Ações
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="h-32 text-center text-muted-foreground"
-                    >
-                      <div className="flex flex-col justify-center items-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                        <span className="text-sm">Carregando parceiros...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <TableSkeleton />
                 ) : isError ? (
                   <TableRow>
                     <TableCell
@@ -214,19 +241,20 @@ export default function SuppliersPage() {
                       colSpan={4}
                       className="h-32 text-center text-muted-foreground"
                     >
-                      Nenhum fornecedor encontrado para "{searchQuery}".
+                      Nenhum fornecedor encontrado
+                      {searchQuery ? ` para "${searchQuery}"` : ""}.
                     </TableCell>
                   </TableRow>
                 ) : (
                   data?.data?.map((row) => (
                     <TableRow
                       key={row.id}
-                      className="group hover:bg-muted/30 transition-colors"
+                      className="group hover:bg-muted/40 transition-colors duration-300"
                     >
                       {/* Coluna Nome/CNPJ */}
                       <TableCell className="align-top py-4">
                         <div className="flex items-start gap-3">
-                          <div className="p-2 bg-muted rounded-lg text-muted-foreground border border-border mt-1">
+                          <div className="p-2 rounded-xl border shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 bg-accent/10 text-accent border-accent/25 mt-0.5">
                             <Truck className="h-5 w-5" />
                           </div>
                           <div>
@@ -278,7 +306,7 @@ export default function SuppliersPage() {
                       {/* Coluna Endereço */}
                       <TableCell className="align-top py-4">
                         {row.address ? (
-                          <div className="flex items-start gap-2 text-sm text-muted-foreground max-w-[250px]">
+                          <div className="flex items-start gap-2 text-sm text-muted-foreground max-w-62.5">
                             <MapPin className="w-4 h-4 text-muted-foreground/70 mt-0.5 shrink-0" />
                             <span className="line-clamp-2">{row.address}</span>
                           </div>
@@ -295,7 +323,7 @@ export default function SuppliersPage() {
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              className="h-8 w-8 p-0 hover:bg-muted"
+                              className="h-8 w-8 p-0 rounded-xl transition-all duration-300 hover:scale-105"
                             >
                               <span className="sr-only">Abrir menu</span>
                               <MoreHorizontal className="h-4 w-4" />
@@ -310,7 +338,7 @@ export default function SuppliersPage() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => handleDelete(row)}
-                              className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                              className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Excluir
@@ -329,7 +357,7 @@ export default function SuppliersPage() {
           <div className="flex items-center justify-between pt-4">
             <div className="text-xs text-muted-foreground">
               {data?.meta?.itemCount
-                ? `Total de ${data.meta.itemCount} registro(s)`
+                ? `Total de ${data.meta.itemCount} fornecedor(es)`
                 : ""}
             </div>
             <div className="flex items-center gap-2">

@@ -386,12 +386,46 @@ function ProductionDetailRow({ productionId }: { productionId: string }) {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
+// ── Table skeleton ─────────────────────────────────────────────────────────
+
+function TableSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="w-8">
+            <Skeleton className="h-4 w-4" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-32" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-16 ml-auto" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-14 ml-auto" />
+          </TableCell>
+          <TableCell className="text-right">
+            <Skeleton className="h-4 w-16 ml-auto" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-24" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-20" />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function ProductionsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading, isPlaceholderData } = useQuery({
+  const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: ["productions", page],
     queryFn: () => ProductionService.getAll(page, 15),
     placeholderData: keepPreviousData,
@@ -401,21 +435,21 @@ export default function ProductionsPage() {
   const meta = data?.meta;
 
   return (
-    <div className="p-6 md:p-8 max-w-350 mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="p-8 max-w-400 mx-auto pb-20 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Factory className="w-8 h-8 text-accent" />
+            <Factory className="w-7 h-7 text-accent" />
             Produção
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Registre lotes de produção e acompanhe custos reais.
           </p>
         </div>
         <Button
           onClick={() => setFormOpen(true)}
-          className="gap-2 bg-primary text-primary-foreground hover:bg-[#A65E2E] shadow-sm"
+          className="gap-2 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Nova Produção
@@ -423,118 +457,128 @@ export default function ProductionsPage() {
       </div>
 
       {/* Table */}
-      <Card className="border-border bg-card shadow-sm">
+      <Card className="border-border shadow-md bg-card rounded-2xl overflow-hidden">
         <CardHeader className="pb-4">
-          <CardTitle className="text-base font-bold">
-            Histórico de Produções
-          </CardTitle>
+          <CardTitle>Histórico de Produções</CardTitle>
           <CardDescription>
-            {meta
-              ? `${meta.itemCount} lote${meta.itemCount !== 1 ? "s" : ""} registrado${meta.itemCount !== 1 ? "s" : ""}`
-              : ""}
+            Lotes produzidos, com custo e consumo de insumos calculados
+            automaticamente.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="pl-6 w-8" />
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-                <TableHead className="text-right">Custo/un</TableHead>
-                <TableHead className="text-right">Custo Total</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="pr-6">Operador</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
-                      <TableCell key={j}>
-                        <Skeleton className="h-5 w-full rounded-md" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : productions.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="h-40 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <Factory className="w-8 h-8 opacity-30" />
-                      <p>Nenhuma produção registrada.</p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setFormOpen(true)}
-                        className="mt-1"
-                      >
-                        Registrar primeira produção
-                      </Button>
-                    </div>
-                  </TableCell>
+        <CardContent>
+          <div className="rounded-md border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-8" />
+                  <TableHead className="font-semibold text-foreground">
+                    Produto
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Quantidade
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Custo/un
+                  </TableHead>
+                  <TableHead className="text-right font-semibold text-foreground">
+                    Custo Total
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Data
+                  </TableHead>
+                  <TableHead className="font-semibold text-foreground">
+                    Operador
+                  </TableHead>
                 </TableRow>
-              ) : (
-                productions.flatMap((prod) => {
-                  const isExpanded = expandedId === prod.id;
-                  return [
-                    <TableRow
-                      key={prod.id}
-                      className="border-border hover:bg-muted/40 cursor-pointer transition-colors"
-                      onClick={() => setExpandedId(isExpanded ? null : prod.id)}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableSkeleton />
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="h-32 text-center text-destructive"
                     >
-                      <TableCell className="pl-6 w-8">
-                        {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">
-                        {prod.product.name}
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {prod.product.unit}
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertTriangle className="h-6 w-6" />
+                        <span>
+                          Erro ao carregar dados. Verifique a conexão.
                         </span>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-semibold">
-                        {prod.quantity.toLocaleString("pt-BR")}
-                        {prod.batches !== prod.quantity && (
-                          <span className="block text-xs font-normal text-muted-foreground">
-                            {prod.batches.toLocaleString("pt-BR")} lote
-                            {prod.batches !== 1 ? "s" : ""}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : productions.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="h-32 text-center text-muted-foreground"
+                    >
+                      Nenhuma produção registrada.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  productions.flatMap((prod) => {
+                    const isExpanded = expandedId === prod.id;
+                    return [
+                      <TableRow
+                        key={prod.id}
+                        className="group hover:bg-muted/40 transition-colors duration-300 cursor-pointer"
+                        onClick={() =>
+                          setExpandedId(isExpanded ? null : prod.id)
+                        }
+                      >
+                        <TableCell className="w-8">
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-foreground">
+                          {prod.product.name}
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {prod.product.unit}
                           </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {fmt.format(prod.unitCost)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums font-bold text-foreground">
-                        {fmt.format(prod.totalCost)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(prod.producedAt), "dd/MM/yy HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </TableCell>
-                      <TableCell className="pr-6 text-sm text-muted-foreground">
-                        {prod.producedBy ?? "—"}
-                      </TableCell>
-                    </TableRow>,
-                    isExpanded ? (
-                      <ProductionDetailRow
-                        key={`${prod.id}-detail`}
-                        productionId={prod.id}
-                      />
-                    ) : null,
-                  ].filter(Boolean);
-                })
-              )}
-            </TableBody>
-          </Table>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums font-semibold">
+                          {prod.quantity.toLocaleString("pt-BR")}
+                          {prod.batches !== prod.quantity && (
+                            <span className="block text-xs font-normal text-muted-foreground">
+                              {prod.batches.toLocaleString("pt-BR")} lote
+                              {prod.batches !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {fmt.format(prod.unitCost)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums font-bold text-foreground">
+                          {fmt.format(prod.totalCost)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(
+                            new Date(prod.producedAt),
+                            "dd/MM/yy HH:mm",
+                            { locale: ptBR },
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {prod.producedBy ?? "—"}
+                        </TableCell>
+                      </TableRow>,
+                      isExpanded ? (
+                        <ProductionDetailRow
+                          key={`${prod.id}-detail`}
+                          productionId={prod.id}
+                        />
+                      ) : null,
+                    ].filter(Boolean);
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Paginação */}
           <div className="flex items-center justify-between pt-4">
