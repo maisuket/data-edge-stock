@@ -10,6 +10,9 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/enums/role.enum';
 import { CreateDeliveryZoneDto } from './dto/create-delivery-zone.dto';
 import { UpdateDeliveryZoneDto } from './dto/update-delivery-zone.dto';
 import { DeliveryZonesService } from './delivery-zones.service';
@@ -30,7 +33,9 @@ export class DeliveryZonesController {
   @Get('manage')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar todos os bairros, ativos e inativos (admin)' })
+  @ApiOperation({
+    summary: 'Listar todos os bairros, ativos e inativos (admin)',
+  })
   findAll() {
     return this.deliveryZonesService.findAll();
   }
@@ -52,7 +57,8 @@ export class DeliveryZonesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remover bairro (admin)' })
   remove(@Param('id') id: string) {
