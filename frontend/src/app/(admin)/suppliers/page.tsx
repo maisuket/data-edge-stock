@@ -338,7 +338,7 @@ export default function SuppliersPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
-                className="h-8 text-xs bg-background hover:bg-muted"
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Anterior
               </Button>
@@ -353,7 +353,7 @@ export default function SuppliersPage() {
                 disabled={
                   !data?.meta?.hasNextPage || isLoading || isPlaceholderData
                 }
-                className="h-8 text-xs bg-background hover:bg-muted"
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Próximo
               </Button>

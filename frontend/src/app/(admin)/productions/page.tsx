@@ -391,7 +391,7 @@ export default function ProductionsPage() {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ["productions", page],
     queryFn: () => ProductionService.getAll(page, 15),
     placeholderData: keepPreviousData,
@@ -535,33 +535,39 @@ export default function ProductionsPage() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
 
-        {meta && meta.pageCount > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Página {meta.page} de {meta.pageCount}
-            </p>
-            <div className="flex gap-2">
+          {/* Paginação */}
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-xs text-muted-foreground">
+              {meta?.itemCount
+                ? `Total de ${meta.itemCount} produção(ões)`
+                : ""}
+            </div>
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!meta.hasPreviousPage}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Anterior
               </Button>
+              <div className="text-xs font-medium px-2 text-muted-foreground">
+                Página {page} {meta?.pageCount ? `de ${meta.pageCount}` : ""}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={!meta.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
+                disabled={!meta?.hasNextPage || isLoading || isPlaceholderData}
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
-                Próxima
+                Próximo
               </Button>
             </div>
           </div>
-        )}
+        </CardContent>
       </Card>
 
       <ProductionFormDialog open={formOpen} onOpenChange={setFormOpen} />

@@ -63,7 +63,7 @@ export default function MovementsPage() {
   const [endDate, setEndDate] = useState<string>("");
 
   // Query de Movimentações
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isPlaceholderData } = useQuery({
     queryKey: ["movements", page, pageSize, filterType, startDate, endDate],
     queryFn: () =>
       StockMovementService.getAll(
@@ -385,10 +385,10 @@ export default function MovementsPage() {
           </div>
 
           {/* Paginação */}
-          <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 border-t border-border gap-4 sm:gap-0">
-            <div className="text-xs text-muted-foreground w-full sm:w-auto text-center sm:text-left">
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-xs text-muted-foreground">
               {data?.meta?.itemCount
-                ? `Total de ${data.meta.itemCount} registros`
+                ? `Total de ${data.meta.itemCount} registro(s)`
                 : ""}
             </div>
             <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ export default function MovementsPage() {
                 size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
-                className="h-8 text-xs"
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Anterior
               </Button>
@@ -409,8 +409,10 @@ export default function MovementsPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={!data?.meta?.hasNextPage || isLoading}
-                className="h-8 text-xs"
+                disabled={
+                  !data?.meta?.hasNextPage || isLoading || isPlaceholderData
+                }
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Próximo
               </Button>
