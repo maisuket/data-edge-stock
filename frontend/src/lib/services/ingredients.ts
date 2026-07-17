@@ -22,12 +22,12 @@ export const UNIT_LABELS: Record<IngredientUnit, string> = {
 };
 
 export const UNIT_SHORT: Record<string, string> = {
-  LITRO: "L",
-  ML: "ML",
-  KG: "KG",
-  MILIGRAMA: "MG",
-  G: "G",
-  UN: "UN",
+  [IngredientUnit.LITRO]: "L",
+  [IngredientUnit.ML]: "ML",
+  [IngredientUnit.KG]: "KG",
+  [IngredientUnit.MILIGRAMA]: "MG",
+  [IngredientUnit.G]: "G",
+  [IngredientUnit.UNIT]: "UN",
 };
 
 // ── Interfaces ─────────────────────────────────────────────────────────────
