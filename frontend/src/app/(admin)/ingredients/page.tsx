@@ -108,7 +108,7 @@ export default function IngredientsPage() {
 
   // ── Queries ──────────────────────────────────────────────────────────────
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isPlaceholderData } = useQuery({
     queryKey: ["ingredients", page, search],
     queryFn: () => IngredientService.getAll(page, 15, search),
     placeholderData: keepPreviousData,
@@ -385,36 +385,37 @@ export default function IngredientsPage() {
               </TableBody>
             </Table>
           </div>
-        </CardContent>
 
-        {/* Paginação */}
-        {meta && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-border">
-            <p className="text-sm text-muted-foreground">
-              Página {meta.page} de {meta.pageCount}
-            </p>
-            <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          {/* Paginação */}
+          <div className="flex items-center justify-between pt-4">
+            <div className="text-xs text-muted-foreground">
+              {meta?.itemCount ? `Total de ${meta.itemCount} insumo(s)` : ""}
+            </div>
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="w-1/2 sm:w-auto"
-                disabled={!meta.hasPreviousPage}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
                 Anterior
               </Button>
+              <div className="text-xs font-medium px-2 text-muted-foreground">
+                Página {page} {meta?.pageCount ? `de ${meta.pageCount}` : ""}
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-1/2 sm:w-auto"
-                disabled={!meta.hasNextPage}
                 onClick={() => setPage((p) => p + 1)}
+                disabled={!meta?.hasNextPage || isLoading || isPlaceholderData}
+                className="h-8 text-xs rounded-xl transition-all duration-300 hover:scale-[1.05]"
               >
-                Próxima
+                Próximo
               </Button>
             </div>
           </div>
-        )}
+        </CardContent>
       </Card>
 
       {/* Dialogs */}
