@@ -388,7 +388,7 @@ export default function IngredientsPage() {
         </CardContent>
 
         {/* Paginação */}
-        {meta && meta.pageCount > 1 && (
+        {meta && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-border">
             <p className="text-sm text-muted-foreground">
               Página {meta.page} de {meta.pageCount}
