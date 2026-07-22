@@ -84,6 +84,8 @@ model Product {
   isManufactured Boolean         @default(false) @map("is_manufactured")
   /// Quantas unidades do produto uma execução da receita produz
   yieldQuantity  Decimal         @default(1) @map("yield_quantity")
+  /// Liga/desliga a promoção por quantidade (price tiers) sem apagar a configuração
+  tieredPricingEnabled Boolean   @default(false) @map("tiered_pricing_enabled")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   attachments    Attachment[]
@@ -94,8 +96,26 @@ model Product {
   priceHistories ProductPriceHistory[]
   saleItems      SaleItem[]
   orderItems     OrderItem[]
+  priceTiers     PriceTier[]
 
   @@map("products")
+}
+
+/// Faixa de preço por quantidade ("compre N, cada unidade sai por X")
+model PriceTier {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  /// A partir de quantas unidades esse preço passa a valer
+  minQuantity Decimal  @map("min_quantity")
+  /// Preço por unidade quando a quantidade pedida atinge minQuantity
+  unitPrice   Decimal  @map("unit_price")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("price_tiers")
 }
 
 model StockMovement {

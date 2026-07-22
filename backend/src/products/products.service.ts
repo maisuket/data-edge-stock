@@ -432,6 +432,11 @@ export class ProductsService {
         currentStock: true,
         imageUrl: true,
         specifications: { select: { name: true, value: true } },
+        tieredPricingEnabled: true,
+        priceTiers: {
+          select: { minQuantity: true, unitPrice: true },
+          orderBy: { minQuantity: 'asc' },
+        },
       },
     });
 
@@ -439,6 +444,13 @@ export class ProductsService {
       ...p,
       salePrice: p.salePrice ? p.salePrice.toNumber() : null,
       currentStock: p.currentStock.toNumber(),
+      priceTiers:
+        p.tieredPricingEnabled && p.priceTiers.length > 0
+          ? p.priceTiers.map((t) => ({
+              minQuantity: t.minQuantity.toNumber(),
+              unitPrice: t.unitPrice.toNumber(),
+            }))
+          : [],
     }));
   }
 

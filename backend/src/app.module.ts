@@ -25,6 +25,7 @@ import { OrdersModule } from './orders/orders.module';
 import { DeliveryZonesModule } from './delivery-zones/delivery-zones.module';
 import { CustomersModule } from './customers/customers.module';
 import { PurchasesModule } from './purchases/purchases.module';
+import { PriceTiersModule } from './price-tiers/price-tiers.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { PurchasesModule } from './purchases/purchases.module';
     DeliveryZonesModule,
     CustomersModule,
     PurchasesModule,
+    PriceTiersModule,
   ],
   controllers: [AppController],
   providers: [
