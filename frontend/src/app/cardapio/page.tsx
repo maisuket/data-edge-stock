@@ -31,6 +31,7 @@ import {
 } from "@/lib/services/orders";
 import { DeliveryZoneService } from "@/lib/services/delivery-zones";
 import { normalizeBrazilPhone, formatBrazilPhoneInput } from "@/lib/phone";
+import { getUnitPriceForQuantity } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -61,24 +62,6 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "BRL",
   }).format(value);
-
-/**
- * Espelha a mesma regra do backend (resolveUnitPrice em
- * price-tiers/resolve-unit-price.ts): usa o preço da maior faixa de
- * quantidade que a quantidade pedida atinge, ou o preço normal se a
- * promoção estiver desligada ou nenhuma faixa se aplicar. O backend nunca
- * confia nesse valor — é só para a prévia do carrinho ficar correta.
- */
-function getUnitPriceForQuantity(product: PublicProduct, quantity: number) {
-  const basePrice = product.salePrice ?? 0;
-  if (!product.priceTiers || product.priceTiers.length === 0) return basePrice;
-
-  const applicable = product.priceTiers
-    .filter((t) => quantity >= t.minQuantity)
-    .sort((a, b) => b.minQuantity - a.minQuantity)[0];
-
-  return applicable ? applicable.unitPrice : basePrice;
-}
 
 /** Abaixo desse tanto de unidades restantes, mostra aviso de estoque baixo */
 const LOW_STOCK_THRESHOLD = 3;

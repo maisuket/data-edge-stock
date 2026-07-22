@@ -17,6 +17,8 @@ export interface Product {
   isManufactured: boolean;
   /** true = a promoção por quantidade (price tiers) está ligada */
   tieredPricingEnabled?: boolean;
+  /** Faixas de preço por quantidade cadastradas (independente de tieredPricingEnabled) */
+  priceTiers?: { id?: string; minQuantity: number; unitPrice: number }[];
 
   specifications?: { name: string; value: string }[];
   attachments?: { fileName: string; filePath: string; fileType: string }[];
@@ -31,6 +33,8 @@ export interface PublicProduct {
   currentStock: number;
   imageUrl?: string | null;
   specifications?: { name: string; value: string }[];
+  /** true = a promoção por quantidade (price tiers) está ligada */
+  tieredPricingEnabled?: boolean;
   /** Faixas de preço por quantidade ativas (vazio se a promoção estiver desligada) */
   priceTiers?: { minQuantity: number; unitPrice: number }[];
 }

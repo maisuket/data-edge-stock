@@ -114,6 +114,7 @@ export class ProductsService {
         include: {
           attachments: true,
           specifications: true,
+          priceTiers: { orderBy: { minQuantity: 'asc' } },
         },
       }),
       queryBuilder.count({ where }), // Conta apenas os filtrados para a paginação funcionar
@@ -127,6 +128,11 @@ export class ProductsService {
       salePrice: p.salePrice ? p.salePrice.toNumber() : null,
       currentStock: p.currentStock.toNumber(),
       minStock: p.minStock.toNumber(),
+      priceTiers: p.priceTiers.map((t) => ({
+        id: t.id,
+        minQuantity: t.minQuantity.toNumber(),
+        unitPrice: t.unitPrice.toNumber(),
+      })),
     }));
 
     return new PageDto(mappedProducts, pageMetaDto);
@@ -138,6 +144,7 @@ export class ProductsService {
       include: {
         specifications: true,
         attachments: true,
+        priceTiers: { orderBy: { minQuantity: 'asc' } },
       },
     });
 
@@ -149,6 +156,11 @@ export class ProductsService {
       salePrice: product.salePrice ? product.salePrice.toNumber() : null,
       currentStock: product.currentStock.toNumber(),
       minStock: product.minStock.toNumber(),
+      priceTiers: product.priceTiers.map((t) => ({
+        id: t.id,
+        minQuantity: t.minQuantity.toNumber(),
+        unitPrice: t.unitPrice.toNumber(),
+      })),
     };
   }
 

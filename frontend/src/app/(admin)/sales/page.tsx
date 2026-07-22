@@ -51,6 +51,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductService } from "@/lib/services/products";
 import { SalesService } from "@/lib/services/sales";
+import { getUnitPriceForQuantity } from "@/lib/pricing";
 
 const fmt = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -119,6 +120,16 @@ export default function SalesPage() {
 
   const products = productsData?.data || [];
   const selectedProduct = products.find((p: any) => p.id === productId);
+
+  // Recalcula o valor unitário sempre que a quantidade ou o produto mudam,
+  // aplicando a promoção por quantidade quando ela se aplicar. Só mexe no
+  // campo quando o produto tem preço padrão (campo fica bloqueado nesse
+  // caso); se não tiver, o valor continua livre para digitação manual.
+  useEffect(() => {
+    if (!selectedProduct?.salePrice) return;
+    const qty = Number(quantity) || 1;
+    setUnitPrice(String(getUnitPriceForQuantity(selectedProduct, qty)));
+  }, [selectedProduct, quantity]);
 
   // Quantidade desse produto específico que já está no carrinho
   const qtyInCartForSelected = selectedProduct
@@ -409,7 +420,14 @@ export default function SalesPage() {
                         (p: any) => p.id === newProductId,
                       );
                       setUnitPrice(
-                        product?.salePrice ? String(product.salePrice) : "",
+                        product?.salePrice
+                          ? String(
+                              getUnitPriceForQuantity(
+                                product,
+                                Number(quantity) || 1,
+                              ),
+                            )
+                          : "",
                       );
                     }}
                     disabled={isLoadingProducts || saleMutation.isPending}
@@ -599,15 +617,37 @@ export default function SalesPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">
-                        Preço Sugerido
+                        Preço Unitário
                       </p>
                       <p className="font-semibold text-foreground">
                         {selectedProduct.salePrice
-                          ? fmt.format(selectedProduct.salePrice)
+                          ? fmt.format(
+                              getUnitPriceForQuantity(
+                                selectedProduct,
+                                Number(quantity) || 1,
+                              ),
+                            )
                           : "Não definido"}
                       </p>
                     </div>
                   </div>
+                  {selectedProduct.tieredPricingEnabled &&
+                    selectedProduct.priceTiers &&
+                    selectedProduct.priceTiers.length > 0 && (
+                      <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/30 rounded-md">
+                        {[...selectedProduct.priceTiers]
+                          .sort((a, b) => a.minQuantity - b.minQuantity)
+                          .map((t, i) => (
+                            <p
+                              key={i}
+                              className="text-xs text-emerald-700 dark:text-emerald-400 font-medium"
+                            >
+                              🏷️ A partir de {t.minQuantity} un:{" "}
+                              {fmt.format(t.unitPrice)} cada
+                            </p>
+                          ))}
+                      </div>
+                    )}
                   {Number(quantity) > 0 &&
                     selectedProduct.currentStock <
                       Number(quantity) + qtyInCartForSelected && (
