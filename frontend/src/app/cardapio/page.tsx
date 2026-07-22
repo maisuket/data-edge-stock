@@ -62,6 +62,24 @@ const formatCurrency = (value: number) =>
     currency: "BRL",
   }).format(value);
 
+/**
+ * Espelha a mesma regra do backend (resolveUnitPrice em
+ * price-tiers/resolve-unit-price.ts): usa o preço da maior faixa de
+ * quantidade que a quantidade pedida atinge, ou o preço normal se a
+ * promoção estiver desligada ou nenhuma faixa se aplicar. O backend nunca
+ * confia nesse valor — é só para a prévia do carrinho ficar correta.
+ */
+function getUnitPriceForQuantity(product: PublicProduct, quantity: number) {
+  const basePrice = product.salePrice ?? 0;
+  if (!product.priceTiers || product.priceTiers.length === 0) return basePrice;
+
+  const applicable = product.priceTiers
+    .filter((t) => quantity >= t.minQuantity)
+    .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+  return applicable ? applicable.unitPrice : basePrice;
+}
+
 /** Abaixo desse tanto de unidades restantes, mostra aviso de estoque baixo */
 const LOW_STOCK_THRESHOLD = 3;
 
@@ -105,6 +123,15 @@ function ProductCard({
   const remaining = product.currentStock - quantity;
   const isLowStock =
     !isOutOfStock && remaining > 0 && remaining <= LOW_STOCK_THRESHOLD;
+
+  const hasPromo = !!product.priceTiers && product.priceTiers.length > 0;
+  const cheapestTier = hasPromo
+    ? [...product.priceTiers!].sort((a, b) => a.minQuantity - b.minQuantity)[0]
+    : null;
+  const effectiveUnitPrice =
+    quantity > 0 ? getUnitPriceForQuantity(product, quantity) : null;
+  const promoActive =
+    effectiveUnitPrice !== null && effectiveUnitPrice !== product.salePrice;
 
   return (
     <div
@@ -153,14 +180,33 @@ function ProductCard({
               Só {remaining === 1 ? "resta 1 unidade" : `restam ${remaining} unidades`}!
             </p>
           )}
+          {hasPromo && cheapestTier && (
+            <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+              🏷️ A partir de {cheapestTier.minQuantity} un:{" "}
+              {formatCurrency(cheapestTier.unitPrice)} cada
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="font-bold text-primary text-base">
-            {product.salePrice !== null
-              ? formatCurrency(product.salePrice)
-              : "Consultar"}
-          </span>
+          {promoActive && effectiveUnitPrice !== null ? (
+            <span className="flex flex-col leading-tight">
+              <span className="text-[11px] text-zinc-400 line-through">
+                {product.salePrice !== null
+                  ? formatCurrency(product.salePrice)
+                  : ""}
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-base">
+                {formatCurrency(effectiveUnitPrice)}
+              </span>
+            </span>
+          ) : (
+            <span className="font-bold text-primary text-base">
+              {product.salePrice !== null
+                ? formatCurrency(product.salePrice)
+                : "Consultar"}
+            </span>
+          )}
 
           {isOutOfStock ? (
             <span className="text-xs font-medium text-zinc-400 px-3 py-1.5">
@@ -246,7 +292,8 @@ function CartDrawer({
     deliveryType === "DELIVERY" ? (selectedZone?.fee ?? 0) : 0;
 
   const subtotal = items.reduce(
-    (sum, item) => sum + (item.product.salePrice ?? 0) * item.quantity,
+    (sum, item) =>
+      sum + getUnitPriceForQuantity(item.product, item.quantity) * item.quantity,
     0,
   );
   const total = subtotal + deliveryFee;
@@ -287,7 +334,10 @@ function CartDrawer({
       const orderLines = items
         .map(
           (item) =>
-            `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency((item.product.salePrice ?? 0) * item.quantity)}`,
+            `▫️ ${item.quantity}x *${item.product.name}* — ${formatCurrency(
+              getUnitPriceForQuantity(item.product, item.quantity) *
+                item.quantity,
+            )}`,
         )
         .join("\n");
 
@@ -444,7 +494,8 @@ function CartDrawer({
                   </p>
                   <p className="text-xs text-zinc-500 dark:text-zinc-400">
                     {formatCurrency(
-                      (item.product.salePrice ?? 0) * item.quantity,
+                      getUnitPriceForQuantity(item.product, item.quantity) *
+                        item.quantity,
                     )}
                   </p>
                 </div>
@@ -788,7 +839,7 @@ export default function CardapioPage() {
 
   const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce(
-    (s, i) => s + (i.product.salePrice ?? 0) * i.quantity,
+    (s, i) => s + getUnitPriceForQuantity(i.product, i.quantity) * i.quantity,
     0,
   );
 

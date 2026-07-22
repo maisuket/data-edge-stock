@@ -22,6 +22,7 @@ import {
   ChefHat,
   Factory,
   TrendingUp,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +68,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { ProductFormDialog } from "@/app/components/ProductFormDialog";
+import { PriceTiersDialog } from "@/app/components/PriceTiersDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -315,6 +317,9 @@ export default function ProductsPage() {
     undefined,
   );
 
+  const [isPromoOpen, setIsPromoOpen] = useState(false);
+  const [promoProduct, setPromoProduct] = useState<Product | null>(null);
+
   const queryClient = useQueryClient();
 
   // Debounce da busca: atualiza a query de busca 500ms após o usuário parar de digitar
@@ -371,6 +376,11 @@ export default function ProductsPage() {
   const openMove = (product: Product) => {
     setMovingProduct(product);
     setIsMoveOpen(true);
+  };
+
+  const openPromo = (product: Product) => {
+    setPromoProduct(product);
+    setIsPromoOpen(true);
   };
 
   const newLocal = "relative w-[300px]";
@@ -619,6 +629,13 @@ export default function ProductsPage() {
                                 Editar
                               </DropdownMenuItem>
 
+                              <DropdownMenuItem
+                                onClick={() => openPromo(product)}
+                              >
+                                <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                                Promoção por quantidade
+                              </DropdownMenuItem>
+
                               {product.isManufactured ? (
                                 <>
                                   <DropdownMenuItem
@@ -723,6 +740,12 @@ export default function ProductsPage() {
           product={movingProduct}
         />
       )}
+
+      <PriceTiersDialog
+        open={isPromoOpen}
+        onOpenChange={setIsPromoOpen}
+        product={promoProduct}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}

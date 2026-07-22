@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveUnitPrice } from '../price-tiers/resolve-unit-price';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
@@ -28,6 +29,7 @@ export class SalesService {
       for (const item of dto.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
+          include: { priceTiers: true },
         });
 
         if (!product) {
@@ -36,9 +38,16 @@ export class SalesService {
           );
         }
 
+        const quantity = new Prisma.Decimal(item.quantity);
+
         // Seguindo o princípio "Nunca confie no frontend", forçamos o uso do
-        // preço cadastrado no banco de dados.
-        const unitPrice = product.salePrice;
+        // preço cadastrado no banco de dados (considerando a promoção por
+        // quantidade, se estiver ligada e a faixa se aplicar).
+        const unitPrice = resolveUnitPrice(
+          product,
+          product.priceTiers,
+          quantity,
+        );
 
         // No JavaScript, um Decimal com valor 0 (Prisma.Decimal(0)) é um objeto "truthy".
         // Precisamos validar com .lte(0) para garantir que o preço seja maior que zero.
@@ -47,8 +56,6 @@ export class SalesService {
             `O produto "${product.name}" está sem preço de venda definido (ou o valor é zero) no banco de dados. Atualize o cadastro antes de vender.`,
           );
         }
-
-        const quantity = new Prisma.Decimal(item.quantity);
 
         // UPDATE atômico: decrementa apenas se o estoque for suficiente.
         // Previne race condition onde duas vendas simultâneas poderiam levar ao estoque negativo.

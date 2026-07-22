@@ -7,6 +7,7 @@ import { PageOptionsDto } from '../common/dto/page-options.dto';
 import { PageDto } from '../common/dto/page.dto';
 import { PageMetaDto } from '../common/dto/page-meta.dto';
 import { MercadoPagoService } from '../mercado-pago/mercado-pago.service';
+import { resolveUnitPrice } from '../price-tiers/resolve-unit-price';
 import { CreateOrderDto, CreateOrderItemDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 
@@ -383,6 +384,7 @@ export class OrdersService {
     for (const item of items) {
       const product = await tx.product.findUnique({
         where: { id: item.productId },
+        include: { priceTiers: true },
       });
 
       if (!product) {
@@ -391,14 +393,13 @@ export class OrdersService {
         );
       }
 
-      const unitPrice = product.salePrice;
+      const quantity = new Prisma.Decimal(item.quantity);
+      const unitPrice = resolveUnitPrice(product, product.priceTiers, quantity);
       if (!unitPrice || unitPrice.lte(0)) {
         throw new BadRequestException(
           `O produto "${product.name}" está sem preço de venda definido.`,
         );
       }
-
-      const quantity = new Prisma.Decimal(item.quantity);
 
       // UPDATE atômico: decrementa apenas se o estoque for suficiente.
       const updated = await tx.$queryRaw<{ current_stock: number }[]>(

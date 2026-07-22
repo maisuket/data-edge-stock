@@ -15,6 +15,8 @@ export interface Product {
   imageUrl?: string;
   /** true = produto fabricado internamente (custo calculado pela receita) */
   isManufactured: boolean;
+  /** true = a promoção por quantidade (price tiers) está ligada */
+  tieredPricingEnabled?: boolean;
 
   specifications?: { name: string; value: string }[];
   attachments?: { fileName: string; filePath: string; fileType: string }[];
@@ -29,6 +31,8 @@ export interface PublicProduct {
   currentStock: number;
   imageUrl?: string | null;
   specifications?: { name: string; value: string }[];
+  /** Faixas de preço por quantidade ativas (vazio se a promoção estiver desligada) */
+  priceTiers?: { minQuantity: number; unitPrice: number }[];
 }
 
 export interface DashboardStats {
